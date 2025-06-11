@@ -12,6 +12,7 @@ export type WorkflowCardTypes = {
   author: User;
   category: string;
   slug: string;
+  videoUrl?: string
   viewCount: number
 };
 

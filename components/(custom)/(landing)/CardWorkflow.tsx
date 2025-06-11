@@ -354,7 +354,7 @@ export default function CardWorkflow({
 
       {/* Update Workflow Dialog */}
       <Dialog open={isUpdateDialogOpen} onOpenChange={handleUpdateDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-primary border-4">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Edit className="h-5 w-5 text-blue-600" />
@@ -366,17 +366,6 @@ export default function CardWorkflow({
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={updateFormData.title}
-                onChange={(e) => handleInputChange("title", e.target.value)}
-                placeholder="Enter workflow title"
-                disabled={isUpdating}
-              />
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="videoUrl">Video URL</Label>
               <Input
@@ -420,7 +409,7 @@ export default function CardWorkflow({
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-primary border-4">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
