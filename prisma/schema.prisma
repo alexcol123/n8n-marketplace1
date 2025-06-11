@@ -1,0 +1,126 @@
+// # // to push to db   npx prisma db push && npx prisma generate
+// # // to open studio npx prisma studio
+
+
+// # // to push to db   npx prisma db push && npx prisma generate
+// # // to open studio npx prisma studio
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Profile {
+  id                String               @id @default(uuid())
+  clerkId           String               @unique
+  firstName         String
+  lastName          String
+  username          String               @unique
+  email             String
+  profileImage      String
+  bio               String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  Workflow          Workflow[]
+  WorkflowDownloads WorkflowDownload[]
+  completions       WorkflowCompletion[] // Fixed relation name
+  reportedIssues    Issue[]              @relation("reportedIssues")
+}
+
+model Workflow {
+  id                String               @id @default(uuid())
+  title             String
+  content           String               @db.Text
+  workflowImage     String
+  videoUrl          String?
+  slug              String               @unique
+  authorId          String
+  author            Profile              @relation(fields: [authorId], references: [clerkId], onDelete: Cascade)
+  category          CategoryType
+  viewCount         Int                  @default(0)
+  workFlowJson      Json                 @default("{}")
+  steps             Json? // Optional JSON array of step text strings
+  verifiedAndTested Boolean              @default(false) // New field with default value of false
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  downloads         WorkflowDownload[]
+  completions       WorkflowCompletion[] // Fixed relation name
+}
+
+model WorkflowDownload {
+  id           String   @id @default(uuid())
+  workflowId   String
+  workflow     Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  userId       String
+  user         Profile  @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  downloadedAt DateTime @default(now())
+
+  @@unique([workflowId, userId]) // Optional: prevent duplicate download records
+}
+
+model WorkflowCompletion {
+  id          String   @id @default(uuid())
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  userId      String
+  user        Profile  @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  completedAt DateTime @default(now())
+
+  @@unique([workflowId, userId]) // Prevent duplicate completions - one completion per user per workflow
+}
+
+model Issue {
+  id          String      @id @default(uuid())
+  name        String
+  email       String?
+  phone       String?
+  workflowUrl String?
+  content     String      @db.Text
+  status      IssueStatus @default(OPEN)
+  priority    Priority    @default(MEDIUM) // ← Add this line
+  userId      String?
+  user        Profile?    @relation(fields: [userId], references: [clerkId], onDelete: SetNull, name: "reportedIssues")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([status])
+  @@index([priority]) // ← Add this index
+  @@index([createdAt])
+}
+
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// Predefined categories
+enum CategoryType {
+  ai
+  secops
+  sales
+  it_ops
+  marketing
+  engineering
+  devops
+  building_blocks
+  design
+  finance
+  hr
+  other
+  product
+  support
+}
