@@ -11,11 +11,24 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, CalendarIcon, Eye, Trash2, AlertTriangle } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarIcon,
+  Eye,
+  Trash2,
+  AlertTriangle,
+  Edit,
+} from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { WorkflowCardTypes } from "@/utils/types";
-import { deleteWorkflowAction } from "@/utils/actions";
+import {
+  deleteWorkflowAction,
+  updateWorkflowVideoAction,
+} from "@/utils/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -32,16 +45,27 @@ interface CardWorkflowProps {
   workflows: WorkflowCardTypes;
   canDelete?: boolean;
   onDeleteWorkflow?: (id: string) => Promise<void>;
+  onUpdateWorkflow?: (
+    id: string,
+    data: { title: string; videoUrl: string }
+  ) => Promise<void>;
 }
 
 export default function CardWorkflow({
   workflows,
   canDelete = false,
-  onDeleteWorkflow
+  onDeleteWorkflow,
+  onUpdateWorkflow,
 }: CardWorkflowProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateFormData, setUpdateFormData] = useState({
+    title: workflows?.title?.replace(/^"(.+)"$/, "$1") || "",
+    videoUrl: workflows?.videoUrl || "",
+  });
   const router = useRouter();
 
   // Format date to readable string
@@ -71,19 +95,19 @@ export default function CardWorkflow({
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      
+
       // Call the server action directly
       const result = await deleteWorkflowAction({} as Record<string, unknown>, {
-        workflowId: workflows.id
+        workflowId: workflows.id,
       });
-      
+
       if (result.success) {
         // Close the dialog
-        setIsDialogOpen(false);
-        
+        setIsDeleteDialogOpen(false);
+
         // Show success toast
         toast.success(result.message);
-        
+
         // If onDeleteWorkflow callback is provided, call it
         if (onDeleteWorkflow) {
           await onDeleteWorkflow(workflows.id);
@@ -101,6 +125,81 @@ export default function CardWorkflow({
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  // Handle update workflow video
+  const handleUpdate = async () => {
+    try {
+      setIsUpdating(true);
+
+      // Validate YouTube URL if provided
+      if (updateFormData.videoUrl.trim()) {
+        const youtubeRegex =
+          /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/;
+
+        if (!youtubeRegex.test(updateFormData.videoUrl.trim())) {
+          toast.error(
+            "Please provide a valid YouTube URL (youtube.com or youtu.be)"
+          );
+          return;
+        }
+      }
+
+      // Call the server action directly
+      const result = await updateWorkflowVideoAction(
+        {} as Record<string, unknown>,
+        {
+          workflowId: workflows.id,
+          videoUrl: updateFormData.videoUrl.trim(),
+        }
+      );
+
+      if (result.success) {
+        // Close the dialog
+        setIsUpdateDialogOpen(false);
+
+        // Show success toast
+        toast.success(result.message);
+
+        // If onUpdateWorkflow callback is provided, call it
+        if (onUpdateWorkflow) {
+          await onUpdateWorkflow(workflows.id, {
+            title: workflows.title, // Keep existing title
+            videoUrl: updateFormData.videoUrl.trim(),
+          });
+        } else {
+          // Otherwise refresh the page to show updated list
+          router.refresh();
+        }
+      } else {
+        // Show error toast
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Error updating workflow video:", error);
+      toast.error("An unexpected error occurred while updating the video");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Handle form input changes
+  const handleInputChange = (field: string, value: string) => {
+    setUpdateFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  // Reset form when dialog opens
+  const handleUpdateDialogOpen = (open: boolean) => {
+    if (open) {
+      setUpdateFormData({
+        title: workflows?.title?.replace(/^"(.+)"$/, "$1") || "",
+        videoUrl: workflows?.videoUrl || "",
+      });
+    }
+    setIsUpdateDialogOpen(open);
   };
 
   return (
@@ -160,8 +259,10 @@ export default function CardWorkflow({
           </CardDescription>
 
           <div className="flex items-center justify-between pt-2 group ">
-            <Link href={`/authors/${workflows.author.username}`
-            } className="flex items-center space-x-2 border border-muted p-1 rounded hover:border-primary">
+            <Link
+              href={`/authors/${workflows.author.username}`}
+              className="flex items-center space-x-2 border border-muted p-1 rounded hover:border-primary"
+            >
               <Avatar className="h-8 w-8 border border-primary/10 ">
                 <AvatarImage
                   src={workflows?.author?.profileImage}
@@ -187,23 +288,9 @@ export default function CardWorkflow({
         </CardContent>
 
         <CardFooter className="pt-0 pb-4">
-          <div className="w-full flex justify-between items-center">
-            {canDelete && (
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-destructive hover:text-destructive-foreground hover:bg-destructive border-destructive/20 hover:border-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
-            )}
-            
-            <div className={canDelete ? "ml-auto" : "w-full flex justify-end"}>
+          <div className="w-full space-y-3">
+            {/* View Workflow Button */}
+            <div className="w-full flex justify-end">
               <Link href={workflowUrl} className="flex items-center">
                 <Button
                   variant="outline"
@@ -215,12 +302,124 @@ export default function CardWorkflow({
                 </Button>
               </Link>
             </div>
+
+            {/* Actions Section */}
+            {canDelete && (
+              <div className="space-y-4">
+                <Separator decorative className="bg-primary/30" />
+                <h5 className="text-center text-sm font-medium text-muted-foreground">
+                  Actions
+                </h5>
+
+                <div className="flex gap-3 justify-center px-2">
+                  {/* Update Workflow Button */}
+                  <Dialog
+                    open={isUpdateDialogOpen}
+                    onOpenChange={handleUpdateDialogOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/50 bg-card border-2 border-blue-200 dark:border-blue-800/50 shadow-sm transition-all duration-200"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Update
+                      </Button>
+                    </DialogTrigger>
+                  </Dialog>
+
+                  {/* Delete Workflow Button */}
+                  <Dialog
+                    open={isDeleteDialogOpen}
+                    onOpenChange={setIsDeleteDialogOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-destructive hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50 bg-card border-2 border-red-200 dark:border-red-800/50 shadow-sm transition-all duration-200"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </DialogTrigger>
+                  </Dialog>
+                </div>
+              </div>
+            )}
           </div>
         </CardFooter>
       </Card>
 
+      {/* Update Workflow Dialog */}
+      <Dialog open={isUpdateDialogOpen} onOpenChange={handleUpdateDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5 text-blue-600" />
+              Update Workflow
+            </DialogTitle>
+            <DialogDescription>
+              Update the workflow information below.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={updateFormData.title}
+                onChange={(e) => handleInputChange("title", e.target.value)}
+                placeholder="Enter workflow title"
+                disabled={isUpdating}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="videoUrl">Video URL</Label>
+              <Input
+                id="videoUrl"
+                value={updateFormData.videoUrl}
+                onChange={(e) => handleInputChange("videoUrl", e.target.value)}
+                placeholder="Enter video URL (optional)"
+                disabled={isUpdating}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="ghost"
+              onClick={() => setIsUpdateDialogOpen(false)}
+              disabled={isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdate}
+              disabled={isUpdating}
+              className="gap-2"
+            >
+              {isUpdating ? (
+                <>
+                  <span className="h-4 w-4 border-2 border-current border-r-transparent rounded-full animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Edit className="h-4 w-4" />
+                  Update Workflow
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -228,21 +427,29 @@ export default function CardWorkflow({
               Confirm Workflow Deletion
             </DialogTitle>
             <DialogDescription className="pt-2">
-              Are you sure you want to delete <span className="font-medium text-foreground">&quot;{workflows?.title.replace(/^"(.+)"$/, "$1")}&quot;</span>?
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-foreground">
+                &quot;{workflows?.title.replace(/^"(.+)"$/, "$1")}&quot;
+              </span>
+              ?
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="bg-muted/50 p-4 rounded-md border border-border my-2">
             <p className="text-sm text-destructive flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              <span>This action <strong>cannot be undone</strong>. This will permanently delete the workflow, its JSON data, and its associated images.</span>
+              <span>
+                This action <strong>cannot be undone</strong>. This will
+                permanently delete the workflow, its JSON data, and its
+                associated images.
+              </span>
             </p>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0 mt-2">
             <Button
               variant="ghost"
-              onClick={() => setIsDialogOpen(false)}
+              onClick={() => setIsDeleteDialogOpen(false)}
               disabled={isDeleting}
             >
               Cancel

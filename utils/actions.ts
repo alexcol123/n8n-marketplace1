@@ -44,6 +44,56 @@ const isAdminUser = async (): Promise<boolean> => {
   }
 };
 
+export const isWorkflowCreator = async (
+  workflowId: string
+): Promise<boolean> => {
+  try {
+    // Get the authenticated user
+    const user = await getAuthUser();
+
+    // Get the workflow to check ownership
+    const workflow = await db.workflow.findUnique({
+      where: { id: workflowId },
+      select: {
+        authorId: true,
+      },
+    });
+
+    // Return false if workflow doesn't exist
+    if (!workflow) {
+      return false;
+    }
+
+    // Check if the authenticated user is the creator
+    return workflow.authorId === user.id;
+  } catch (error) {
+    console.error("Error checking workflow creator:", error);
+    return false;
+  }
+};
+
+export const isCreatorOrAdmin = async (
+  workflowId: string
+): Promise<boolean> => {
+  try {
+    // Check if user is creator first (most common case)
+    const isCreator = await isWorkflowCreator(workflowId);
+
+    // If user is creator, return true immediately - no need to check admin
+    if (isCreator) {
+      return true;
+    }
+
+    // Only check admin if user is not the creator
+    const isAdmin = await isAdminUser();
+
+    return isAdmin;
+  } catch (error) {
+    console.error("Error checking creator or admin status:", error);
+    return false;
+  }
+};
+
 const renderError = (error: unknown): { message: string; success: boolean } => {
   console.log(error);
   return {
@@ -546,9 +596,6 @@ export const deleteWorkflowAction = async (
   formData: FormData | { workflowId: string }
 ): Promise<{ message: string; success: boolean }> => {
   try {
-    // Get the authenticated user
-    const user = await getAuthUser();
-
     // Get workflow ID from either FormData or direct object
     const workflowId =
       formData instanceof FormData
@@ -559,32 +606,33 @@ export const deleteWorkflowAction = async (
       throw new Error("Workflow ID is required");
     }
 
-    // Get the workflow to check ownership and retrieve image URL
-    const workflow = await db.workflow.findUnique({
-      where: { id: workflowId },
-      select: {
-        id: true,
-        authorId: true,
-        workflowImage: true,
-        title: true,
-        slug: true,
-      },
-    });
+    // Check permissions using the reusable function
+    const canDelete = await isCreatorOrAdmin(workflowId);
 
-    // Check if workflow exists
-    if (!workflow) {
-      return { message: "No workflow found with that id ", success: false };
-    }
-
-    // Verify ownership - check if the authenticated user created this workflow
-    if (workflow.authorId !== user.id) {
+    if (!canDelete) {
       return {
         message: "You do not have permission to delete this workflow",
         success: false,
       };
     }
 
-    // Second step: Delete the workflow from the database
+    // Get the workflow title for the success message
+    const workflow = await db.workflow.findUnique({
+      where: { id: workflowId },
+      select: {
+        title: true,
+      },
+    });
+
+    // Check if workflow exists (in case it was deleted between permission check and this query)
+    if (!workflow) {
+      return {
+        message: "No workflow found with that id",
+        success: false,
+      };
+    }
+
+    // Delete the workflow from the database
     // This will cascade delete related records based on your schema relationships
     await db.workflow.delete({
       where: { id: workflowId },
@@ -764,7 +812,6 @@ export const getLeaderboardData = async (): Promise<LeaderboardData> => {
 };
 
 export const getUserProfileWithWorkflows = async (username: string) => {
-
   try {
     // Find the user profile by username
     const profile = await db.profile.findFirst({
@@ -843,7 +890,6 @@ export const getUserProfileWithWorkflows = async (username: string) => {
 
 // Record workflow completion for current user ==================>
 export const recordWorkflowCompletion = async (workflowId: string) => {
-
   try {
     const user = await getAuthUser();
 
@@ -1482,7 +1528,6 @@ export const createIssue = async (
   prevState: Record<string, unknown>,
   formData: FormData
 ): Promise<{ message: string; success: boolean }> => {
-
   try {
     // Get current user (optional - could be null for guests)
     const user = await currentUser();
@@ -1659,8 +1704,6 @@ export const updateIssuePriority = async (
   issueId: string,
   newPriority: Priority
 ): Promise<{ message: string; success: boolean }> => {
-
-
   try {
     await db.issue.update({
       where: { id: issueId },
@@ -2018,6 +2061,85 @@ export const fetchAdminDashboardStats = async () => {
       recentActivity: [],
       topWorkflows: [],
       topUsers: [],
+    };
+  }
+};
+
+//  Update video url  =======================================>
+
+// Add this function to your utils/actions.ts file
+export const updateWorkflowVideoAction = async (
+  prevState: Record<string, unknown>,
+  formData: FormData | { workflowId: string; videoUrl: string }
+): Promise<{ message: string; success: boolean }> => {
+  try {
+    // Get workflow ID and video URL from either FormData or direct object
+    const workflowId =
+      formData instanceof FormData
+        ? (formData.get("workflowId") as string)
+        : formData.workflowId;
+
+    const videoUrl =
+      formData instanceof FormData
+        ? (formData.get("videoUrl") as string)
+        : formData.videoUrl;
+
+    if (!workflowId) {
+      throw new Error("Workflow ID is required");
+    }
+
+    // Validate YouTube URL if provided
+    if (videoUrl && videoUrl.trim() !== "") {
+      const youtubeRegex =
+        /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/;
+
+      if (!youtubeRegex.test(videoUrl.trim())) {
+        return {
+          message:
+            "Please provide a valid YouTube URL (youtube.com or youtu.be)",
+          success: false,
+        };
+      }
+    }
+
+    // Check permissions using the reusable function
+    const canEdit = await isCreatorOrAdmin(workflowId);
+
+    if (!canEdit) {
+      return {
+        message: "You do not have permission to update this workflow",
+        success: false,
+      };
+    }
+
+    // Update the workflow with the new video URL
+    await db.workflow.update({
+      where: { id: workflowId },
+      data: {
+        videoUrl: videoUrl?.trim() || null, // Store null if empty string
+        updatedAt: new Date(),
+      },
+    });
+
+    // Revalidate relevant paths to update the UI
+    revalidatePath("/dashboard/wf"); // My Workflows page
+    revalidatePath(`/workflow/${workflowId}`); // Individual workflow page
+
+    // Return success message
+    const actionMessage = videoUrl?.trim()
+      ? "Video URL updated successfully"
+      : "Video URL removed successfully";
+
+    return {
+      message: actionMessage,
+      success: true,
+    };
+  } catch (error) {
+    console.error("Error updating workflow video:", error);
+    return {
+      message:
+        error instanceof Error ? error.message : "Failed to update video URL",
+      success: false,
     };
   }
 };
