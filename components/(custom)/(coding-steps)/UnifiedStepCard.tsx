@@ -1,4 +1,4 @@
-// components/(custom)/(workflow)/UnifiedStepCard.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -64,23 +64,36 @@ export default function UnifiedStepCard({
   const [nodeCopied, setNodeCopied] = useState(false);
 
   // Handle expansion toggle - this now requests expansion from parent
-  const handleToggleExpanded = () => {
-    if (isExpanded) {
-      // If currently expanded, close it
-      if (onToggleExpanded) {
-        onToggleExpanded(step.id, false);
-      }
-    } else {
-      // If currently closed, request to expand (parent will handle closing others)
-      if (onExpand) {
-        onExpand(step.id);
-      }
-      // Always mark as viewed when expanding
-      if (onToggleExpanded) {
-        onToggleExpanded(step.id, true);
-      }
+const handleToggleExpanded = () => {
+
+  
+  if (isExpanded) {
+    // If currently expanded, close it
+
+    if (onExpand) {
+
+      onExpand(step.id);
     }
-  };
+    
+    if (onToggleExpanded) {
+ 
+      onToggleExpanded(step.id, false);
+    }
+  } else {
+    // If currently closed, request to expand
+
+    
+    if (onExpand) {
+
+      onExpand(step.id);
+    }
+    
+    if (onToggleExpanded) {
+
+      onToggleExpanded(step.id, true);
+    }
+  }
+};
 
   // Generate cURL command for HTTP nodes
   const generateCurlCommand = (): string => {
@@ -974,9 +987,9 @@ export default function UnifiedStepCard({
             )}
           </div>
 
-          {/* cURL Command Section - Only for HTTP nodes when expanded */}
+
           {isHTTPNode() && hasParameters && copied && (
-            <>
+            <div>
               <Separator className="my-4" />
               <div className="space-y-3">
                 <h5 className="font-medium flex items-center gap-2">
@@ -1011,7 +1024,7 @@ export default function UnifiedStepCard({
                   </ScrollArea>
                 </div>
               </div>
-            </>
+            </div>
           )}
 
           {/* Disconnected Warning */}
@@ -1372,7 +1385,7 @@ export default function UnifiedStepCard({
                                         </div>
                                         <div className="p-3">
                                           <pre className="text-xs leading-relaxed whitespace-pre-wrap font-sans break-words">
-                                            {formatAIPrompt(String(content))}
+                                            {formatAIPrompt(typeof content === 'string' ? content : JSON.stringify(content))}
                                           </pre>
                                         </div>
                                       </div>

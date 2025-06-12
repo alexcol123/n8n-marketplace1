@@ -51,17 +51,35 @@ export default function WorkflowStepsViewer({
   };
 
   // Handle step expansion (only one at a time)
+  // const handleStepExpand = (stepId: string) => {
+  //   if (expandedStepId === stepId) {
+  //     // If clicking the same step, close it
+  //     setExpandedStepId(null);
+  //   } else {
+  //     // Open the new step and close any previously opened step
+  //     setExpandedStepId(stepId);
+  //     // Mark as viewed when opened
+  //     setViewedSteps((prev) => new Set([...prev, stepId]));
+  //   }
+  // };
+
+
   const handleStepExpand = (stepId: string) => {
-    if (expandedStepId === stepId) {
-      // If clicking the same step, close it
-      setExpandedStepId(null);
-    } else {
-      // Open the new step and close any previously opened step
-      setExpandedStepId(stepId);
-      // Mark as viewed when opened
-      setViewedSteps((prev) => new Set([...prev, stepId]));
-    }
-  };
+
+  
+  if (expandedStepId === stepId) {
+    // If clicking the same step, close it
+
+    setExpandedStepId(null);
+  } else {
+    // Open the new step and close any previously opened step
+ 
+    setExpandedStepId(stepId);
+    // Mark as viewed when opened
+    setViewedSteps((prev) => new Set([...prev, stepId]));
+  }
+};
+
 
 
 
@@ -71,8 +89,7 @@ export default function WorkflowStepsViewer({
 
   const stats = getWorkflowStats(workflowJson);
 
-  console.log('ordered steps ===========================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================')
-console.log(orderedSteps)
+
   // Always show all steps - no more limiting
   const displayedSteps = showDisconnected
     ? orderedSteps
@@ -233,14 +250,15 @@ console.log(orderedSteps)
 
                   {/* Step Content - Unified Card */}
                   <div className="flex-1 min-w-0">
-                    <UnifiedStepCard
-                      step={step}
-                      stepNumber={step.stepNumber}
-                      onToggleExpanded={handleStepToggleExpanded}
-                      isMarkedAsViewed={viewedSteps.has(step.id)}
-                      isExpanded={expandedStepId === step.id}
-                      onExpand={handleStepExpand}
-                    />
+           <UnifiedStepCard
+  key={step.id}
+  step={step}
+  stepNumber={index + 1}
+  onToggleExpanded={handleStepToggleExpanded}
+  isMarkedAsViewed={viewedSteps.has(step.id)}
+  isExpanded={expandedStepId === step.id} // This is crucial
+  onExpand={handleStepExpand} // This should handle the toggle
+/>
                   </div>
                 </div>
               </div>

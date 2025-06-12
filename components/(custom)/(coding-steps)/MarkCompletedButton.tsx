@@ -14,6 +14,8 @@ import {
   Target,
   Award,
   Rocket,
+  BarChart3,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
@@ -286,17 +288,36 @@ export default function MarkCompletedButton({
                 </div>
               </div>
 
-              <Badge
+              <Button
+                asChild
                 className={cn(
-                  " ml-4 px-4 py-2 text-base font-semibold shadow-lg transition-all duration-300",
+                  "ml-4 px-4 py-2 text-base font-semibold shadow-lg transition-all duration-300",
                   "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0",
                   "hover:from-green-600 hover:to-emerald-600",
+                  "hover:scale-105 active:scale-95",
                   justCompleted && "animate-pulse scale-110"
                 )}
               >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                COMPLETED
-              </Badge>
+                <Link href="http://localhost:3000/dashboard/myCompletions" className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  View Progress
+                </Link>
+              </Button>
+            </div>
+
+            {/* Progress tracking info */}
+            <div className="mt-4 p-3 bg-white/50 dark:bg-black/20 rounded-lg border border-green-200/50 dark:border-green-800/50">
+              <div className="flex items-center gap-3">
+                <Eye className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    📊 Track your learning journey and see all completed workflows
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Monitor your progress and celebrate your achievements in your personal dashboard
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Next Challenge Call-to-Action */}

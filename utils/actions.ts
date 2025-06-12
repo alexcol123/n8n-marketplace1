@@ -2143,3 +2143,29 @@ export const updateWorkflowVideoAction = async (
     };
   }
 };
+
+// ================================>
+
+export const adminFetchAllWorkflows = async () => {
+  const user = await getAuthUser();
+
+  const isAnAdmin = await isAdminUser();
+
+  if (!isAnAdmin) {
+    return {
+      message: "You do not have permission to view  this workflows",
+      success: false,
+    };
+  } else {
+    const workflows = await db.workflow.findMany({
+      orderBy: {
+        createdAt: "desc", // This sorts by newest first
+      },
+      include: {
+        author: true, // Optionally include author details if needed
+      },
+    });
+
+    return workflows;
+  }
+};
