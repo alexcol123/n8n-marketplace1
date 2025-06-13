@@ -25,12 +25,19 @@ import {
   Plus,
   Info,
   Target,
+  CheckCircle,
+  Download,
+  TrendingUp,
+  Calendar,
+  Clock,
 } from "lucide-react";
 
 import Link from "next/link";
 import Image from "next/image";
 import { fetchProfile } from "@/utils/actions";
 import { getUserWorkflowStats } from "@/utils/actions";
+import { getUserCompletionStats } from "@/utils/actions";
+import { fetchUserDownloads } from "@/utils/actions";
 import { CreateNewWorkflowButton } from "@/components/(custom)/(dashboard)/Form/Buttons";
 
 // Helper function to get greeting based on time of day
@@ -53,6 +60,8 @@ async function Dashboard() {
   // Fetch profile and stats server-side
   const profile = await fetchProfile();
   const stats = await getUserWorkflowStats();
+  const completionStats = await getUserCompletionStats();
+  const userDownloads = await fetchUserDownloads();
   const greeting = getGreeting();
 
   const isAdmin = profile?.clerkId === process.env.ADMIN_USER_ID;
@@ -60,7 +69,26 @@ async function Dashboard() {
   // Format stats for display
   const { totalWorkflows, categoriesUsed } = stats;
 
-  // Get most popular categories (top 3)
+  // Process downloads data
+  const totalDownloads = Array.isArray(userDownloads)
+    ? userDownloads.length
+    : 0;
+  const recentDownloads = Array.isArray(userDownloads)
+    ? userDownloads.filter((download) => {
+        const downloadDate = new Date(download.downloadedAt);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        return downloadDate >= sevenDaysAgo;
+      }).length
+    : 0;
+
+  // Get most recent download
+  const latestDownload =
+    Array.isArray(userDownloads) && userDownloads.length > 0
+      ? userDownloads[0]
+      : null;
+
+  // Get top categories (top 3)
   const topCategories = categoriesUsed.slice(0, 3);
 
   // Get random motivational quote
@@ -119,23 +147,23 @@ async function Dashboard() {
 
   return (
     <div className="flex flex-col gap-6 pb-12">
-{isAdmin && (
+      {isAdmin && (
         <div className="mb-6">
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/50 dark:border-amber-800/30 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
-                  <svg 
-                    className="h-5 w-5 text-white" 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
+                  <svg
+                    className="h-5 w-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z" 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                     />
                   </svg>
                 </div>
@@ -148,10 +176,8 @@ async function Dashboard() {
                   </p>
                 </div>
               </div>
-              
-              <Button 
-                asChild 
-                variant="default">
+
+              <Button asChild variant="default">
                 <Link
                   href="/admin"
                   className="flex items-center gap-2 px-4 py-2"
@@ -208,6 +234,149 @@ async function Dashboard() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none"></div>
         </CardContent>
       </Card>
+
+      {/* Activity Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Completions Card */}
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200/50 dark:border-green-800/30 hover:shadow-lg transition-all duration-300">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg text-green-800 dark:text-green-200">
+                    Completions
+                  </CardTitle>
+                  <CardDescription className="text-green-600 dark:text-green-400">
+                    Your learning progress
+                  </CardDescription>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className="text-green-700 hover:text-green-800 hover:bg-green-100/50"
+              >
+                <Link href="/dashboard/completions">
+                  View All <ArrowRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  {completionStats.totalCompletions}
+                </div>
+                <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  Total Completed
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  {completionStats.recentCompletions}
+                </div>
+                <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  This Week
+                </div>
+              </div>
+            </div>
+
+            {completionStats.latestCompletion && (
+              <div className="mt-4 pt-3 border-t border-green-200/50 dark:border-green-800/30">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <span className="text-sm text-green-700 dark:text-green-300">
+                    Latest:
+                  </span>
+                </div>
+                <Link
+                  href={`/workflow/${completionStats.latestCompletion.workflow.slug}`}
+                  className="text-sm font-medium text-green-800 dark:text-green-200 hover:underline mt-1 block"
+                >
+                  {completionStats.latestCompletion.workflow.title}
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Downloads Card */}
+        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200/50 dark:border-blue-800/30 hover:shadow-lg transition-all duration-300">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <Download className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg text-blue-800 dark:text-blue-200">
+                    Downloads
+                  </CardTitle>
+                  <CardDescription className="text-blue-600 dark:text-blue-400">
+                    Workflows you've saved
+                  </CardDescription>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className="text-blue-700 hover:text-blue-800 hover:bg-blue-100/50"
+              >
+                <Link href="/dashboard/mydownloads">
+                  View All <ArrowRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                  {totalDownloads}
+                </div>
+                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  Total Downloads
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                  {recentDownloads}
+                </div>
+                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  This Week
+                </div>
+              </div>
+            </div>
+
+            {latestDownload && (
+              <div className="mt-4 pt-3 border-t border-blue-200/50 dark:border-blue-800/30">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm text-blue-700 dark:text-blue-300">
+                    Latest:
+                  </span>
+                </div>
+                <Link
+                  href={`/workflow/${latestDownload.workflow.slug}`}
+                  className="text-sm font-medium text-blue-800 dark:text-blue-200 hover:underline mt-1 block"
+                >
+                  {latestDownload.workflow.title}
+                </Link>
+                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  by {latestDownload.workflow.author.firstName}{" "}
+                  {latestDownload.workflow.author.lastName}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -472,48 +641,118 @@ async function Dashboard() {
                     Most Used
                   </Badge>
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                   {topCategories.map((category, index) => {
                     const percentage = Math.round(
                       (category.count / totalWorkflows) * 100
                     );
-                    const colors = [
-                      "bg-blue-500 text-blue-50 border-blue-600",
-                      "bg-amber-500 text-amber-50 border-amber-600",
-                      "bg-emerald-500 text-emerald-50 border-emerald-600",
+
+                    const categoryStyles = [
+                      {
+                        gradient: "from-blue-500 to-blue-600",
+                        bg: "bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/10 dark:to-blue-900/20",
+                        border: "border-blue-200 dark:border-blue-800/30",
+                        icon: "text-blue-600 dark:text-blue-400",
+                        text: "text-blue-900 dark:text-blue-200",
+                        badge: "bg-blue-500 text-white",
+                        button:
+                          "bg-blue-500 hover:bg-blue-600 text-white border-0",
+                      },
+                      {
+                        gradient: "from-amber-500 to-orange-500",
+                        bg: "bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-950/10 dark:to-orange-900/20",
+                        border: "border-amber-200 dark:border-amber-800/30",
+                        icon: "text-amber-600 dark:text-amber-400",
+                        text: "text-amber-900 dark:text-amber-200",
+                        badge: "bg-amber-500 text-white",
+                        button:
+                          "bg-amber-500 hover:bg-amber-600 text-white border-0",
+                      },
+                      {
+                        gradient: "from-emerald-500 to-green-600",
+                        bg: "bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-950/10 dark:to-green-900/20",
+                        border: "border-emerald-200 dark:border-emerald-800/30",
+                        icon: "text-emerald-600 dark:text-emerald-400",
+                        text: "text-emerald-900 dark:text-emerald-200",
+                        badge: "bg-emerald-500 text-white",
+                        button:
+                          "bg-emerald-500 hover:bg-emerald-600 text-white border-0",
+                      },
                     ];
+
+                    const style = categoryStyles[index];
 
                     return (
                       <div
                         key={category.name}
-                        className={`${colors[index].split(" ")[0]} ${
-                          colors[index].split(" ")[1]
-                        } rounded-lg p-4 border-l-4 ${
-                          colors[index].split(" ")[2]
-                        } shadow-sm hover:shadow-md transition-all duration-300 group`}
+                        className={`${style.bg} ${style.border} border rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 group relative overflow-hidden`}
                       >
-                        <div className="flex justify-between items-start">
-                          <h4 className="font-semibold capitalize">
-                            {formatCategoryName(category.name)}
-                          </h4>
-                          <Badge className="bg-white/20 text-white border-0">
+                        {/* Background decoration */}
+                        <div
+                          className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${style.gradient} opacity-10 rounded-full -translate-y-6 translate-x-6`}
+                        ></div>
+
+                        {/* Header with icon and title */}
+                        <div className="flex items-start justify-between mb-4 relative z-10">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-10 h-10 rounded-lg bg-gradient-to-br ${style.gradient} flex items-center justify-center shadow-sm`}
+                            >
+                              <PieChart className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <h4
+                                className={`font-semibold text-lg ${style.text} capitalize leading-none`}
+                              >
+                                {formatCategoryName(category.name)}
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Category
+                              </p>
+                            </div>
+                          </div>
+                          <Badge
+                            className={`${style.badge} font-semibold px-2 py-1 text-sm shadow-sm`}
+                          >
                             {percentage}%
                           </Badge>
                         </div>
-                        <p className="mt-2 text-sm opacity-90">
-                          {category.count} workflow
-                          {category.count !== 1 ? "s" : ""}
-                        </p>
-                        <div className="mt-3 pt-3 border-t border-white/20 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                        {/* Stats */}
+                        <div className="mb-4 relative z-10">
+                          <div className="flex items-baseline gap-2">
+                            <span
+                              className={`text-2xl font-bold ${style.text}`}
+                            >
+                              {category.count}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              workflow{category.count !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div className="mt-3 w-full bg-white/50 dark:bg-gray-800/50 rounded-full h-2 overflow-hidden">
+                            <div
+                              className={`h-full bg-gradient-to-r ${style.gradient} rounded-full transition-all duration-700 ease-out`}
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        {/* Action button */}
+                        <div className="relative z-10">
                           <Button
-                            variant="secondary"
                             size="sm"
-                            className="bg-white/20 hover:bg-white/30 text-white w-full text-xs"
+                            className={`${style.button} w-full group-hover:shadow-md transition-all duration-200 text-sm font-medium`}
                             asChild
                           >
-                            <Link href={`/?category=${category.name}`}>
-                              <span>View Category</span>
-                              <ArrowRight className="h-3 w-3 ml-1" />
+                            <Link
+                              href={`/?category=${category.name}`}
+                              className="flex items-center justify-center gap-2"
+                            >
+                              <span>Explore Category</span>
+                              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                             </Link>
                           </Button>
                         </div>
@@ -591,7 +830,10 @@ async function Dashboard() {
                   </h4>
                   <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">
                     You&apos;re most active with{" "}
-                    <span className="font-semibold">AI workflows</span> (
+                    <span className="font-semibold">
+                      {formatCategoryName(categoriesUsed[0].name)}
+                    </span>{" "}
+                    (
                     {Math.round(
                       (categoriesUsed[0].count / totalWorkflows) * 100
                     )}

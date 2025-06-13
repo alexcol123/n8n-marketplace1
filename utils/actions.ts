@@ -1035,7 +1035,7 @@ export const getUserCompletionStats = async () => {
 
     // Get completions by category
 
-    // Get recent completions (last 7 days)
+    // Get recent completions ALL USERS (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
