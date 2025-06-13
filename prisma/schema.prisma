@@ -1,5 +1,3 @@
-// # // to push to db   npx prisma db push && npx prisma generate
-// # // to open studio npx prisma studio
 
 
 // # // to push to db   npx prisma db push && npx prisma generate
@@ -16,40 +14,71 @@ generator client {
 }
 
 model Profile {
-  id                String               @id @default(uuid())
-  clerkId           String               @unique
-  firstName         String
-  lastName          String
-  username          String               @unique
-  email             String
-  profileImage      String
-  bio               String?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  Workflow          Workflow[]
+  id           String  @id @default(uuid())
+  clerkId      String  @unique
+  firstName    String
+  lastName     String
+  username     String  @unique
+  email        String
+  profileImage String
+  bio          String?
+
+  // Simple continue tracking
+  lastWorkflowId String? // Just store the workflow ID
+  lastViewedAt   DateTime? // When they last viewed it
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations (existing only)
+  Workflow          Workflow[]           @relation("AuthoredWorkflows")
   WorkflowDownloads WorkflowDownload[]
-  completions       WorkflowCompletion[] // Fixed relation name
+  completions       WorkflowCompletion[]
   reportedIssues    Issue[]              @relation("reportedIssues")
 }
 
 model Workflow {
-  id                String               @id @default(uuid())
+  id                String       @id @default(uuid())
   title             String
-  content           String               @db.Text
+  content           String       @db.Text
   workflowImage     String
   videoUrl          String?
-  slug              String               @unique
+  slug              String       @unique
   authorId          String
-  author            Profile              @relation(fields: [authorId], references: [clerkId], onDelete: Cascade)
+  author            Profile      @relation(fields: [authorId], references: [clerkId], onDelete: Cascade, name: "AuthoredWorkflows")
   category          CategoryType
-  viewCount         Int                  @default(0)
-  workFlowJson      Json                 @default("{}")
-  steps             Json? // Optional JSON array of step text strings
-  verifiedAndTested Boolean              @default(false) // New field with default value of false
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  downloads         WorkflowDownload[]
-  completions       WorkflowCompletion[] // Fixed relation name
+  viewCount         Int          @default(0)
+  workFlowJson      Json         @default("{}")
+  steps             Json?
+  verifiedAndTested Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  // Relations (existing + new steps)
+  downloads     WorkflowDownload[]
+  completions   WorkflowCompletion[]
+  workflowSteps WorkflowStep[] // NEW: Simple steps
+}
+
+model WorkflowStep {
+  id              String  @id @default(uuid())
+  workflowId      String
+  stepNumber      Int
+  stepTitle       String
+  stepDescription String?
+  stepImage       String?
+  helpText        String? // "This step requires an OpenAI API key"
+  helpLinks       Json? // [{"name": "OpenAI Documentation", "url": "https://..."}, {"name": "Get API Key Tutorial", "url": "/tutorials/..."}]
+
+  isCustomStep Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, stepNumber])
+  @@index([workflowId, stepNumber])
 }
 
 model WorkflowDownload {

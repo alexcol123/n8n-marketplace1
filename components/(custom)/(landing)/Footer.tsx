@@ -21,19 +21,19 @@ const Footer = () => {
             {/* Footer navigation links */}
             <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm">
               <Link 
-                href="/privacy" 
+                href="/legal/privacy-policy" 
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
                 Privacy Policy
               </Link>
               <Link 
-                href="/terms" 
+                href="/legal/terms-of-service" 
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
                 Terms of Service
               </Link>
               <Link 
-                href="/contact" 
+                href="/legal/contact-us" 
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
                 Contact

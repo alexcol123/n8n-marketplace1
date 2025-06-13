@@ -30,7 +30,6 @@ interface WorkflowStepsViewerProps {
   workflowId: string;
   className?: string;
   showStats?: boolean;
-
 }
 
 export default function WorkflowStepsViewer({
@@ -63,32 +62,30 @@ export default function WorkflowStepsViewer({
   //   }
   // };
 
-
   const handleStepExpand = (stepId: string) => {
+    if (expandedStepId === stepId) {
+      // If clicking the same step, close it
 
-  
-  if (expandedStepId === stepId) {
-    // If clicking the same step, close it
+      setExpandedStepId(null);
+    } else {
+      // Open the new step and close any previously opened step
 
-    setExpandedStepId(null);
-  } else {
-    // Open the new step and close any previously opened step
- 
-    setExpandedStepId(stepId);
-    // Mark as viewed when opened
-    setViewedSteps((prev) => new Set([...prev, stepId]));
-  }
-};
-
-
-
+      setExpandedStepId(stepId);
+      // Mark as viewed when opened
+      setViewedSteps((prev) => new Set([...prev, stepId]));
+    }
+  };
 
   // Get ordered steps and stats
   const orderedSteps = getWorkflowStepsInOrder(workflowJson);
 
-
   const stats = getWorkflowStats(workflowJson);
 
+  // console.log("getWorkflowStepsInOrder", orderedSteps);
+  // console.log(
+  //   "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+  // );
+  // console.log("getWorkflowStats", stats);
 
   // Always show all steps - no more limiting
   const displayedSteps = showDisconnected
@@ -250,15 +247,15 @@ export default function WorkflowStepsViewer({
 
                   {/* Step Content - Unified Card */}
                   <div className="flex-1 min-w-0">
-           <UnifiedStepCard
-  key={step.id}
-  step={step}
-  stepNumber={index + 1}
-  onToggleExpanded={handleStepToggleExpanded}
-  isMarkedAsViewed={viewedSteps.has(step.id)}
-  isExpanded={expandedStepId === step.id} // This is crucial
-  onExpand={handleStepExpand} // This should handle the toggle
-/>
+                    <UnifiedStepCard
+                      key={step.id}
+                      step={step}
+                      stepNumber={index + 1}
+                      onToggleExpanded={handleStepToggleExpanded}
+                      isMarkedAsViewed={viewedSteps.has(step.id)}
+                      isExpanded={expandedStepId === step.id} // This is crucial
+                      onExpand={handleStepExpand} // This should handle the toggle
+                    />
                   </div>
                 </div>
               </div>
@@ -269,8 +266,6 @@ export default function WorkflowStepsViewer({
         {/* Mark All Completed Section */}
         {displayedSteps.length > 0 && (
           <div className="p-4 border-t bg-gradient-to-r from-muted/30 to-transparent">
-          
-
             {/* Progress bar */}
             <div className="mt-3 w-full bg-muted/30 rounded-full h-2 overflow-hidden">
               <div

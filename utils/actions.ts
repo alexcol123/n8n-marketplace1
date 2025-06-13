@@ -17,6 +17,7 @@ import { uploadImage } from "./supabase";
 import slug from "slug";
 import { CategoryType, IssueStatus, Priority } from "@prisma/client";
 import { getDateTime } from "./functions/getDateTime";
+import { extractAndSaveWorkflowSteps } from "./functions/extractWorkflowSteps";
 
 const getAuthUser = async () => {
   const user = await currentUser();
@@ -322,7 +323,6 @@ export const createWorkflowAction = async (
       content: rawData.content,
       category: rawData.category,
       steps: rawData.steps,
-      // Include videoUrl in validation
       videoUrl: rawData.videoUrl || "",
     });
 
@@ -375,12 +375,24 @@ export const createWorkflowAction = async (
       authorId: user.id,
       workFlowJson,
       steps,
-      videoUrl, // Add the videoUrl field to the database
+      videoUrl,
     };
 
-    await db.workflow.create({
+    // CREATE WORKFLOW
+    const workflow = await db.workflow.create({
       data: workflowData,
     });
+
+    // NEW: Extract and save steps to database
+    try {
+      await extractAndSaveWorkflowSteps(workflow.id, workFlowJson);
+    } catch (stepError) {
+      console.error("Error extracting workflow steps:", stepError);
+      // Don't fail the whole workflow creation if step extraction fails
+    }
+
+
+
   } catch (error) {
     console.error("Error creating workflow:", error);
     return {
@@ -426,35 +438,43 @@ export const fetchWorkflows = async ({
   return workflows;
 };
 
-export const fetchSingleWorkflow1 = async (slug: string) => {
-  const singleWorkflow = await db.workflow.findUnique({
-    where: {
-      slug,
-    },
-    include: {
-      author: true,
-    },
-  });
 
-  return singleWorkflow;
-};
 
 export const fetchSingleWorkflow = async (slug: string) => {
   try {
-    // Use the update operation. It increments viewCount AND returns the updated workflow.
-    const workflow = await db.workflow.update({
-      where: {
-        slug,
-      },
-      data: {
-        viewCount: {
-          increment: 1, // Use the increment modifier
-        },
-      },
+    const user = await getAuthUser(); // Get current user
+
+    const workflow = await db.workflow.findUnique({
+      where: { slug },
       include: {
-        author: true, // Still include the author relation
-      },
+        author: true,
+        workflowSteps: {
+          orderBy: { stepNumber: 'asc' }
+        }
+      }
     });
+
+    if (!workflow) {
+      return { message: "Workflow not found", success: false };
+    }
+
+    // Update view count and user's last viewed workflow
+    await Promise.all([
+      // Update workflow view count
+      db.workflow.update({
+        where: { slug },
+        data: { viewCount: { increment: 1 } }
+      }),
+      
+      // NEW: Update user's last viewed workflow
+      db.profile.update({
+        where: { clerkId: user.id },
+        data: {
+          lastWorkflowId: workflow.id,
+          lastViewedAt: new Date()
+        }
+      })
+    ]);
 
     return workflow;
   } catch (error) {

@@ -1,0 +1,209 @@
+import { getWorkflowStepsInOrder } from "./WorkflowStepsInOrder";
+import db from "@/utils/db";
+
+export async function extractAndSaveWorkflowSteps(
+  workflowId: string,
+  workflowJson: unknown
+) {
+  try {
+    // Use your existing function to get ordered steps!
+    const orderedSteps = getWorkflowStepsInOrder(workflowJson);
+
+    // Delete existing steps (for updates)
+    await db.workflowStep.deleteMany({
+      where: { workflowId },
+    });
+
+    // Convert extracted steps to database format
+    const stepData = orderedSteps
+      .filter((step) => !step.type.includes("StickyNote")) // Skip sticky notes
+      .map((step, index) => ({
+        workflowId,
+        stepNumber: index + 1,
+        stepTitle: step.name,
+        stepDescription: generateStepDescription(step),
+        isCustomStep: false, // Auto-generated from workflow JSON
+      }));
+
+    // Save to database
+    await db.workflowStep.createMany({
+      data: stepData,
+    });
+
+    return {
+      success: true,
+      stepsCreated: stepData.length,
+      message: `Successfully extracted ${stepData.length} steps`,
+    };
+  } catch (error) {
+    console.error("Failed to extract workflow steps:", error);
+    throw error;
+  }
+}
+
+// Helper to create readable step descriptions
+function generateStepDescription(step: any): string {
+  const nodeTypeDescriptions: Record<string, string> = {
+    // Triggers
+    "n8n-nodes-base.formTrigger":
+      "Receives form submissions and triggers the workflow",
+    "n8n-nodes-base.webhook":
+      "Receives incoming webhook requests from external services",
+    "n8n-nodes-base.manualTrigger": "Manually starts the workflow execution",
+    "n8n-nodes-base.cronTrigger":
+      "Triggers workflow on a scheduled basis using cron expressions",
+    "n8n-nodes-base.intervalTrigger":
+      "Triggers workflow at regular time intervals",
+    "n8n-nodes-base.emailTrigger": "Triggers workflow when emails are received",
+    "n8n-nodes-base.executeWorkflowTrigger":
+      "Triggers when called by another workflow",
+    "@n8n/n8n-nodes-langchain.chatTrigger":
+      "Creates an interactive chat interface for AI conversations",
+
+    // HTTP & API
+    "n8n-nodes-base.httpRequest":
+      "Makes HTTP requests to external APIs or services",
+    "n8n-nodes-base.httpRequestWebhook":
+      "Creates webhook endpoints to receive HTTP requests",
+    "n8n-nodes-base.respondToWebhook":
+      "Sends responses back to incoming webhook requests",
+
+    // Google Services
+    "n8n-nodes-base.googleDrive":
+      "Uploads, downloads, or manages files in Google Drive",
+    "n8n-nodes-base.googleSheets":
+      "Reads from and writes to Google Sheets spreadsheets",
+    "n8n-nodes-base.gmail": "Sends emails and manages Gmail messages",
+    "n8n-nodes-base.googleCalendar":
+      "Creates and manages events in Google Calendar",
+    "n8n-nodes-base.googleDocs": "Creates and manages Google Documents",
+    "n8n-nodes-base.googleAnalytics":
+      "Retrieves website analytics data from Google Analytics",
+
+    // Microsoft Services
+    "n8n-nodes-base.microsoftExcel":
+      "Reads from and writes to Microsoft Excel files",
+    "n8n-nodes-base.microsoftOutlook":
+      "Sends emails and manages Outlook messages and calendar events",
+    "n8n-nodes-base.microsoftTeams":
+      "Sends messages and manages Microsoft Teams",
+    "n8n-nodes-base.oneDrive":
+      "Uploads, downloads, or manages files in Microsoft OneDrive",
+
+    // Communication & Social
+    "n8n-nodes-base.slack":
+      "Sends messages and manages Slack channels and users",
+    "n8n-nodes-base.discord":
+      "Sends messages and manages Discord servers and channels",
+    "n8n-nodes-base.telegram": "Sends messages via Telegram bot",
+    "n8n-nodes-base.whatsApp": "Sends WhatsApp messages through API",
+    "n8n-nodes-base.twitter": "Posts tweets and manages Twitter interactions",
+
+    // AI & Language Models
+    "@n8n/n8n-nodes-langchain.agent":
+      "Uses AI agent to process and generate intelligent responses",
+    "@n8n/n8n-nodes-langchain.lmChatOpenAi":
+      "Connects to OpenAI language models for AI processing",
+    "@n8n/n8n-nodes-langchain.openAi":
+      "Integrates with OpenAI services for content generation",
+    "@n8n/n8n-nodes-langchain.memoryBufferWindow":
+      "Provides conversation memory for AI chat sessions",
+    "@n8n/n8n-nodes-langchain.toolHttpRequest":
+      "Creates AI tools that can make HTTP requests",
+    "@n8n/n8n-nodes-langchain.toolWorkflow":
+      "Creates AI tools that can execute other workflows",
+    "n8n-nodes-base.openAi":
+      "Integrates with OpenAI API for text and image generation",
+
+    // Database
+    "n8n-nodes-base.postgres": "Connects to and queries PostgreSQL databases",
+    "n8n-nodes-base.mysql": "Connects to and queries MySQL databases",
+    "n8n-nodes-base.mongoDb": "Connects to and queries MongoDB databases",
+    "n8n-nodes-base.redis": "Stores and retrieves data from Redis cache",
+    "n8n-nodes-base.sqlite": "Connects to and queries SQLite databases",
+
+    // File Management
+    "n8n-nodes-base.convertToFile":
+      "Converts data into file format for download or storage",
+    "n8n-nodes-base.readBinaryFile": "Reads binary files from the file system",
+    "n8n-nodes-base.writeBinaryFile": "Writes binary data to files",
+    "n8n-nodes-base.ftp": "Uploads and downloads files via FTP protocol",
+    "n8n-nodes-base.sftp": "Uploads and downloads files via SFTP protocol",
+
+    // Data Processing
+    "n8n-nodes-base.code":
+      "Executes custom JavaScript code for data processing",
+    "n8n-nodes-base.set": "Sets or modifies data values in the workflow",
+    "n8n-nodes-base.merge":
+      "Combines and merges data from multiple workflow branches",
+    "n8n-nodes-base.sort": "Sorts data items based on specified criteria",
+    "n8n-nodes-base.filter": "Filters data items based on specified conditions",
+    "n8n-nodes-base.aggregate": "Aggregates and summarizes data collections",
+    "n8n-nodes-base.itemLists": "Splits or combines arrays of data items",
+    "n8n-nodes-base.splitInBatches":
+      "Splits large datasets into smaller batches",
+
+    // Control Flow
+    "n8n-nodes-base.if":
+      "Creates conditional logic and branching in the workflow",
+    "n8n-nodes-base.switch":
+      "Routes data through different paths based on multiple conditions",
+    "n8n-nodes-base.wait": "Pauses workflow execution for a specified duration",
+    "n8n-nodes-base.stopAndError":
+      "Stops workflow execution and throws an error",
+    "n8n-nodes-base.noOp": "Does nothing - used for workflow organization",
+
+    // E-commerce & Payment
+    "n8n-nodes-base.stripe":
+      "Processes payments and manages Stripe transactions",
+    "n8n-nodes-base.shopify": "Manages Shopify store data and orders",
+    "n8n-nodes-base.wooCommerce": "Integrates with WooCommerce stores",
+    "n8n-nodes-base.payPal": "Processes PayPal payments and transactions",
+
+    // CRM & Sales
+    "n8n-nodes-base.hubspot": "Manages contacts and deals in HubSpot CRM",
+    "n8n-nodes-base.salesforce": "Integrates with Salesforce CRM system",
+    "n8n-nodes-base.pipedrive": "Manages deals and contacts in Pipedrive",
+    "n8n-nodes-base.airtable": "Reads from and writes to Airtable databases",
+    "n8n-nodes-base.notion": "Creates and manages content in Notion workspace",
+
+    // Marketing & Analytics
+    "n8n-nodes-base.mailchimp":
+      "Manages email campaigns and subscribers in Mailchimp",
+    "n8n-nodes-base.sendGrid":
+      "Sends transactional emails via SendGrid service",
+    "n8n-nodes-base.facebookGraphApi": "Interacts with Facebook Graph API",
+
+    // Project Management
+    "n8n-nodes-base.trello": "Creates and manages Trello boards and cards",
+    "n8n-nodes-base.asana": "Manages tasks and projects in Asana",
+    "n8n-nodes-base.jira": "Creates and manages issues in Jira",
+    "n8n-nodes-base.linear": "Manages issues and projects in Linear",
+    "n8n-nodes-base.github": "Interacts with GitHub repositories and issues",
+
+    // Utilities
+    "n8n-nodes-base.xml": "Converts between XML and JSON data formats",
+    "n8n-nodes-base.html": "Extracts data from HTML content",
+    "n8n-nodes-base.markdown": "Converts between Markdown and HTML formats",
+    "n8n-nodes-base.crypto": "Performs cryptographic operations on data",
+    "n8n-nodes-base.dateTime": "Manipulates and formats date and time values",
+    "n8n-nodes-base.editImage": "Edits and manipulates image files",
+    "n8n-nodes-base.rss": "Reads and parses RSS feed content",
+    "n8n-nodes-base.stickyNote":
+      "Adds documentation notes to workflows (non-executable)",
+
+    // Cloud Storage
+    "n8n-nodes-base.awsS3":
+      "Uploads, downloads, and manages files in Amazon S3",
+    "n8n-nodes-base.dropbox": "Manages files and folders in Dropbox",
+    "n8n-nodes-base.box": "Manages files and folders in Box cloud storage",
+
+    // Monitoring & Logging
+    "n8n-nodes-base.sentry":
+      "Sends error reports and monitoring data to Sentry",
+    "n8n-nodes-base.elasticsearch":
+      "Indexes and searches data in Elasticsearch",
+  };
+
+  return nodeTypeDescriptions[step.type] || `Executes ${step.name} operation`;
+}

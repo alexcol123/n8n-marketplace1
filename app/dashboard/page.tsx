@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 
 import {
   FileCode,
@@ -30,6 +31,18 @@ import {
   TrendingUp,
   Calendar,
   Clock,
+  Trophy,
+  Flame,
+  Star,
+  Zap,
+  Crown,
+  Users,
+  Heart,
+  Gift,
+  BarChart3,
+  ChevronUp,
+  PlayCircle,
+  Compass,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -38,6 +51,7 @@ import { fetchProfile } from "@/utils/actions";
 import { getUserWorkflowStats } from "@/utils/actions";
 import { getUserCompletionStats } from "@/utils/actions";
 import { fetchUserDownloads } from "@/utils/actions";
+import { getCompletionStreaks } from "@/utils/actions";
 import { CreateNewWorkflowButton } from "@/components/(custom)/(dashboard)/Form/Buttons";
 
 // Helper function to get greeting based on time of day
@@ -56,23 +70,51 @@ function formatCategoryName(name: string) {
     .join(" ");
 }
 
+// Get user level based on total activities
+function getUserLevel(totalWorkflows: number, totalCompletions: number) {
+  const totalActivity = totalWorkflows * 3 + totalCompletions; // Weight workflows more
+
+  if (totalActivity >= 100)
+    return {
+      level: "Master",
+      color: "from-purple-500 to-pink-500",
+      icon: Crown,
+    };
+  if (totalActivity >= 50)
+    return {
+      level: "Expert",
+      color: "from-amber-500 to-orange-500",
+      icon: Trophy,
+    };
+  if (totalActivity >= 20)
+    return { level: "Creator", color: "from-blue-500 to-cyan-500", icon: Star };
+  if (totalActivity >= 10)
+    return {
+      level: "Explorer",
+      color: "from-green-500 to-emerald-500",
+      icon: Compass,
+    };
+  return { level: "Rookie", color: "from-gray-500 to-slate-500", icon: Target };
+}
+
 async function Dashboard() {
-  // Fetch profile and stats server-side
+  // Fetch all data
   const profile = await fetchProfile();
   const stats = await getUserWorkflowStats();
   const completionStats = await getUserCompletionStats();
   const userDownloads = await fetchUserDownloads();
+  const streaks = await getCompletionStreaks();
   const greeting = getGreeting();
 
   const isAdmin = profile?.clerkId === process.env.ADMIN_USER_ID;
 
-  // Format stats for display
-  const { totalWorkflows, categoriesUsed } = stats;
-
-  // Process downloads data
+  // Process data
+  const { totalWorkflows, categoriesUsed, totalViews } = stats;
   const totalDownloads = Array.isArray(userDownloads)
     ? userDownloads.length
     : 0;
+
+  // Calculate recent activity
   const recentDownloads = Array.isArray(userDownloads)
     ? userDownloads.filter((download) => {
         const downloadDate = new Date(download.downloadedAt);
@@ -82,71 +124,74 @@ async function Dashboard() {
       }).length
     : 0;
 
-  // Get most recent download
-  const latestDownload =
-    Array.isArray(userDownloads) && userDownloads.length > 0
-      ? userDownloads[0]
-      : null;
+  // Get user level and next milestone
+  const userLevel = getUserLevel(
+    totalWorkflows,
+    completionStats.totalCompletions
+  );
+  const totalActivity = totalWorkflows * 3 + completionStats.totalCompletions;
 
-  // Get top categories (top 3)
-  const topCategories = categoriesUsed.slice(0, 3);
+  let nextMilestone = 10;
+  if (totalActivity >= 10) nextMilestone = 20;
+  if (totalActivity >= 20) nextMilestone = 50;
+  if (totalActivity >= 50) nextMilestone = 100;
+  if (totalActivity >= 100) nextMilestone = null;
 
-  // Get random motivational quote
-  const motivationalQuotes = [
-    "Share your knowledge. It's a way to achieve immortality.",
-    "Your expertise today becomes someone's inspiration tomorrow.",
-    "The best way to predict the future is to create it.",
-    "Knowledge increases by sharing but not by saving.",
-    "Teaching others is the highest form of understanding.",
-    "When you share your knowledge, you gain more than you give.",
-    "Great things happen when you share what you know.",
-    "Automation liberates human potential for creative work.",
-    "Your workflows could be the solution someone is searching for.",
-    "The value of knowledge multiplies when shared with others.",
-    "Be the guide you wished you had when you started.",
-    "Every workflow you share makes the world more efficient.",
-    "Expertise shared is expertise squared.",
-    "Today's automation is tomorrow's foundation.",
-    "Create the tools that make others successful.",
-    "Share solutions, not just problems.",
-    "Build once, benefit many - that's the power of sharing workflows.",
-    "Your knowledge has value - prepare to share and earn.",
-    "The best experts don't hoard knowledge; they distribute it.",
-    "Today's shared workflow could be tomorrow's game-changer.",
-    "In the world of automation, givers gain the most.",
+  const progressToNext = nextMilestone
+    ? Math.min(100, (totalActivity / nextMilestone) * 100)
+    : 100;
+
+  // Get achievements
+  const achievements = [
+    {
+      name: "First Step",
+      description: "Created your first workflow",
+      unlocked: totalWorkflows >= 1,
+      icon: Sparkles,
+      color: "text-blue-500",
+    },
+    {
+      name: "Learner",
+      description: "Completed 5 workflows",
+      unlocked: completionStats.totalCompletions >= 5,
+      icon: BookOpen,
+      color: "text-green-500",
+    },
+    {
+      name: "Streak Master",
+      description: "3+ day completion streak",
+      unlocked: streaks.currentStreak >= 3,
+      icon: Flame,
+      color: "text-orange-500",
+    },
+    {
+      name: "Popular Creator",
+      description: "100+ workflow views",
+      unlocked: totalViews >= 100,
+      icon: Heart,
+      color: "text-pink-500",
+    },
   ];
-  const quoteIndex = Math.floor(Math.random() * motivationalQuotes.length);
-  const dailyQuote = motivationalQuotes[quoteIndex];
 
-  // Create progress status based on number of workflows
-  let progressStatus = {
-    level: "Beginner",
-    color: "bg-blue-500",
-    textColor: "text-blue-500",
-    next: 10,
-    message: "Create more workflows to reach Explorer status!",
-  };
+  const unlockedAchievements = achievements.filter((a) => a.unlocked);
+  const nextAchievement = achievements.find((a) => !a.unlocked);
 
-  if (totalWorkflows >= 20) {
-    progressStatus = {
-      level: "Expert",
-      color: "bg-purple-500",
-      textColor: "text-purple-500",
-      next: 0,
-      message: "You've reached Expert status! Keep creating amazing workflows.",
-    };
-  } else if (totalWorkflows >= 10) {
-    progressStatus = {
-      level: "Explorer",
-      color: "bg-amber-500",
-      textColor: "text-amber-500",
-      next: 20,
-      message: "Keep going to reach Expert status!",
-    };
-  }
+  // Motivational messages
+  const motivationalMessages = [
+    `You're doing amazing! ${completionStats.recentCompletions} completions this week! 🚀`,
+    `Your workflows have ${totalViews} views - you're helping others! ✨`,
+    `${streaks.currentStreak} day streak - keep the momentum going! 🔥`,
+    `${totalDownloads} downloads in your library - what will you build next? 💡`,
+    `Ready to share more knowledge with the community? 🌟`,
+  ];
+
+  const todayMessage =
+    motivationalMessages[
+      Math.floor(Math.random() * motivationalMessages.length)
+    ];
 
   return (
-    <div className="flex flex-col gap-6 pb-12">
+    <div className="flex flex-col gap-8 pb-12 max-w-7xl mx-auto">
       {isAdmin && (
         <div className="mb-6">
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/50 dark:border-amber-800/30 rounded-xl p-4 shadow-sm">
@@ -191,13 +236,16 @@ async function Dashboard() {
           </div>
         </div>
       )}
+      {/* Hero Welcome Section */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-purple/5 to-blue/5 rounded-3xl p-8 border border-primary/10">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5"></div>
+        <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-primary/10 to-purple/10 rounded-full -translate-y-36 translate-x-36 blur-3xl"></div>
 
-      {/* Welcome Card - Personalized with name, avatar and motivation */}
-      <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20 overflow-hidden">
-        <CardContent className="pt-6 pb-6 relative">
-          <div className="flex flex-col md:flex-row justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-primary/30 shadow-md">
+        <div className="relative z-10 flex flex-col lg:flex-row items-start justify-between gap-8">
+          {/* Welcome Content */}
+          <div className="flex items-start gap-6">
+            <div className="relative">
+              <div className="h-20 w-20 rounded-2xl overflow-hidden border-4 border-white shadow-xl">
                 <Image
                   src={
                     profile?.profileImage || "https://via.placeholder.com/100"
@@ -207,684 +255,489 @@ async function Dashboard() {
                   className="object-cover"
                 />
               </div>
-              <div>
-                <h1 className="text-3xl font-bold">
-                  {greeting}, {profile?.firstName || "there"}
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  Ready to share your automation expertise with the world?
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {totalWorkflows > 0 && (
-                <Badge
-                  variant="outline"
-                  className={`${progressStatus.textColor} border-current flex items-center gap-1.5 px-3 py-1.5 font-medium`}
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {progressStatus.level}
-                </Badge>
+              {streaks.currentStreak > 0 && (
+                <div className="absolute -top-2 -right-2 bg-orange-500 text-white rounded-full p-1 shadow-lg">
+                  <Flame className="h-4 w-4" />
+                </div>
               )}
-              <CreateNewWorkflowButton />
+            </div>
+
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
+                {greeting}, {profile?.firstName || "Creator"}!
+              </h1>
+              <p className="text-lg text-muted-foreground mt-2 max-w-lg">
+                {todayMessage}
+              </p>
+
+              {/* Level Badge */}
+              <div className="flex items-center gap-3 mt-4">
+                <Badge
+                  className={`bg-gradient-to-r ${userLevel.color} text-white px-4 py-2 text-sm font-semibold shadow-lg`}
+                >
+                  <userLevel.icon className="h-4 w-4 mr-2" />
+                  {userLevel.level}
+                </Badge>
+                {streaks.currentStreak > 0 && (
+                  <Badge
+                    variant="outline"
+                    className="border-orange-200 text-orange-700 dark:border-orange-800 dark:text-orange-300"
+                  >
+                    <Flame className="h-3 w-3 mr-1" />
+                    {streaks.currentStreak} day streak
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none"></div>
-        </CardContent>
-      </Card>
+          {/* Quick Actions */}
+          <div className="flex flex-col gap-3">
+            <CreateNewWorkflowButton />
+            <Button
+              variant="outline"
+              asChild
+              className="flex items-center gap-2"
+            >
+              <Link href="/leaderboard">
+                <Trophy className="h-4 w-4" />
+                Leaderboard
+              </Link>
+            </Button>
+          </div>
+        </div>
 
-      {/* Activity Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Completions Card */}
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200/50 dark:border-green-800/30 hover:shadow-lg transition-all duration-300">
-          <CardHeader className="pb-3">
+        {/* Progress to Next Level */}
+        {nextMilestone && (
+          <div className="relative z-10 mt-8 p-4 bg-white/50 dark:bg-gray-900/50 rounded-2xl backdrop-blur-sm border border-white/20">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">
+                Progress to next level
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {totalActivity}/{nextMilestone}
+              </span>
+            </div>
+            <Progress value={progressToNext} className="h-2" />
+          </div>
+        )}
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Workflows Created */}
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/30 border-blue-200/50 dark:border-blue-800/30 hover:shadow-lg transition-all duration-300 group">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg text-green-800 dark:text-green-200">
-                    Completions
-                  </CardTitle>
-                  <CardDescription className="text-green-600 dark:text-green-400">
-                    Your learning progress
-                  </CardDescription>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  Workflows Created
+                </p>
+                <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                  {totalWorkflows}
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  {totalViews} total views
+                </p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="text-green-700 hover:text-green-800 hover:bg-green-100/50"
-              >
-                <Link href="/dashboard/completions">
-                  View All <ArrowRight className="h-4 w-4 ml-1" />
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                  {completionStats.totalCompletions}
-                </div>
-                <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                  Total Completed
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                  {completionStats.recentCompletions}
-                </div>
-                <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                  This Week
-                </div>
+              <div className="bg-blue-500 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                <Rocket className="h-6 w-6 text-white" />
               </div>
             </div>
-
-            {completionStats.latestCompletion && (
-              <div className="mt-4 pt-3 border-t border-green-200/50 dark:border-green-800/30">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <span className="text-sm text-green-700 dark:text-green-300">
-                    Latest:
-                  </span>
-                </div>
-                <Link
-                  href={`/workflow/${completionStats.latestCompletion.workflow.slug}`}
-                  className="text-sm font-medium text-green-800 dark:text-green-200 hover:underline mt-1 block"
-                >
-                  {completionStats.latestCompletion.workflow.title}
-                </Link>
-              </div>
-            )}
           </CardContent>
         </Card>
 
-        {/* Downloads Card */}
-        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200/50 dark:border-blue-800/30 hover:shadow-lg transition-all duration-300">
-          <CardHeader className="pb-3">
+        {/* Completions */}
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/30 border-green-200/50 dark:border-green-800/30 hover:shadow-lg transition-all duration-300 group">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <Download className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg text-blue-800 dark:text-blue-200">
-                    Downloads
-                  </CardTitle>
-                  <CardDescription className="text-blue-600 dark:text-blue-400">
-                    Workflows you've saved
-                  </CardDescription>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                  Completed
+                </p>
+                <p className="text-3xl font-bold text-green-900 dark:text-green-100">
+                  {completionStats.totalCompletions}
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  {completionStats.recentCompletions} this week
+                </p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="text-blue-700 hover:text-blue-800 hover:bg-blue-100/50"
-              >
-                <Link href="/dashboard/mydownloads">
-                  View All <ArrowRight className="h-4 w-4 ml-1" />
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                  {totalDownloads}
-                </div>
-                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                  Total Downloads
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                  {recentDownloads}
-                </div>
-                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                  This Week
-                </div>
+              <div className="bg-green-500 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                <CheckCircle className="h-6 w-6 text-white" />
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {latestDownload && (
-              <div className="mt-4 pt-3 border-t border-blue-200/50 dark:border-blue-800/30">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm text-blue-700 dark:text-blue-300">
-                    Latest:
-                  </span>
-                </div>
-                <Link
-                  href={`/workflow/${latestDownload.workflow.slug}`}
-                  className="text-sm font-medium text-blue-800 dark:text-blue-200 hover:underline mt-1 block"
-                >
-                  {latestDownload.workflow.title}
-                </Link>
-                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                  by {latestDownload.workflow.author.firstName}{" "}
-                  {latestDownload.workflow.author.lastName}
-                </div>
+        {/* Downloads */}
+        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/30 border-purple-200/50 dark:border-purple-800/30 hover:shadow-lg transition-all duration-300 group">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                  Downloads
+                </p>
+                <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">
+                  {totalDownloads}
+                </p>
+                <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                  {recentDownloads} this week
+                </p>
               </div>
-            )}
+              <div className="bg-purple-500 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                <Download className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Current Streak */}
+        <Card className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/30 border-orange-200/50 dark:border-orange-800/30 hover:shadow-lg transition-all duration-300 group">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                  Current Streak
+                </p>
+                <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">
+                  {streaks.currentStreak}
+                </p>
+                <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                  Best: {streaks.longestStreak} days
+                </p>
+              </div>
+              <div className="bg-orange-500 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                <Flame className="h-6 w-6 text-white" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Content Grid */}
+      {/* Achievements & Next Goal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Inspiration + Progress */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Inspiration Card */}
-          <Card className="shadow-sm hover:shadow-md transition-all duration-200 border-primary/20 overflow-hidden">
-            <CardHeader className="pb-2 border-b bg-gradient-to-r from-amber-50/50 to-transparent dark:from-amber-950/10">
-              <div className="flex items-center gap-2">
-                <Coffee className="h-5 w-5 text-amber-500" />
-                <CardTitle className="text-lg">Daily Inspiration</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <blockquote className="border-l-4 border-amber-200 dark:border-amber-700/50 pl-4 italic text-muted-foreground">
-                &quot;{dailyQuote}&quot;
-              </blockquote>
-            </CardContent>
-          </Card>
-
-          {/* Progress Card - Only show when user has workflows */}
-          {totalWorkflows > 0 && (
-            <Card className="shadow-sm hover:shadow-md transition-all duration-200 border-primary/20 overflow-hidden">
-              <CardHeader className="pb-2 border-b bg-gradient-to-r from-primary/5 to-transparent">
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">Creator Status</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{progressStatus.level}</span>
-                    {progressStatus.next && (
-                      <span className="text-xs text-muted-foreground">
-                        {totalWorkflows}/{progressStatus.next} workflows
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Progress bar */}
-                  {progressStatus.next && (
-                    <div className="w-full bg-muted/30 rounded-full h-2.5 overflow-hidden">
-                      <div
-                        className={`h-2.5 rounded-full transition-all duration-700 ${progressStatus.color}`}
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            (totalWorkflows / progressStatus.next) * 100
-                          )}%`,
-                        }}
-                      ></div>
-                    </div>
-                  )}
-
-                  <p className="text-sm text-muted-foreground">
-                    {progressStatus.message}
-                  </p>
-
-                  {/* Benefits list */}
-                  <div className="pt-2">
-                    <h4 className="text-xs font-medium uppercase text-muted-foreground tracking-wider mb-2">
-                      {progressStatus.level} Benefits
-                    </h4>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <div
-                          className={`${progressStatus.color} rounded-full p-0.5 mt-0.5`}
-                        >
-                          <svg
-                            className="h-3 w-3 text-white"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="3"
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </div>
-                        <span>Featured in category listings</span>
-                      </li>
-                      {(progressStatus.level === "Explorer" ||
-                        progressStatus.level === "Expert") && (
-                        <li className="flex items-start gap-2">
-                          <div
-                            className={`${progressStatus.color} rounded-full p-0.5 mt-0.5`}
-                          >
-                            <svg
-                              className="h-3 w-3 text-white"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="3"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          </div>
-                          <span>Creator badge on your profile</span>
-                        </li>
-                      )}
-                      {progressStatus.level === "Expert" && (
-                        <li className="flex items-start gap-2">
-                          <div
-                            className={`${progressStatus.color} rounded-full p-0.5 mt-0.5`}
-                          >
-                            <svg
-                              className="h-3 w-3 text-white"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="3"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          </div>
-                          <span>Early access to marketplace features</span>
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Quick Start Card - Center/Right Column */}
-        <div className="lg:col-span-2">
-          <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30 shadow-md hover:shadow-lg transition-all duration-300 h-full flex flex-col">
-            <CardHeader className="border-b border-primary/10 bg-primary/5 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-primary/20 p-2 rounded-full">
-                  <Rocket className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl">Share & Earn</CardTitle>
-                  <CardDescription className="text-base mt-1">
-                    Build your reputation today, monetize tomorrow
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="flex-grow py-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-3 group">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Share2 className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="font-medium group-hover:text-primary transition-colors">
-                    Share Your Knowledge
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Help others automate their work with your expertise
-                  </p>
-                </div>
-
-                <div className="space-y-3 group">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Award className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="font-medium group-hover:text-primary transition-colors">
-                    Build Authority
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Become recognized in your field of expertise
-                  </p>
-                </div>
-
-                <div className="space-y-3 group">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <DollarSign className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="font-medium group-hover:text-primary transition-colors">
-                    Future Income
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Prepare for upcoming monetization features
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-8 flex justify-center">
-                <Button
-                  asChild
-                  className="w-full max-w-xs py-6 text-lg gap-2 bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-200"
+        {/* Achievements */}
+        <Card className="lg:col-span-2 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-b">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-amber-600" />
+              <CardTitle>Achievements</CardTitle>
+              <Badge variant="secondary">
+                {unlockedAchievements.length}/{achievements.length}
+              </Badge>
+            </div>
+            <CardDescription>Your progress milestones</CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {achievements.map((achievement, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                    achievement.unlocked
+                      ? "bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 border-amber-200 dark:border-amber-800/50 shadow-sm"
+                      : "bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 opacity-60"
+                  }`}
                 >
-                  <Link
-                    href="/dashboard/wf/create"
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-5 w-5" />
-                    Create New Workflow
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`p-2 rounded-lg ${
+                        achievement.unlocked
+                          ? "bg-amber-100 dark:bg-amber-900/30"
+                          : "bg-gray-100 dark:bg-gray-800"
+                      }`}
+                    >
+                      <achievement.icon
+                        className={`h-5 w-5 ${
+                          achievement.unlocked
+                            ? achievement.color
+                            : "text-gray-400"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <h4
+                        className={`font-semibold ${
+                          achievement.unlocked
+                            ? "text-gray-900 dark:text-gray-100"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {achievement.name}
+                      </h4>
+                      <p
+                        className={`text-sm ${
+                          achievement.unlocked
+                            ? "text-gray-600 dark:text-gray-400"
+                            : "text-gray-400"
+                        }`}
+                      >
+                        {achievement.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Next Goal */}
+        <Card className="bg-gradient-to-br from-primary/5 to-blue/5 border-primary/20">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg">Next Goal</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {nextAchievement ? (
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+                  <nextAchievement.icon className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">
+                  {nextAchievement.name}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {nextAchievement.description}
+                </p>
+                <Button className="w-full" asChild>
+                  <Link href="/workflows">
+                    Start Working
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </Link>
                 </Button>
               </div>
-            </CardContent>
-
-            <CardFooter className="bg-amber-50 dark:bg-amber-950/20 border-t border-amber-200/50 dark:border-amber-800/20 text-amber-800 dark:text-amber-300 p-3">
-              <div className="flex items-center gap-2 w-full text-sm">
-                <BookOpen className="h-4 w-4 flex-shrink-0" />
-                <p>
-                  <span className="font-semibold">Coming Soon:</span> Workflow
-                  Marketplace - Sell your automation solutions and earn money!
+            ) : (
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-4">
+                  <Crown className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">
+                  Achievement Master!
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  You've unlocked all achievements! Keep creating amazing
+                  workflows.
                 </p>
+                <Button className="w-full" asChild>
+                  <Link href="/dashboard/wf/create">
+                    Create Workflow
+                    <Plus className="h-4 w-4 ml-2" />
+                  </Link>
+                </Button>
               </div>
-            </CardFooter>
-          </Card>
-        </div>
+            )}
+
+            <Separator />
+
+            {/* Daily Challenge */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <Zap className="h-4 w-4 text-amber-500" />
+                Daily Challenge
+              </h4>
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800/30">
+                <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">
+                  Complete 1 workflow today
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-amber-600 dark:text-amber-400">
+                    {streaks.todayCompletions}/1 completed
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="border-amber-200 text-amber-700"
+                  >
+                    <Gift className="h-3 w-3 mr-1" />
+                    +10 XP
+                  </Badge>
+                </div>
+                <Progress
+                  value={Math.min(100, (streaks.todayCompletions / 1) * 100)}
+                  className="h-1 mt-2"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Category Insights Section */}
-      <Card className="shadow-md overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b pb-4">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+      {/* Quick Access & Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Quick Access */}
+        <Card>
+          <CardHeader>
             <div className="flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-primary" />
-              <CardTitle>Your Workflow Collection</CardTitle>
+              <Compass className="h-5 w-5 text-primary" />
+              <CardTitle>Quick Access</CardTitle>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col items-center justify-center bg-primary/5 rounded-lg px-4 py-2 border border-primary">
-                <span className="text-2xl font-bold">{totalWorkflows}</span>
-                <span className="text-xs text-muted-foreground mt-1">
-                  Total Workflows
-                </span>
+            <CardDescription>
+              Jump back into your workflow journey
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                className="h-auto flex-col gap-2 p-4"
+                asChild
+              >
+                <Link href="/dashboard/wf/create">
+                  <Plus className="h-5 w-5" />
+                  <span className="text-sm">New Workflow</span>
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto flex-col gap-2 p-4"
+                asChild
+              >
+                <Link href="/leaderboard/creators">
+                  <Crown className="h-5 w-5" />
+                  <span className="text-sm">Creator Board</span>
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto flex-col gap-2 p-4"
+                asChild
+              >
+                <Link href="/leaderboard/students">
+                  <Award className="h-5 w-5" />
+                  <span className="text-sm">Student Board</span>
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto flex-col gap-2 p-4"
+                asChild
+              >
+                <Link href="/dashboard/mydownloads">
+                  <Download className="h-5 w-5" />
+                  <span className="text-sm">My Downloads</span>
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Categories Overview */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <PieChart className="h-5 w-5 text-primary" />
+                <CardTitle>Your Categories</CardTitle>
               </div>
               {categoriesUsed.length > 0 && (
-                <Badge
-                  variant="outline"
-                  className="font-medium px-3 border border-primary"
-                >
-                  {categoriesUsed.length}{" "}
-                  {categoriesUsed.length === 1 ? "Category" : "Categories"}
+                <Badge variant="outline">
+                  {categoriesUsed.length} categories
                 </Badge>
               )}
             </div>
-          </div>
-        </CardHeader>
+          </CardHeader>
+          <CardContent>
+            {categoriesUsed.length > 0 ? (
+              <div className="space-y-3">
+                {categoriesUsed.slice(0, 4).map((category, index) => {
+                  const percentage = Math.round(
+                    (category.count / totalWorkflows) * 100
+                  );
+                  const colors = [
+                    "bg-blue-500",
+                    "bg-amber-500",
+                    "bg-green-500",
+                    "bg-purple-500",
+                  ];
 
-        <CardContent className="p-6">
-          {categoriesUsed.length > 0 ? (
-            <>
-              {/* Top Categories Section */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
-                  <span className="uppercase tracking-wider">
-                    TOP CATEGORIES
-                  </span>
-                  <Badge variant="secondary" className="font-normal text-xs">
-                    Most Used
-                  </Badge>
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {topCategories.map((category, index) => {
-                    const percentage = Math.round(
-                      (category.count / totalWorkflows) * 100
-                    );
-
-                    const categoryStyles = [
-                      {
-                        gradient: "from-blue-500 to-blue-600",
-                        bg: "bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/10 dark:to-blue-900/20",
-                        border: "border-blue-200 dark:border-blue-800/30",
-                        icon: "text-blue-600 dark:text-blue-400",
-                        text: "text-blue-900 dark:text-blue-200",
-                        badge: "bg-blue-500 text-white",
-                        button:
-                          "bg-blue-500 hover:bg-blue-600 text-white border-0",
-                      },
-                      {
-                        gradient: "from-amber-500 to-orange-500",
-                        bg: "bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-950/10 dark:to-orange-900/20",
-                        border: "border-amber-200 dark:border-amber-800/30",
-                        icon: "text-amber-600 dark:text-amber-400",
-                        text: "text-amber-900 dark:text-amber-200",
-                        badge: "bg-amber-500 text-white",
-                        button:
-                          "bg-amber-500 hover:bg-amber-600 text-white border-0",
-                      },
-                      {
-                        gradient: "from-emerald-500 to-green-600",
-                        bg: "bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-950/10 dark:to-green-900/20",
-                        border: "border-emerald-200 dark:border-emerald-800/30",
-                        icon: "text-emerald-600 dark:text-emerald-400",
-                        text: "text-emerald-900 dark:text-emerald-200",
-                        badge: "bg-emerald-500 text-white",
-                        button:
-                          "bg-emerald-500 hover:bg-emerald-600 text-white border-0",
-                      },
-                    ];
-
-                    const style = categoryStyles[index];
-
-                    return (
+                  return (
+                    <div
+                      key={category.name}
+                      className="flex items-center gap-3"
+                    >
                       <div
-                        key={category.name}
-                        className={`${style.bg} ${style.border} border rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 group relative overflow-hidden`}
-                      >
-                        {/* Background decoration */}
-                        <div
-                          className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${style.gradient} opacity-10 rounded-full -translate-y-6 translate-x-6`}
-                        ></div>
-
-                        {/* Header with icon and title */}
-                        <div className="flex items-start justify-between mb-4 relative z-10">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-10 h-10 rounded-lg bg-gradient-to-br ${style.gradient} flex items-center justify-center shadow-sm`}
-                            >
-                              <PieChart className="h-5 w-5 text-white" />
-                            </div>
-                            <div>
-                              <h4
-                                className={`font-semibold text-lg ${style.text} capitalize leading-none`}
-                              >
-                                {formatCategoryName(category.name)}
-                              </h4>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Category
-                              </p>
-                            </div>
-                          </div>
-                          <Badge
-                            className={`${style.badge} font-semibold px-2 py-1 text-sm shadow-sm`}
-                          >
-                            {percentage}%
-                          </Badge>
+                        className={`w-3 h-3 rounded-full ${
+                          colors[index % colors.length]
+                        }`}
+                      ></div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium capitalize">
+                            {formatCategoryName(category.name)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {category.count} ({percentage}%)
+                          </span>
                         </div>
-
-                        {/* Stats */}
-                        <div className="mb-4 relative z-10">
-                          <div className="flex items-baseline gap-2">
-                            <span
-                              className={`text-2xl font-bold ${style.text}`}
-                            >
-                              {category.count}
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                              workflow{category.count !== 1 ? "s" : ""}
-                            </span>
-                          </div>
-
-                          {/* Progress bar */}
-                          <div className="mt-3 w-full bg-white/50 dark:bg-gray-800/50 rounded-full h-2 overflow-hidden">
-                            <div
-                              className={`h-full bg-gradient-to-r ${style.gradient} rounded-full transition-all duration-700 ease-out`}
-                              style={{ width: `${percentage}%` }}
-                            ></div>
-                          </div>
-                        </div>
-
-                        {/* Action button */}
-                        <div className="relative z-10">
-                          <Button
-                            size="sm"
-                            className={`${style.button} w-full group-hover:shadow-md transition-all duration-200 text-sm font-medium`}
-                            asChild
-                          >
-                            <Link
-                              href={`/?category=${category.name}`}
-                              className="flex items-center justify-center gap-2"
-                            >
-                              <span>Explore Category</span>
-                              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                            </Link>
-                          </Button>
-                        </div>
+                        <Progress value={percentage} className="h-1 mt-1" />
                       </div>
-                    );
-                  })}
+                    </div>
+                  );
+                })}
+                {categoriesUsed.length > 4 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-2"
+                    asChild
+                  >
+                    <Link href="/dashboard/analytics">
+                      View All Categories{" "}
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 mx-auto bg-primary/10 rounded-xl flex items-center justify-center mb-3">
+                  <FileCode className="h-6 w-6 text-primary" />
                 </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  No workflows yet
+                </p>
+                <Button size="sm" asChild>
+                  <Link href="/dashboard/wf/create">Create Your First</Link>
+                </Button>
               </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-              <Separator className="my-6" />
-
-              {/* All Categories Chart */}
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wider">
-                  ALL CATEGORIES
-                </h3>
-                <div className="space-y-4">
-                  {categoriesUsed.map((category, index) => {
-                    const percentage = Math.round(
-                      (category.count / totalWorkflows) * 100
-                    );
-
-                    // Generate color based on index position
-                    const hue = (index * 137) % 360; // Golden angle approximation for good distribution
-                    const saturation = 80;
-                    const lightness = 55;
-
-                    return (
-                      <div key={category.name} className="space-y-2 group">
-                        <div className="flex justify-between items-center">
-                          <Link
-                            href={`/?category=${category.name}`}
-                            className="flex items-center gap-2 hover:text-primary transition-colors"
-                          >
-                            <span
-                              className="h-3 w-3 rounded-full"
-                              style={{
-                                backgroundColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
-                              }}
-                            ></span>
-                            <span className="font-medium capitalize">
-                              {formatCategoryName(category.name)}
-                            </span>
-                          </Link>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">
-                              {category.count}
-                            </span>
-                            <span className="text-sm font-medium">
-                              {percentage}%
-                            </span>
-                          </div>
-                        </div>
-                        <div className="w-full bg-muted/30 rounded-full h-2 overflow-hidden group-hover:h-3 transition-all">
-                          <div
-                            className="h-full rounded-full transition-all duration-700 ease-in-out"
-                            style={{
-                              width: `${percentage}%`,
-                              backgroundColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Insight Box */}
-              <div className="mt-8 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/30 rounded-md p-4 flex items-start gap-3">
-                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-blue-800 dark:text-blue-300">
-                    Category Insight
-                  </h4>
-                  <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">
-                    You&apos;re most active with{" "}
-                    <span className="font-semibold">
-                      {formatCategoryName(categoriesUsed[0].name)}
-                    </span>{" "}
-                    (
-                    {Math.round(
-                      (categoriesUsed[0].count / totalWorkflows) * 100
-                    )}
-                    % of total). Consider exploring{" "}
-                    <span className="font-semibold">
-                      {categoriesUsed.length > 3
-                        ? formatCategoryName(
-                            categoriesUsed[categoriesUsed.length - 1].name
-                          )
-                        : "other categories"}
-                    </span>{" "}
-                    to diversify your portfolio.
-                  </p>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 mb-4">
-                <FileCode className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-lg font-medium mb-2">No workflows yet</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Start creating workflows to see category insights and analytics
-              </p>
-              <Button
-                className="mx-auto bg-primary hover:bg-primary/90"
-                asChild
-              >
+      {/* Motivational Footer */}
+      <Card className="bg-gradient-to-r from-primary/5 via-purple/5 to-blue/5 border-primary/20">
+        <CardContent className="p-8 text-center">
+          <div className="max-w-2xl mx-auto">
+            <h3 className="text-2xl font-bold mb-4">
+              🚀 Keep Building the Future
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              Every workflow you create helps others automate their work and
+              frees up time for what matters most. You're part of a community
+              that's making the world more efficient, one automation at a time.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button size="lg" asChild>
                 <Link
                   href="/dashboard/wf/create"
                   className="flex items-center gap-2"
                 >
-                  <Plus className="h-5 w-5" />
-                  Create Your First Workflow
+                  <Sparkles className="h-5 w-5" />
+                  Create Something Amazing
+                </Link>
+              </Button>
+              <Button variant="outline" size="lg" asChild>
+                <Link href="/community" className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Join the Community
                 </Link>
               </Button>
             </div>
-          )}
+          </div>
         </CardContent>
-
-        <CardFooter className="bg-muted/10 border-t p-4">
-          <Button variant="ghost" className="ml-auto" asChild>
-            <Link
-              href="/dashboard/wf/create"
-              className="flex items-center gap-1 text-primary"
-            >
-              Create new workflow <ChevronRight className="h-4 w-4" />
-            </Link>
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   );
