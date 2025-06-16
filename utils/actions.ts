@@ -300,6 +300,7 @@ export const updateProfileImageAction = async (
   }
 };
 
+
 export const createWorkflowAction = async (
   prevState: Record<string, unknown>,
   formData: FormData
@@ -345,7 +346,7 @@ export const createWorkflowAction = async (
       console.error("Error parsing workflow JSON:", error);
     }
 
-    // Process steps
+    // Process steps (manual user descriptions)
     let steps = [];
     try {
       const stepsString = validatedFields.steps;
@@ -374,7 +375,7 @@ export const createWorkflowAction = async (
       category: validatedFields.category,
       authorId: user.id,
       workFlowJson,
-      steps,
+      steps, // Keep manual user descriptions
       videoUrl,
     };
 
@@ -383,15 +384,17 @@ export const createWorkflowAction = async (
       data: workflowData,
     });
 
-    // NEW: Extract and save steps to database
+    // NEW: Extract and save rich step data to WorkflowStep table
     try {
-      await extractAndSaveWorkflowSteps(workflow.id, workFlowJson);
+      const stepExtractionResult = await extractAndSaveWorkflowSteps(workflow.id, workFlowJson);
+      console.log(`Successfully extracted ${stepExtractionResult.stepsCreated} workflow steps with full node data`);
     } catch (stepError) {
       console.error("Error extracting workflow steps:", stepError);
       // Don't fail the whole workflow creation if step extraction fails
     }
 
-
+    // Revalidate the dashboard to show the new workflow
+   
 
   } catch (error) {
     console.error("Error creating workflow:", error);
@@ -401,7 +404,8 @@ export const createWorkflowAction = async (
     };
   }
 
-  redirect("/dashboard/wf");
+  // Move redirect to where the action is called, or handle it in the component
+   redirect("/dashboard/wf");
 };
 
 export const fetchWorkflows = async ({
@@ -438,8 +442,6 @@ export const fetchWorkflows = async ({
   return workflows;
 };
 
-
-
 export const fetchSingleWorkflow = async (slug: string) => {
   try {
     const user = await getAuthUser(); // Get current user
@@ -449,9 +451,9 @@ export const fetchSingleWorkflow = async (slug: string) => {
       include: {
         author: true,
         workflowSteps: {
-          orderBy: { stepNumber: 'asc' }
-        }
-      }
+          orderBy: { stepNumber: "asc" },
+        },
+      },
     });
 
     if (!workflow) {
@@ -463,17 +465,17 @@ export const fetchSingleWorkflow = async (slug: string) => {
       // Update workflow view count
       db.workflow.update({
         where: { slug },
-        data: { viewCount: { increment: 1 } }
+        data: { viewCount: { increment: 1 } },
       }),
-      
+
       // NEW: Update user's last viewed workflow
       db.profile.update({
         where: { clerkId: user.id },
         data: {
           lastWorkflowId: workflow.id,
-          lastViewedAt: new Date()
-        }
-      })
+          lastViewedAt: new Date(),
+        },
+      }),
     ]);
 
     return workflow;

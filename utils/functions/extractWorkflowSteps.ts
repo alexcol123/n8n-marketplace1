@@ -6,7 +6,7 @@ export async function extractAndSaveWorkflowSteps(
   workflowJson: unknown
 ) {
   try {
-    // Use your existing function to get ordered steps!
+    // Use your existing function to get ordered steps with full node data
     const orderedSteps = getWorkflowStepsInOrder(workflowJson);
 
     // Delete existing steps (for updates)
@@ -14,26 +14,45 @@ export async function extractAndSaveWorkflowSteps(
       where: { workflowId },
     });
 
-    // Convert extracted steps to database format
+    // Filter out sticky notes and prepare the COMPLETE step data for the database
     const stepData = orderedSteps
-      .filter((step) => !step.type.includes("StickyNote")) // Skip sticky notes
+      .filter((step) => !step.type.includes("StickyNote"))
       .map((step, index) => ({
         workflowId,
-        stepNumber: index + 1,
+        stepNumber: index + 1, // Sequential numbering
+        
+        // Basic step info
         stepTitle: step.name,
         stepDescription: generateStepDescription(step),
+        helpText: generateHelpText(step),
+        helpLinks: generateHelpLinks(step),
         isCustomStep: false, // Auto-generated from workflow JSON
+        
+        // Rich n8n node data
+        nodeId: step.id,
+        nodeType: step.type,
+        position: step.position,
+        parameters: step.parameters || {},
+        credentials: (step as any).credentials || null,
+        typeVersion: (step as any).typeVersion || 1,
+        webhookId: (step as any).webhookId || null,
+        
+        // Node classification
+        isTrigger: step.isTrigger,
+        isMergeNode: step.isMergeNode,
+        isDependency: step.isDependency || false,
       }));
 
-    // Save to database
+    // Save complete step data to WorkflowStep table
     await db.workflowStep.createMany({
       data: stepData,
     });
-
+    
     return {
       success: true,
       stepsCreated: stepData.length,
-      message: `Successfully extracted ${stepData.length} steps`,
+      stepData, // Return the complete step data
+      message: `Successfully extracted ${stepData.length} steps with full node data`,
     };
   } catch (error) {
     console.error("Failed to extract workflow steps:", error);
@@ -206,4 +225,55 @@ function generateStepDescription(step: any): string {
   };
 
   return nodeTypeDescriptions[step.type] || `Executes ${step.name} operation`;
+}
+
+// Helper to generate helpful tips for specific node types
+function generateHelpText(step: any): string | null {
+  const helpTexts: Record<string, string> = {
+    "@n8n/n8n-nodes-langchain.lmChatOpenAi": "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
+    "@n8n/n8n-nodes-langchain.openAi": "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
+    "n8n-nodes-base.openAi": "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
+    "n8n-nodes-base.googleDrive": "This step requires Google Drive authentication. Make sure to set up Google OAuth credentials.",
+    "n8n-nodes-base.gmail": "This step requires Gmail authentication. Make sure to set up Google OAuth credentials.",
+    "n8n-nodes-base.googleSheets": "This step requires Google Sheets authentication. Make sure to set up Google OAuth credentials.",
+    "n8n-nodes-base.slack": "This step requires a Slack app token. Make sure to configure your Slack credentials.",
+    "n8n-nodes-base.stripe": "This step requires Stripe API keys. Make sure to configure your Stripe credentials.",
+    "n8n-nodes-base.webhook": "This step creates a webhook endpoint. Make sure to configure the webhook URL properly.",
+    "n8n-nodes-base.httpRequest": "This step makes HTTP requests. Ensure the target API is accessible and properly configured.",
+  };
+
+  return helpTexts[step.type] || null;
+}
+
+// Helper to generate helpful documentation links
+function generateHelpLinks(step: any): any {
+  const helpLinks: Record<string, any[]> = {
+    "@n8n/n8n-nodes-langchain.lmChatOpenAi": [
+      { name: "OpenAI API Documentation", url: "https://platform.openai.com/docs" },
+      { name: "Get OpenAI API Key", url: "https://platform.openai.com/api-keys" }
+    ],
+    "@n8n/n8n-nodes-langchain.openAi": [
+      { name: "OpenAI API Documentation", url: "https://platform.openai.com/docs" },
+      { name: "Get OpenAI API Key", url: "https://platform.openai.com/api-keys" }
+    ],
+    "n8n-nodes-base.openAi": [
+      { name: "OpenAI API Documentation", url: "https://platform.openai.com/docs" },
+      { name: "Get OpenAI API Key", url: "https://platform.openai.com/api-keys" }
+    ],
+    "n8n-nodes-base.googleDrive": [
+      { name: "Google Drive API Documentation", url: "https://developers.google.com/drive/api" },
+      { name: "Google Cloud Console", url: "https://console.cloud.google.com/" }
+    ],
+    "n8n-nodes-base.slack": [
+      { name: "Slack API Documentation", url: "https://api.slack.com/" },
+      { name: "Create Slack App", url: "https://api.slack.com/apps" }
+    ],
+    "n8n-nodes-base.stripe": [
+      { name: "Stripe API Documentation", url: "https://stripe.com/docs/api" },
+      { name: "Stripe Dashboard", url: "https://dashboard.stripe.com/" }
+    ],
+  };
+
+  const links = helpLinks[step.type];
+  return links ? links : null;
 }

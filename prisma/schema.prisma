@@ -1,5 +1,3 @@
-
-
 // # // to push to db   npx prisma db push && npx prisma generate
 // # // to open studio npx prisma studio
 
@@ -69,6 +67,20 @@ model WorkflowStep {
   stepImage       String?
   helpText        String? // "This step requires an OpenAI API key"
   helpLinks       Json? // [{"name": "OpenAI Documentation", "url": "https://..."}, {"name": "Get API Key Tutorial", "url": "/tutorials/..."}]
+
+  // NEW: Rich n8n node data
+  nodeId      String // Original n8n node ID
+  nodeType    String // e.g., "n8n-nodes-base.googleDrive"
+  position    Json // [x, y] coordinates
+  parameters  Json // All node parameters
+  credentials Json? // Node credentials if any
+  typeVersion Int     @default(1)
+  webhookId   String?
+
+  // Node classification
+  isTrigger    Boolean @default(false)
+  isMergeNode  Boolean @default(false)
+  isDependency Boolean @default(false)
 
   isCustomStep Boolean @default(false)
 

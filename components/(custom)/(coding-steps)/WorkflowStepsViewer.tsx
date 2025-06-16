@@ -1,15 +1,15 @@
 // components/(custom)/(workflow)/WorkflowStepsViewer.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import UnifiedStepCard from "./UnifiedStepCard";
 import {
-  getWorkflowStepsInOrder,
   getWorkflowStats,
   type WorkflowJson,
+  type OrderedWorkflowStep,
 } from "@/utils/functions/WorkflowStepsInOrder";
 import {
   Eye,
@@ -24,12 +24,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MarkCompletedButton from "./MarkCompletedButton";
+import { WorkflowStep } from "@prisma/client";
 
 interface WorkflowStepsViewerProps {
   workflowJson: WorkflowJson | unknown;
   workflowId: string;
   className?: string;
   showStats?: boolean;
+  workflowSteps: WorkflowStep[];
 }
 
 export default function WorkflowStepsViewer({
@@ -37,10 +39,36 @@ export default function WorkflowStepsViewer({
   workflowId,
   className,
   showStats = true,
+  workflowSteps,
 }: WorkflowStepsViewerProps) {
   const [showDisconnected, setShowDisconnected] = useState(false);
   const [viewedSteps, setViewedSteps] = useState<Set<string>>(new Set());
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
+
+  // Transform API workflow steps to OrderedWorkflowStep format
+  const orderedSteps: OrderedWorkflowStep[] = useMemo(() => {
+    return workflowSteps.map(step => ({
+      id: step.nodeId,
+      name: step.stepTitle,
+      type: step.nodeType,
+      parameters: step.parameters || {},
+      position: step.position,
+      stepNumber: step.stepNumber,
+      isTrigger: step.isTrigger,
+      isMergeNode: step.isMergeNode,
+      isDependency: step.isDependency,
+      // Additional useful properties from your API
+      stepDescription: step.stepDescription,
+      credentials: step.credentials,
+      typeVersion: step.typeVersion,
+      webhookId: step.webhookId,
+      isCustomStep: step.isCustomStep,
+      // Mark disconnected steps if they exist (you can add logic here)
+      isDisconnected: false, // Add your logic for detecting disconnected steps
+      // Original API step data for reference
+      originalApiStep: step
+    }));
+  }, [workflowSteps]);
 
   // Handle step expansion tracking
   const handleStepToggleExpanded = (stepId: string, isExpanded: boolean) => {
@@ -49,43 +77,20 @@ export default function WorkflowStepsViewer({
     }
   };
 
-  // Handle step expansion (only one at a time)
-  // const handleStepExpand = (stepId: string) => {
-  //   if (expandedStepId === stepId) {
-  //     // If clicking the same step, close it
-  //     setExpandedStepId(null);
-  //   } else {
-  //     // Open the new step and close any previously opened step
-  //     setExpandedStepId(stepId);
-  //     // Mark as viewed when opened
-  //     setViewedSteps((prev) => new Set([...prev, stepId]));
-  //   }
-  // };
-
   const handleStepExpand = (stepId: string) => {
     if (expandedStepId === stepId) {
       // If clicking the same step, close it
-
       setExpandedStepId(null);
     } else {
       // Open the new step and close any previously opened step
-
       setExpandedStepId(stepId);
       // Mark as viewed when opened
       setViewedSteps((prev) => new Set([...prev, stepId]));
     }
   };
 
-  // Get ordered steps and stats
-  const orderedSteps = getWorkflowStepsInOrder(workflowJson);
-
+  // Get workflow stats
   const stats = getWorkflowStats(workflowJson);
-
-  // console.log("getWorkflowStepsInOrder", orderedSteps);
-  // console.log(
-  //   "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-  // );
-  // console.log("getWorkflowStats", stats);
 
   // Always show all steps - no more limiting
   const displayedSteps = showDisconnected
@@ -253,8 +258,8 @@ export default function WorkflowStepsViewer({
                       stepNumber={index + 1}
                       onToggleExpanded={handleStepToggleExpanded}
                       isMarkedAsViewed={viewedSteps.has(step.id)}
-                      isExpanded={expandedStepId === step.id} // This is crucial
-                      onExpand={handleStepExpand} // This should handle the toggle
+                      isExpanded={expandedStepId === step.id}
+                      onExpand={handleStepExpand}
                     />
                   </div>
                 </div>

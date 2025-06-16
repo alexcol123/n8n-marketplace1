@@ -32,16 +32,17 @@ import { WorkflowJsonDownloadButton } from "@/components/(custom)/(download)/Wor
 import ShareButton from "@/components/(custom)/(landing)/ShareButton";
 
 import { ReturnToWorkflowsBtn } from "@/components/(custom)/(dashboard)/Form/Buttons";
-import { Workflow, Profile } from "@prisma/client";
+
 import EmptyList from "@/components/(custom)/EmptyList";
 import YouTubeVideoPlayer from "@/components/(custom)/(video)/YoutubeVideoPlayer";
 
 import WorkflowStepsViewer from "@/components/(custom)/(coding-steps)/WorkflowStepsViewer";
-
+import { Workflow, Profile, WorkflowStep } from "@prisma/client";
 // Import the YouTube player component
 
 type WorkflowWithAuthor = Workflow & {
   author: Profile;
+  workflowSteps: WorkflowStep[]; // Add this line
 };
 
 interface ErrorResponse {
@@ -101,7 +102,11 @@ const SingleWorkflowPage = async ({
 
   const result = await fetchSingleWorkflow(slug);
 
+  const orderedSteps = [...result.workflowSteps];
 
+  console.log("result ===================");
+  console.log(result);
+  console.log("end ===================");
 
   // Check if result is an error response
   if (!result || isErrorResponse(result)) {
@@ -452,8 +457,9 @@ const SingleWorkflowPage = async ({
 
           <div className="max-w-4xl mx-auto">
             <WorkflowStepsViewer
+              workflowSteps={orderedSteps}
               workflowJson={workflow.workFlowJson}
-              workflowId={workflowId} 
+              workflowId={workflowId}
               showStats={true}
               className="shadow-lg border-primary/20"
             />
