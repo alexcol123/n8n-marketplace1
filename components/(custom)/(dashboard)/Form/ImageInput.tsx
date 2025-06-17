@@ -11,6 +11,7 @@ function ImageInput() {
   const name = "image";
   const required = true;
   const fileInputRef = useRef<HTMLInputElement>(null);
+ 
 
   // State to hold the selected file data
   const [currentImage, setCurrentImage] = useState<File | null>(null);

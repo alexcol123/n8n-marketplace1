@@ -104,9 +104,7 @@ const SingleWorkflowPage = async ({
 
   const orderedSteps = [...result.workflowSteps];
 
-  console.log("result ===================");
-  console.log(result);
-  console.log("end ===================");
+
 
   // Check if result is an error response
   if (!result || isErrorResponse(result)) {
@@ -206,7 +204,7 @@ const SingleWorkflowPage = async ({
         </div>
 
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
-          {workflow.title}
+          {workflow.title}  
         </h1>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pt-2">

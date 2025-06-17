@@ -6,11 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import UnifiedStepCard from "./UnifiedStepCard";
-import {
-  getWorkflowStats,
-  type WorkflowJson,
-  type OrderedWorkflowStep,
-} from "@/utils/functions/WorkflowStepsInOrder";
+import { type WorkflowJson } from "@/utils/functions/WorkflowStepsInOrder";
 import {
   Eye,
   EyeOff,
@@ -21,10 +17,43 @@ import {
   Zap,
   Check,
   Trophy,
+  Edit3,
+  Save,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MarkCompletedButton from "./MarkCompletedButton";
 import { WorkflowStep } from "@prisma/client";
+import { toast } from "sonner";
+
+// Define the OrderedWorkflowStep interface locally
+interface OrderedWorkflowStep {
+  id: string;
+  name: string;
+  type: string;
+  parameters?: Record<string, unknown>;
+  position: [number, number];
+  stepNumber: number;
+  isTrigger: boolean;
+  isMergeNode: boolean;
+  isDependency: boolean;
+  isDisconnected?: boolean;
+  // Additional fields from database
+  stepDescription?: string;
+  credentials?: any;
+  typeVersion?: number;
+  webhookId?: string;
+  isCustomStep?: boolean;
+  stepTitle?: string;
+  stepImage?: string;
+  helpText?: string;
+  helpLinks?: any;
+  originalApiStep?: WorkflowStep;
+}
+
+interface HelpLink {
+  title: string;
+  url: string;
+}
 
 interface WorkflowStepsViewerProps {
   workflowJson: WorkflowJson | unknown;
@@ -32,6 +61,7 @@ interface WorkflowStepsViewerProps {
   className?: string;
   showStats?: boolean;
   workflowSteps: WorkflowStep[];
+  onUpdateHelpContent?: (stepId: string, helpText: string, helpLinks: HelpLink[]) => Promise<void>; // Callback for updates
 }
 
 export default function WorkflowStepsViewer({
@@ -40,35 +70,91 @@ export default function WorkflowStepsViewer({
   className,
   showStats = true,
   workflowSteps,
+  onUpdateHelpContent,
 }: WorkflowStepsViewerProps) {
   const [showDisconnected, setShowDisconnected] = useState(false);
   const [viewedSteps, setViewedSteps] = useState<Set<string>>(new Set());
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
+  const [editingSteps, setEditingSteps] = useState<Set<string>>(new Set());
+  const [localWorkflowSteps, setLocalWorkflowSteps] = useState<WorkflowStep[]>(workflowSteps);
 
   // Transform API workflow steps to OrderedWorkflowStep format
+  // 🚫 FILTER OUT STICKY NOTES HERE TOO (belt and suspenders approach)
   const orderedSteps: OrderedWorkflowStep[] = useMemo(() => {
-    return workflowSteps.map(step => ({
-      id: step.nodeId,
-      name: step.stepTitle,
-      type: step.nodeType,
-      parameters: step.parameters || {},
-      position: step.position,
-      stepNumber: step.stepNumber,
-      isTrigger: step.isTrigger,
-      isMergeNode: step.isMergeNode,
-      isDependency: step.isDependency,
-      // Additional useful properties from your API
-      stepDescription: step.stepDescription,
-      credentials: step.credentials,
-      typeVersion: step.typeVersion,
-      webhookId: step.webhookId,
-      isCustomStep: step.isCustomStep,
-      // Mark disconnected steps if they exist (you can add logic here)
-      isDisconnected: false, // Add your logic for detecting disconnected steps
-      // Original API step data for reference
-      originalApiStep: step
-    }));
-  }, [workflowSteps]);
+    return localWorkflowSteps
+      .filter((step) => {
+        // Multiple ways to filter sticky notes to be extra sure
+        const nodeType = step.nodeType.toLowerCase();
+        return (
+          !nodeType.includes("stickynote") &&
+          !nodeType.includes("sticky-note") &&
+          !nodeType.includes("note") &&
+          !step.nodeType.includes("StickyNote")
+        );
+      })
+      .map((step) => ({
+        id: step.id,
+        name: step.stepTitle,
+        type: step.nodeType,
+        parameters: step.parameters || {},
+        position: step.position,
+        stepNumber: step.stepNumber,
+        isTrigger: step.isTrigger,
+        isMergeNode: step.isMergeNode,
+        isDependency: step.isDependency,
+        // Additional useful properties from your API
+        stepDescription: step.stepDescription,
+        credentials: step.credentials,
+        typeVersion: step.typeVersion,
+        webhookId: step.webhookId,
+        isCustomStep: step.isCustomStep,
+        // Additional fields for UnifiedStepCard
+        stepTitle: step.stepTitle,
+        stepImage: step.stepImage,
+        helpText: step.helpText,
+        helpLinks: step.helpLinks,
+        // Mark disconnected steps if they exist (you can add logic here)
+        isDisconnected: false, // Add your logic for detecting disconnected steps
+        // Original API step data for reference
+        originalApiStep: step,
+      }));
+  }, [localWorkflowSteps]);
+
+  // Handle help content updates
+  const handleUpdateHelpContent = async (
+    stepId: string,
+    helpText: string,
+    helpLinks: HelpLink[]
+  ) => {
+    try {
+      // Call the provided callback if available
+      if (onUpdateHelpContent) {
+        await onUpdateHelpContent(stepId, helpText, helpLinks);
+      }
+
+      // Update local state optimistically
+      setLocalWorkflowSteps(prevSteps =>
+        prevSteps.map(step =>
+          step.nodeId === stepId
+            ? { ...step, helpText, helpLinks }
+            : step
+        )
+      );
+
+      // Remove step from editing state
+      setEditingSteps(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(stepId);
+        return newSet;
+      });
+
+      toast.success("Help content updated successfully!");
+    } catch (error) {
+      console.error("Failed to update help content:", error);
+      toast.error("Failed to update help content. Please try again.");
+      throw error; // Re-throw to let the component handle loading states
+    }
+  };
 
   // Handle step expansion tracking
   const handleStepToggleExpanded = (stepId: string, isExpanded: boolean) => {
@@ -89,8 +175,44 @@ export default function WorkflowStepsViewer({
     }
   };
 
-  // Get workflow stats
-  const stats = getWorkflowStats(workflowJson);
+  // Calculate stats directly from database workflowSteps
+  const stats = useMemo(() => {
+    const filteredSteps = localWorkflowSteps.filter((step) => {
+      const nodeType = step.nodeType.toLowerCase();
+      return (
+        !nodeType.includes("stickynote") &&
+        !nodeType.includes("sticky-note") &&
+        !nodeType.includes("note") &&
+        !step.nodeType.includes("StickyNote")
+      );
+    });
+
+    const totalSteps = filteredSteps.length;
+    const triggerSteps = filteredSteps.filter((step) => step.isTrigger).length;
+    const actionSteps = filteredSteps.filter(
+      (step) => !step.isTrigger && !step.isDependency
+    ).length;
+    const dependencySteps = filteredSteps.filter(
+      (step) => step.isDependency
+    ).length;
+    const nodeTypes = [...new Set(filteredSteps.map((step) => step.nodeType))];
+
+    const complexity =
+      totalSteps <= 5
+        ? "Beginner Friendly"
+        : totalSteps <= 15
+        ? "Intermediate"
+        : "Advanced";
+
+    return {
+      totalSteps,
+      triggerSteps,
+      actionSteps,
+      dependencySteps,
+      nodeTypes,
+      complexity,
+    };
+  }, [localWorkflowSteps]);
 
   // Always show all steps - no more limiting
   const displayedSteps = showDisconnected
@@ -133,6 +255,15 @@ export default function WorkflowStepsViewer({
           </CardTitle>
 
           <div className="flex items-center gap-2">
+            {/* Edit Mode Indicator - Always shown */}
+            <Badge
+              variant="outline"
+              className="text-xs bg-blue-50 text-blue-600 border-blue-300"
+            >
+              <Edit3 className="h-3 w-3 mr-1" />
+              Edit Mode
+            </Badge>
+
             {disconnectedSteps.length > 0 && (
               <Button
                 variant="outline"
@@ -201,6 +332,21 @@ export default function WorkflowStepsViewer({
                 </span>
               </div>
             </div>
+
+            {/* Edit Mode Instructions - Always shown */}
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex items-start gap-2">
+                <Edit3 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                    Edit Mode Active
+                  </h4>
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    Click on any step to expand it, then use the "Edit Help" button to modify help text and links.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -250,7 +396,7 @@ export default function WorkflowStepsViewer({
                     )}
                   </div>
 
-                  {/* Step Content - Unified Card */}
+                  {/* Step Content - Unified Card with Editing */}
                   <div className="flex-1 min-w-0">
                     <UnifiedStepCard
                       key={step.id}
@@ -260,6 +406,8 @@ export default function WorkflowStepsViewer({
                       isMarkedAsViewed={viewedSteps.has(step.id)}
                       isExpanded={expandedStepId === step.id}
                       onExpand={handleStepExpand}
+               
+                      onUpdateHelpContent={handleUpdateHelpContent}
                     />
                   </div>
                 </div>

@@ -106,3 +106,36 @@ export const workflowSchema = z.object({
     .optional()
     .or(z.literal("")), // Allow empty string
 });
+
+// Steps =================================>>>>>>>>>>>>>
+
+// Schema for validating help links
+const helpLinkSchema = z.object({
+  title: z.string().min(1, "Link title is required"),
+  url: z.string().url("Must be a valid URL"),
+});
+
+// Schema for updating workflow step
+export const workflowStepSchema = z.object({
+  stepTitle: z
+    .string()
+    .min(3, "Step title must be at least 3 characters")
+    .max(100, "Step title must be less than 100 characters"),
+  stepDescription: z
+    .string()
+    .min(10, "Step description must be at least 10 characters")
+    .max(1000, "Step description must be less than 1000 characters")
+    .optional()
+    .or(z.literal("")), // Allow empty string
+  helpText: z
+    .string()
+    .min(10, "Help text must be at least 10 characters")
+    .max(1000, "Help text must be less than 1000 characters")
+    .optional()
+    .or(z.literal("")), // Allow empty string
+  helpLinks: z
+    .array(helpLinkSchema)
+    .max(10, "Maximum 10 help links allowed")
+    .optional()
+    .default([]),
+});

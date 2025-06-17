@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -31,8 +30,10 @@ import {
   Check,
   Copy,
   Download,
+  ThumbsUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import EditCardHelp from "./EditCardHelp";
 
 interface AIMessage {
   role?: string;
@@ -64,36 +65,29 @@ export default function UnifiedStepCard({
   const [nodeCopied, setNodeCopied] = useState(false);
 
   // Handle expansion toggle - this now requests expansion from parent
-const handleToggleExpanded = () => {
+  const handleToggleExpanded = () => {
+    if (isExpanded) {
+      // If currently expanded, close it
 
-  
-  if (isExpanded) {
-    // If currently expanded, close it
+      if (onExpand) {
+        onExpand(step.id);
+      }
 
-    if (onExpand) {
+      if (onToggleExpanded) {
+        onToggleExpanded(step.id, false);
+      }
+    } else {
+      // If currently closed, request to expand
 
-      onExpand(step.id);
+      if (onExpand) {
+        onExpand(step.id);
+      }
+
+      if (onToggleExpanded) {
+        onToggleExpanded(step.id, true);
+      }
     }
-    
-    if (onToggleExpanded) {
- 
-      onToggleExpanded(step.id, false);
-    }
-  } else {
-    // If currently closed, request to expand
-
-    
-    if (onExpand) {
-
-      onExpand(step.id);
-    }
-    
-    if (onToggleExpanded) {
-
-      onToggleExpanded(step.id, true);
-    }
-  }
-};
+  };
 
   // Generate cURL command for HTTP nodes
   const generateCurlCommand = (): string => {
@@ -957,6 +951,10 @@ const handleToggleExpanded = () => {
       {/* Card Content - Only Show When Expanded */}
       {isExpanded && (
         <CardContent className="pt-3">
+          {/* Step Information Section =================>>>>>>>>>>>> */}
+
+          <EditCardHelp step={step} />
+
           {/* Basic Information */}
           <div className="space-y-2 text-sm">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -986,7 +984,6 @@ const handleToggleExpanded = () => {
               </div>
             )}
           </div>
-
 
           {isHTTPNode() && hasParameters && copied && (
             <div>
@@ -1385,7 +1382,11 @@ const handleToggleExpanded = () => {
                                         </div>
                                         <div className="p-3">
                                           <pre className="text-xs leading-relaxed whitespace-pre-wrap font-sans break-words">
-                                            {formatAIPrompt(typeof content === 'string' ? content : JSON.stringify(content))}
+                                            {formatAIPrompt(
+                                              typeof content === "string"
+                                                ? content
+                                                : JSON.stringify(content)
+                                            )}
                                           </pre>
                                         </div>
                                       </div>

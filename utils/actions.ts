@@ -10,6 +10,7 @@ import {
   imageSchema,
   profileSchema,
   validateWithZodSchema,
+  workflowStepSchema,
 } from "./schemas";
 import { revalidatePath } from "next/cache";
 import { uploadImage } from "./supabase";
@@ -300,7 +301,6 @@ export const updateProfileImageAction = async (
   }
 };
 
-
 export const createWorkflowAction = async (
   prevState: Record<string, unknown>,
   formData: FormData
@@ -386,16 +386,19 @@ export const createWorkflowAction = async (
 
     // NEW: Extract and save rich step data to WorkflowStep table
     try {
-      const stepExtractionResult = await extractAndSaveWorkflowSteps(workflow.id, workFlowJson);
-      console.log(`Successfully extracted ${stepExtractionResult.stepsCreated} workflow steps with full node data`);
+      const stepExtractionResult = await extractAndSaveWorkflowSteps(
+        workflow.id,
+        workFlowJson
+      );
+      console.log(
+        `Successfully extracted ${stepExtractionResult.stepsCreated} workflow steps with full node data`
+      );
     } catch (stepError) {
       console.error("Error extracting workflow steps:", stepError);
       // Don't fail the whole workflow creation if step extraction fails
     }
 
     // Revalidate the dashboard to show the new workflow
-   
-
   } catch (error) {
     console.error("Error creating workflow:", error);
     return {
@@ -405,7 +408,7 @@ export const createWorkflowAction = async (
   }
 
   // Move redirect to where the action is called, or handle it in the component
-   redirect("/dashboard/wf");
+  redirect("/dashboard/wf");
 };
 
 export const fetchWorkflows = async ({
@@ -2189,5 +2192,321 @@ export const adminFetchAllWorkflows = async () => {
     });
 
     return workflows;
+  }
+};
+
+//  Steps actions ====================================================================== >>>>
+
+// ===================================================
+// Add this to utils/actions.ts
+
+/**
+ * Update workflow step information (stepTitle, stepDescription, helpText, helpLinks)
+ */
+export const updateWorkflowStepAction = async (
+  stepId: string,
+  data: {
+    stepTitle: string;
+    stepDescription?: string;
+    helpText?: string;
+    helpLinks?: Array<{ title: string; url: string }>;
+  }
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const user = await getAuthUser();
+
+    // Validate the input data
+    const validatedFields = validateWithZodSchema(workflowStepSchema, data);
+
+    console.log("step id :", stepId);
+
+    // First, check if the step exists and verify ownership through the workflow
+    const step = await db.workflowStep.findUnique({
+      where: { id: stepId },
+      include: {
+        workflow: {
+          select: {
+            id: true,
+            authorId: true,
+            title: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    if (!step) {
+      return {
+        success: false,
+        message: "Workflow step not found",
+      };
+    }
+
+    // Verify that the current user owns the workflow
+    if (step.workflow.authorId !== user.id) {
+      return {
+        success: false,
+        message: "You do not have permission to edit this workflow step",
+      };
+    }
+
+    // Prepare the update data
+    const updateData = {
+      stepTitle: validatedFields.stepTitle,
+      stepDescription: validatedFields.stepDescription || null,
+      helpText: validatedFields.helpText || null,
+      helpLinks:
+        validatedFields.helpLinks && validatedFields.helpLinks.length > 0
+          ? validatedFields.helpLinks
+          : null,
+      updatedAt: new Date(),
+    };
+
+    // Update the workflow step
+    await db.workflowStep.update({
+      where: { id: stepId },
+      data: updateData,
+    });
+
+    // Revalidate the workflow page to reflect changes
+    revalidatePath(`/workflow/${step.workflow.slug}`);
+    revalidatePath("/dashboard/wf");
+
+    return {
+      success: true,
+      message: "Workflow step updated successfully",
+    };
+  } catch (error) {
+    console.error("Error updating workflow step:", error);
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to update workflow step",
+    };
+  }
+};
+
+/**
+ * Get a specific workflow step by ID with ownership verification
+ */
+export const fetchWorkflowStep = async (stepId: string) => {
+  try {
+    const user = await getAuthUser();
+
+    const step = await db.workflowStep.findUnique({
+      where: { id: stepId },
+      include: {
+        workflow: {
+          select: {
+            id: true,
+            authorId: true,
+            title: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    if (!step) {
+      return null;
+    }
+
+    // Verify ownership
+    if (step.workflow.authorId !== user.id) {
+      throw new Error(
+        "You do not have permission to access this workflow step"
+      );
+    }
+
+    return step;
+  } catch (error) {
+    console.error("Error fetching workflow step:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get all workflow steps for a specific workflow with ownership verification
+ */
+export const fetchWorkflowSteps = async (workflowId: string) => {
+  try {
+    const user = await getAuthUser();
+
+    // First verify the user owns this workflow
+    const workflow = await db.workflow.findUnique({
+      where: { id: workflowId },
+      select: {
+        id: true,
+        authorId: true,
+        title: true,
+      },
+    });
+
+    if (!workflow) {
+      throw new Error("Workflow not found");
+    }
+
+    if (workflow.authorId !== user.id) {
+      throw new Error("You do not have permission to access this workflow");
+    }
+
+    // Fetch all steps for this workflow
+    const steps = await db.workflowStep.findMany({
+      where: { workflowId },
+      orderBy: { stepNumber: "asc" },
+    });
+
+    return steps;
+  } catch (error) {
+    console.error("Error fetching workflow steps:", error);
+    throw error;
+  }
+};
+
+/**
+ * Alternative action that accepts FormData (useful for form submissions)
+ */
+
+// export const updateWorkflowStepImageAction = async (
+//   prevState: Record<string, unknown>,
+//   formData: FormData
+// ): Promise<{ message: string }> => {
+//   const user = await getAuthUser();
+//   try {
+//     const rawData = Object.fromEntries(formData.entries());
+
+//     const image = rawData.image;
+//     const stepId = rawData.stepId;
+
+//     // const image = formData.get("image") as File;
+//     const validatedFields = validateWithZodSchema(imageSchema, { image });
+
+//     const fullPath = await uploadImage(validatedFields.image);
+
+//     await db.workflowStep.update({
+//       where: { id: stepId },
+//       stepImage: fullPath,
+//     });
+
+//     return { message: "Profile image updated successfully" };
+//   } catch (error) {
+//     return renderError(error);
+//   }
+// };
+// Add this to your utils/actions.ts file
+
+
+export const updateWorkflowStepImageAction = async (
+  prevState: Record<string, unknown>,
+  formData: FormData
+): Promise<{ message: string; success?: boolean; imageUrl?: string; stepId?: string }> => {
+  try {
+    const user = await getAuthUser();
+
+    // Get the stepId from form data
+    const stepId = formData.get("stepId") as string;
+    const image = formData.get("image") as File;
+
+    if (!stepId) {
+      return { message: "Step ID is required" };
+    }
+
+    if (!image || image.size === 0) {
+      return { message: "Image file is required" };
+    }
+
+    // Validate the image
+    const validatedFields = validateWithZodSchema(imageSchema, { image });
+
+    // Upload the new image
+    const fullPath = await uploadImage(validatedFields.image);
+
+    // Update the step with the new image
+    // Assuming you have a Step model with an image field
+    const updatedStep = await db.workflowStep.update({
+      where: {
+        id: stepId,
+      },
+      data: {
+        stepImage: fullPath, // Make sure this matches your database field name
+      },
+      include: {
+        workflow: {
+          select: {
+            authorId: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    // Verify the user owns this workflow
+    if (updatedStep.workflow.authorId !== user.id) {
+      return { message: "You don't have permission to update this step" };
+    }
+
+    // Revalidate the workflow page
+    revalidatePath(`/dashboard/wf/${updatedStep.workflow.slug}`);
+    revalidatePath("/dashboard/wf");
+
+    return { 
+      message: "Step image updated successfully",
+      success: true,
+      imageUrl: fullPath,
+      stepId: stepId
+    };
+  } catch (error) {
+    return renderError(error);
+  }
+};
+
+export const updateWorkflowStepFormAction = async (
+  prevState: any,
+  formData: FormData
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const stepId = formData.get("stepId") as string;
+    const stepTitle = formData.get("stepTitle") as string;
+    const stepDescription = formData.get("stepDescription") as string;
+    const helpText = formData.get("helpText") as string;
+
+    // Parse help links from form data (expecting JSON string)
+    let helpLinks: Array<{ title: string; url: string }> = [];
+    const helpLinksString = formData.get("helpLinks") as string;
+
+    if (helpLinksString) {
+      try {
+        helpLinks = JSON.parse(helpLinksString);
+      } catch (error) {
+        console.error("Error parsing help links:", error);
+        helpLinks = [];
+      }
+    }
+
+    if (!stepId) {
+      return {
+        success: false,
+        message: "Step ID is required",
+      };
+    }
+
+    const result = await updateWorkflowStepAction(stepId, {
+      stepTitle,
+      stepDescription,
+      helpText,
+      helpLinks,
+    });
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to update workflow step",
+    };
   }
 };
