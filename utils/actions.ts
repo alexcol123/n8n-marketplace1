@@ -13,7 +13,7 @@ import {
   workflowStepSchema,
 } from "./schemas";
 import { revalidatePath } from "next/cache";
-import { uploadImage } from "./supabase";
+import { deleteImage, uploadImage } from "./supabase";
 
 import slug from "slug";
 import { CategoryType, IssueStatus, Priority } from "@prisma/client";
@@ -284,8 +284,20 @@ export const updateProfileImageAction = async (
     const image = formData.get("image") as File;
     const validatedFields = validateWithZodSchema(imageSchema, { image });
 
+    // Get the current profile to retrieve the old image URL
+    const currentProfile = await db.profile.findUnique({
+      where: {
+        clerkId: user.id,
+      },
+      select: {
+        profileImage: true,
+      },
+    });
+
+    // Upload the new image
     const fullPath = await uploadImage(validatedFields.image);
 
+    // Update the profile with the new image
     await db.profile.update({
       where: {
         clerkId: user.id,
@@ -294,13 +306,26 @@ export const updateProfileImageAction = async (
         profileImage: fullPath,
       },
     });
+
+    // Delete the old image from storage (if it exists and is a Supabase URL)
+    if (
+      currentProfile?.profileImage &&
+      currentProfile.profileImage.includes("supabase.co")
+    ) {
+      try {
+        await deleteImage(currentProfile.profileImage);
+      } catch (deleteError) {
+        // Log the error but don't fail the entire operation
+        console.error("Failed to delete old profile image:", deleteError);
+      }
+    }
+
     revalidatePath("/profile");
     return { message: "Profile image updated successfully" };
   } catch (error) {
     return renderError(error);
   }
 };
-
 export const createWorkflowAction = async (
   prevState: Record<string, unknown>,
   formData: FormData
@@ -641,15 +666,21 @@ export const deleteWorkflowAction = async (
       };
     }
 
-    // Get the workflow title for the success message
+    // Get the workflow with all step images AND workflow image before deletion
     const workflow = await db.workflow.findUnique({
       where: { id: workflowId },
       select: {
         title: true,
+        workflowImage: true,
+        workflowSteps: {
+          select: {
+            stepImage: true,
+          },
+        },
       },
     });
 
-    // Check if workflow exists (in case it was deleted between permission check and this query)
+    // Check if workflow exists
     if (!workflow) {
       return {
         message: "No workflow found with that id",
@@ -657,11 +688,39 @@ export const deleteWorkflowAction = async (
       };
     }
 
-    // Delete the workflow from the database
+    // Collect all images that need to be deleted from Supabase
+    const imagesToDelete: string[] = [];
+    
+    // Add workflow image if it exists and is from Supabase
+    if (workflow.workflowImage && workflow.workflowImage.includes("supabase.co")) {
+      imagesToDelete.push(workflow.workflowImage);
+    }
+    
+    // Add all step images from Supabase
+    const stepImages = workflow.workflowSteps
+      .map(step => step.stepImage)
+      .filter(imageUrl => imageUrl && imageUrl.includes("supabase.co")) as string[];
+    
+    imagesToDelete.push(...stepImages);
+
+    // Delete the workflow from the database first
     // This will cascade delete related records based on your schema relationships
     await db.workflow.delete({
       where: { id: workflowId },
     });
+
+    // Delete all associated images from Supabase storage
+    // Do this after database deletion to ensure data consistency
+    if (imagesToDelete.length > 0) {
+      const deletePromises = imagesToDelete.map(imageUrl => 
+        deleteImage(imageUrl)
+      );
+      
+      // Wait for all image deletions to complete
+      await Promise.allSettled(deletePromises);
+      
+      console.log(`Attempted to delete ${imagesToDelete.length} images from storage`);
+    }
 
     // Revalidate relevant paths to update the UI
     revalidatePath("/dashboard/wf"); // My Workflows page
@@ -2365,43 +2424,15 @@ export const fetchWorkflowSteps = async (workflowId: string) => {
   }
 };
 
-/**
- * Alternative action that accepts FormData (useful for form submissions)
- */
-
-// export const updateWorkflowStepImageAction = async (
-//   prevState: Record<string, unknown>,
-//   formData: FormData
-// ): Promise<{ message: string }> => {
-//   const user = await getAuthUser();
-//   try {
-//     const rawData = Object.fromEntries(formData.entries());
-
-//     const image = rawData.image;
-//     const stepId = rawData.stepId;
-
-//     // const image = formData.get("image") as File;
-//     const validatedFields = validateWithZodSchema(imageSchema, { image });
-
-//     const fullPath = await uploadImage(validatedFields.image);
-
-//     await db.workflowStep.update({
-//       where: { id: stepId },
-//       stepImage: fullPath,
-//     });
-
-//     return { message: "Profile image updated successfully" };
-//   } catch (error) {
-//     return renderError(error);
-//   }
-// };
-// Add this to your utils/actions.ts file
-
-
 export const updateWorkflowStepImageAction = async (
   prevState: Record<string, unknown>,
   formData: FormData
-): Promise<{ message: string; success?: boolean; imageUrl?: string; stepId?: string }> => {
+): Promise<{
+  message: string;
+  success?: boolean;
+  imageUrl?: string;
+  stepId?: string;
+}> => {
   try {
     const user = await getAuthUser();
 
@@ -2420,21 +2451,16 @@ export const updateWorkflowStepImageAction = async (
     // Validate the image
     const validatedFields = validateWithZodSchema(imageSchema, { image });
 
-    // Upload the new image
-    const fullPath = await uploadImage(validatedFields.image);
-
-    // Update the step with the new image
-    // Assuming you have a Step model with an image field
-    const updatedStep = await db.workflowStep.update({
+    // Get the current step to retrieve the old image URL and verify ownership
+    const currentStep = await db.workflowStep.findUnique({
       where: {
         id: stepId,
       },
-      data: {
-        stepImage: fullPath, // Make sure this matches your database field name
-      },
-      include: {
+      select: {
+        stepImage: true,
         workflow: {
           select: {
+            id: true,
             authorId: true,
             slug: true,
           },
@@ -2442,20 +2468,57 @@ export const updateWorkflowStepImageAction = async (
       },
     });
 
-    // Verify the user owns this workflow
-    if (updatedStep.workflow.authorId !== user.id) {
-      return { message: "You don't have permission to update this step" };
+    if (!currentStep) {
+      return { message: "Step not found" };
+    }
+
+    // Check if user is creator or admin
+    const canEdit = await isCreatorOrAdmin(currentStep.workflow.id);
+
+    if (!canEdit) {
+      return {
+        message: "You don't have permission to update this step",
+        success: false,
+      };
+    }
+
+    // Upload the new image
+    const fullPath = await uploadImage(validatedFields.image);
+
+    // Update the step with the new image
+    const updatedStep = await db.workflowStep.update({
+      where: {
+        id: stepId,
+      },
+      data: {
+        stepImage: fullPath,
+      },
+      include: {
+        workflow: {
+          select: {
+            slug: true,
+          },
+        },
+      },
+    });
+
+    // Delete the old image from storage (if it exists and is a Supabase URL)
+    if (
+      currentStep.stepImage &&
+      currentStep.stepImage.includes("supabase.co")
+    ) {
+      await deleteImage(currentStep.stepImage);
     }
 
     // Revalidate the workflow page
     revalidatePath(`/dashboard/wf/${updatedStep.workflow.slug}`);
     revalidatePath("/dashboard/wf");
 
-    return { 
+    return {
       message: "Step image updated successfully",
       success: true,
       imageUrl: fullPath,
-      stepId: stepId
+      stepId: stepId,
     };
   } catch (error) {
     return renderError(error);
@@ -2467,6 +2530,8 @@ export const updateWorkflowStepFormAction = async (
   formData: FormData
 ): Promise<{ success: boolean; message: string }> => {
   try {
+    const user = await getAuthUser();
+
     const stepId = formData.get("stepId") as string;
     const stepTitle = formData.get("stepTitle") as string;
     const stepDescription = formData.get("stepDescription") as string;
@@ -2492,6 +2557,39 @@ export const updateWorkflowStepFormAction = async (
       };
     }
 
+    // Get the current step to verify ownership
+    const currentStep = await db.workflowStep.findUnique({
+      where: {
+        id: stepId,
+      },
+      select: {
+        workflow: {
+          select: {
+            id: true,
+            authorId: true,
+          },
+        },
+      },
+    });
+
+    if (!currentStep) {
+      return {
+        success: false,
+        message: "Step not found",
+      };
+    }
+
+    // Check if user is creator or admin
+    const canEdit = await isCreatorOrAdmin(currentStep.workflow.id);
+
+    if (!canEdit) {
+      return {
+        success: false,
+        message: "You don't have permission to update this step",
+      };
+    }
+
+    // Proceed with the update if permission check passes
     const result = await updateWorkflowStepAction(stepId, {
       stepTitle,
       stepDescription,
