@@ -13,18 +13,12 @@ import {
   AlertTriangle,
   Workflow,
   Clock,
-  Settings,
-  Zap,
-  Check,
-  Trophy,
-  Edit3,
-  Save,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MarkCompletedButton from "./MarkCompletedButton";
 import { WorkflowStep } from "@prisma/client";
-import { toast } from "sonner";
-
 // Define the OrderedWorkflowStep interface locally
 interface OrderedWorkflowStep {
   id: string;
@@ -61,7 +55,6 @@ interface WorkflowStepsViewerProps {
   className?: string;
   showStats?: boolean;
   workflowSteps: WorkflowStep[];
-  onUpdateHelpContent?: (stepId: string, helpText: string, helpLinks: HelpLink[]) => Promise<void>; // Callback for updates
 }
 
 export default function WorkflowStepsViewer({
@@ -70,13 +63,15 @@ export default function WorkflowStepsViewer({
   className,
   showStats = true,
   workflowSteps,
-  onUpdateHelpContent,
 }: WorkflowStepsViewerProps) {
   const [showDisconnected, setShowDisconnected] = useState(false);
   const [viewedSteps, setViewedSteps] = useState<Set<string>>(new Set());
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
-  const [editingSteps, setEditingSteps] = useState<Set<string>>(new Set());
-  const [localWorkflowSteps, setLocalWorkflowSteps] = useState<WorkflowStep[]>(workflowSteps);
+  const [localWorkflowSteps, setLocalWorkflowSteps] =
+    useState<WorkflowStep[]>(workflowSteps);
+
+  // Step navigation state
+  const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
 
   // Transform API workflow steps to OrderedWorkflowStep format
   // 🚫 FILTER OUT STICKY NOTES HERE TOO (belt and suspenders approach)
@@ -120,42 +115,6 @@ export default function WorkflowStepsViewer({
       }));
   }, [localWorkflowSteps]);
 
-  // Handle help content updates
-  const handleUpdateHelpContent = async (
-    stepId: string,
-    helpText: string,
-    helpLinks: HelpLink[]
-  ) => {
-    try {
-      // Call the provided callback if available
-      if (onUpdateHelpContent) {
-        await onUpdateHelpContent(stepId, helpText, helpLinks);
-      }
-
-      // Update local state optimistically
-      setLocalWorkflowSteps(prevSteps =>
-        prevSteps.map(step =>
-          step.nodeId === stepId
-            ? { ...step, helpText, helpLinks }
-            : step
-        )
-      );
-
-      // Remove step from editing state
-      setEditingSteps(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(stepId);
-        return newSet;
-      });
-
-      toast.success("Help content updated successfully!");
-    } catch (error) {
-      console.error("Failed to update help content:", error);
-      toast.error("Failed to update help content. Please try again.");
-      throw error; // Re-throw to let the component handle loading states
-    }
-  };
-
   // Handle step expansion tracking
   const handleStepToggleExpanded = (stepId: string, isExpanded: boolean) => {
     if (isExpanded) {
@@ -171,7 +130,31 @@ export default function WorkflowStepsViewer({
       // Open the new step and close any previously opened step
       setExpandedStepId(stepId);
       // Mark as viewed when opened
-      setViewedSteps((prev) => new Set([...prev, stepId]));
+      setViewedSteps((prev) => {
+        const newSet = new Set([...prev, stepId]);
+        return newSet;
+      });
+    }
+  };
+
+  // Navigation handlers
+  const goToNextStep = () => {
+    if (currentStepIndex < displayedSteps.length - 1) {
+      // Mark current step as viewed when moving to next
+      const currentStep = displayedSteps[currentStepIndex];
+      if (currentStep) {
+        setViewedSteps((prev) => new Set([...prev, currentStep.id]));
+      }
+      setCurrentStepIndex(currentStepIndex + 1);
+    } else if (currentStepIndex === displayedSteps.length - 1) {
+      // Always allow moving to completion step from last step
+      setCurrentStepIndex(displayedSteps.length);
+    }
+  };
+
+  const goToPreviousStep = () => {
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex(currentStepIndex - 1);
     }
   };
 
@@ -221,14 +204,38 @@ export default function WorkflowStepsViewer({
 
   const disconnectedSteps = orderedSteps.filter((step) => step.isDisconnected);
 
+  // Get current step for display
+  const currentStep = displayedSteps[currentStepIndex];
+
   // Check if all steps are completed
   const allStepsCompleted =
     displayedSteps.length > 0 &&
     displayedSteps.every((step) => viewedSteps.has(step.id));
+
+  // Always allow completion step access - users need to reach it to complete
+  const isOnCompletionStep = currentStepIndex === displayedSteps.length;
+
+  // Always include completion step in total count - it's always accessible
+  const totalStepsWithCompletion = displayedSteps.length + 1;
+
+  // Also automatically mark current step as viewed when it's the current step or expanded
+  const isCurrentStepViewed =
+    currentStep &&
+    (viewedSteps.has(currentStep.id) ||
+      expandedStepId === currentStep.id ||
+      currentStepIndex === displayedSteps.length - 1);
+
   const completionPercentage =
     displayedSteps.length > 0
-      ? Math.round((viewedSteps.size / displayedSteps.length) * 100)
+      ? Math.round(
+          ((isOnCompletionStep ? displayedSteps.length : viewedSteps.size) /
+            displayedSteps.length) *
+            100
+        )
       : 0;
+
+  // Helper to determine if we should show green (only on completion step)
+  const shouldShowGreen = isOnCompletionStep;
 
   if (!orderedSteps || orderedSteps.length === 0) {
     return (
@@ -247,7 +254,7 @@ export default function WorkflowStepsViewer({
 
   return (
     <Card className={cn("overflow-hidden py-0", className)}>
-      <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent border-b pt-4 pb-2">
+      <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent border-b pt-4 pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Workflow className="h-5 w-5 text-primary" />
@@ -255,13 +262,9 @@ export default function WorkflowStepsViewer({
           </CardTitle>
 
           <div className="flex items-center gap-2">
-            {/* Edit Mode Indicator - Always shown */}
-            <Badge
-              variant="outline"
-              className="text-xs bg-blue-50 text-blue-600 border-blue-300"
-            >
-              <Edit3 className="h-3 w-3 mr-1" />
-              Edit Mode
+            <Badge variant="default" className="text-xs">
+              <Clock className="h-3 w-3 mr-1" />
+              {stats.complexity}
             </Badge>
 
             {disconnectedSteps.length > 0 && (
@@ -279,152 +282,20 @@ export default function WorkflowStepsViewer({
                 Disconnected ({disconnectedSteps.length})
               </Button>
             )}
-
-            <Badge variant="outline" className="text-xs">
-              {displayedSteps.length} steps
-            </Badge>
-
-            {/* Progress indicator for viewed steps */}
-            {viewedSteps.size > 0 && (
-              <Badge
-                className={cn(
-                  "text-xs text-white",
-                  allStepsCompleted
-                    ? "bg-green-500 hover:bg-green-600"
-                    : "bg-blue-500 hover:bg-blue-600"
-                )}
-              >
-                {allStepsCompleted && <Trophy className="h-3 w-3 mr-1" />}
-                {viewedSteps.size}/{displayedSteps.length} viewed
-              </Badge>
-            )}
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className=" p-0 ">
+      <CardContent className="p-0">
         {/* Workflow Stats */}
         {showStats && (
           <div className="p-4 bg-muted/20 border-b">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <Workflow className="h-4 w-4 text-primary" />
-                <span>
-                  <strong>{stats.totalSteps}</strong> total steps
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-amber-500" />
-                <span>
-                  <strong>{stats.triggerSteps}</strong> triggers
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Settings className="h-4 w-4 text-primary" />
-                <span>
-                  <strong>{stats.actionSteps}</strong> actions
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>
-                  <strong>{stats.complexity}</strong> complexity
-                </span>
-              </div>
-            </div>
-
-            {/* Edit Mode Instructions - Always shown */}
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <div className="flex items-start gap-2">
-                <Edit3 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
-                    Edit Mode Active
-                  </h4>
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Click on any step to expand it, then use the "Edit Help" button to modify help text and links.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Steps List */}
-        <div className="p-4 space-y-4">
-          {displayedSteps.map((step, index) => {
-            const isLastStep = index === displayedSteps.length - 1;
-            const isViewed = viewedSteps.has(step.id);
-
-            return (
-              <div key={step.id} className="relative">
-                {/* Step Number and Connection Line */}
-                <div className="flex items-start gap-4">
-                  {/* Step Number Circle */}
-                  <div className="flex flex-col items-center flex-shrink-0">
-                    <div
-                      className={cn(
-                        "flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm z-10 shadow-md transition-all duration-300",
-                        isViewed
-                          ? step.isTrigger
-                            ? "bg-amber-600 text-white ring-2 ring-amber-300"
-                            : step.isDisconnected
-                            ? "bg-destructive text-white ring-2 ring-destructive/30"
-                            : "bg-primary text-primary-foreground ring-2 ring-primary/30"
-                          : step.isTrigger
-                          ? "bg-amber-500 text-white"
-                          : step.isDisconnected
-                          ? "bg-destructive text-white"
-                          : "bg-primary text-primary-foreground"
-                      )}
-                    >
-                      {isViewed ? (
-                        <Check className="h-5 w-5" />
-                      ) : (
-                        step.stepNumber
-                      )}
-                    </div>
-
-                    {/* Connection Line */}
-                    {!isLastStep && (
-                      <div
-                        className={cn(
-                          "w-px h-8 mt-2 transition-colors duration-300",
-                          isViewed ? "bg-primary" : "bg-border"
-                        )}
-                      />
-                    )}
-                  </div>
-
-                  {/* Step Content - Unified Card with Editing */}
-                  <div className="flex-1 min-w-0">
-                    <UnifiedStepCard
-                      key={step.id}
-                      step={step}
-                      stepNumber={index + 1}
-                      onToggleExpanded={handleStepToggleExpanded}
-                      isMarkedAsViewed={viewedSteps.has(step.id)}
-                      isExpanded={expandedStepId === step.id}
-                      onExpand={handleStepExpand}
-               
-                      onUpdateHelpContent={handleUpdateHelpContent}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Mark All Completed Section */}
-        {displayedSteps.length > 0 && (
-          <div className="p-4 border-t bg-gradient-to-r from-muted/30 to-transparent">
             {/* Progress bar */}
-            <div className="mt-3 w-full bg-muted/30 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-muted/30 rounded-full h-2 overflow-hidden">
               <div
                 className={cn(
                   "h-full rounded-full transition-all duration-700 ease-in-out",
-                  allStepsCompleted
+                  shouldShowGreen
                     ? "bg-gradient-to-r from-green-500 to-green-400"
                     : "bg-gradient-to-r from-primary to-primary/70"
                 )}
@@ -434,9 +305,128 @@ export default function WorkflowStepsViewer({
           </div>
         )}
 
-        <div className="flex items-center justify-center p-4 border-t bg-gradient-to-r from-muted/30 to-transparent">
-          <MarkCompletedButton workflowId={workflowId} />
+        {/* Navigation Bar - Positioned right above the step content */}
+        <div className="px-4 py-3 bg-gradient-to-r from-muted/30 to-transparent border-b border-border/50">
+          <div className="flex items-center justify-between">
+            {/* Current Step Title */}
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-medium text-foreground truncate">
+                {isOnCompletionStep
+                  ? "🎉 Complete Your Learning Journey"
+                  : currentStep?.stepTitle || "Loading..."}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Step {currentStepIndex + 1} of {totalStepsWithCompletion}
+              </p>
+            </div>
+
+            {/* Navigation Controls */}
+            <div className="flex items-center gap-2 ml-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToPreviousStep}
+                disabled={currentStepIndex === 0}
+                className="gap-1 px-3"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+
+              {/* Progress dots - compact version */}
+              <div className="flex gap-1 px-2">
+                {Array.from(
+                  { length: Math.min(5, totalStepsWithCompletion) },
+                  (_, idx) => {
+                    const startIndex = Math.max(0, currentStepIndex - 2);
+                    const actualIndex = startIndex + idx;
+                    const isCompletionDot =
+                      actualIndex === displayedSteps.length;
+
+                    return (
+                      <div
+                        key={actualIndex}
+                        className={cn(
+                          "w-1.5 h-1.5 rounded-full transition-colors",
+                          actualIndex === currentStepIndex
+                            ? isCompletionDot
+                              ? "bg-green-500"
+                              : "bg-primary"
+                            : actualIndex < currentStepIndex
+                            ? "bg-green-500"
+                            : "bg-muted"
+                        )}
+                      />
+                    );
+                  }
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToNextStep}
+                disabled={currentStepIndex >= totalStepsWithCompletion - 1}
+                className="gap-1 px-3"
+              >
+                {currentStepIndex === displayedSteps.length - 1
+                  ? "Complete"
+                  : "Next"}
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
+
+        {/* Current Step Display OR Completion Step */}
+        {isOnCompletionStep ? (
+          /* Completion Step Display */
+          <div className="p-4">
+            <div className="p-6 border border-green-200 rounded-lg bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-green-950/30">
+              <div className="text-center space-y-4">
+                <div>
+                  <h3 className="text-xl font-bold text-green-800 dark:text-green-200 mb-2">
+                    🎉 Ready to Master This Workflow?
+                  </h3>
+                  <p className="text-green-700 dark:text-green-300 mb-4 max-w-md mx-auto">
+                    Complete this automation challenge and level up your skills!
+                    Join thousands of students mastering automation workflows.
+                  </p>
+                </div>
+                <div className="flex justify-center">
+                  <MarkCompletedButton workflowId={workflowId} />
+                </div>
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  🔥 Join thousands of students mastering automation workflows
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : currentStep ? (
+          /* Regular Step Display */
+          <div className="p-4">
+            <UnifiedStepCard
+              key={currentStep.id}
+              step={currentStep}
+              stepNumber={currentStepIndex + 1}
+              onToggleExpanded={handleStepToggleExpanded}
+              isMarkedAsViewed={isCurrentStepViewed}
+              isExpanded={expandedStepId === currentStep.id}
+              onExpand={handleStepExpand}
+            />
+          </div>
+        ) : (
+          /* Fallback for undefined currentStep */
+          <div className="p-4">
+            <div className="text-center py-8">
+              <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Step not found. Please use the navigation buttons to go to a
+                valid step.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Disconnected Steps Warning */}
         {disconnectedSteps.length > 0 && !showDisconnected && (

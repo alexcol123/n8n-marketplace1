@@ -250,6 +250,7 @@ export default function UnifiedStepCard({
   };
 
   // Copy node data in n8n workflow format
+  // Copy node data in n8n workflow format AND mark as completed
   const copyNodeData = async () => {
     // Create single node in n8n workflow format
     const nodeData = {
@@ -280,6 +281,11 @@ export default function UnifiedStepCard({
       );
       setNodeCopied(true);
       setTimeout(() => setNodeCopied(false), 2000);
+
+      // Mark step as completed when successfully exported
+      if (onToggleExpanded) {
+        onToggleExpanded(step.id, true); // Mark as viewed/completed
+      }
     } catch (err) {
       console.error("Failed to copy node data to clipboard:", err);
     }
@@ -798,159 +804,167 @@ export default function UnifiedStepCard({
   return (
     <Card
       className={cn(
-        "transition-all duration-300 pt-0",
+        "transition-all duration-300 pt-0 relative overflow-hidden py-0 my-2",
         colors.border,
         colors.bg,
-        colors.isViewed && "ring-2 ring-primary/20 shadow-md"
+        colors.isViewed && "ring-2 ring-primary/20 shadow-md",
+        // Completion styling - apply to entire card for proper coverage
+        (isMarkedAsViewed || isExpanded) && [
+          "bg-gradient-to-br from-green-50 via-emerald-50 to-green-50",
+          "dark:from-green-950/30 dark:via-emerald-950/30 dark:to-green-950/30",
+          "border-2 border-green-400/60 shadow-xl shadow-green-500/25",
+          "dark:border-green-500/50 dark:shadow-green-400/15",
+          "before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-green-200/20 before:to-transparent",
+          "before:animate-pulse before:pointer-events-none before:rounded-lg",
+        ]
       )}
     >
       {/* Card Header - Always Visible */}
-      <CardHeader className={cn("pb-3", colors.headerBg)}>
-        <div className="flex items-start justify-between gap-3 mt-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              {getStepIcon()}
-              <h4 className="font-semibold text-lg truncate">{step.name}</h4>
-            </div>
+      <CardHeader
+        className={cn(
+          "pb-3 transition-all duration-300 relative z-10 py-4",
+          colors.headerBg
+        )}
+      >
+        <div className="flex flex-col gap-3">
+          {/* Main Content Row */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                {getStepIcon()}
+                <h4 className="font-semibold text-lg truncate">{step.name}</h4>
+              </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className={cn("text-xs", colors.text)}>
-                {getNodeTypeDisplay(step.type)}
-              </Badge>
-
-              {/* Viewed/Completed Status Badge */}
-              {(isMarkedAsViewed || isExpanded) && (
-                <Badge className="text-xs bg-green-500 hover:bg-green-600 text-white">
-                  <Check className="h-3 w-3 mr-1" />
-                  Completed
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className={cn("text-xs", colors.text)}>
+                  {getNodeTypeDisplay(step.type)}
                 </Badge>
-              )}
 
-              {/* Category Badge */}
-              {colors.category !== "default" &&
-                colors.category !== "trigger" &&
-                colors.category !== "disconnected" && (
-                  <Badge
-                    className={cn("text-xs text-white capitalize", {
-                      "bg-blue-500 hover:bg-blue-600":
-                        colors.category === "http",
-                      "bg-purple-500 hover:bg-purple-600":
-                        colors.category === "ai",
-                      "bg-green-500 hover:bg-green-600":
-                        colors.category === "code",
-                      "bg-orange-500 hover:bg-orange-600":
-                        colors.category === "database",
-                      "bg-red-500 hover:bg-red-600":
-                        colors.category === "email",
-                      "bg-indigo-500 hover:bg-indigo-600":
-                        colors.category === "file",
-                      "bg-pink-500 hover:bg-pink-600":
-                        colors.category === "social",
-                    })}
-                  >
-                    {colors.category}
+                {/* Category Badge */}
+                {colors.category !== "default" &&
+                  colors.category !== "trigger" &&
+                  colors.category !== "disconnected" && (
+                    <Badge
+                      className={cn("text-xs text-white capitalize", {
+                        "bg-blue-500 hover:bg-blue-600":
+                          colors.category === "http",
+                        "bg-purple-500 hover:bg-purple-600":
+                          colors.category === "ai",
+                        "bg-green-500 hover:bg-green-600":
+                          colors.category === "code",
+                        "bg-orange-500 hover:bg-orange-600":
+                          colors.category === "database",
+                        "bg-red-500 hover:bg-red-600":
+                          colors.category === "email",
+                        "bg-indigo-500 hover:bg-indigo-600":
+                          colors.category === "file",
+                        "bg-pink-500 hover:bg-pink-600":
+                          colors.category === "social",
+                      })}
+                    >
+                      {colors.category}
+                    </Badge>
+                  )}
+
+                {step.isTrigger && (
+                  <Badge className="text-xs bg-amber-500 hover:bg-amber-600 text-white">
+                    Trigger
                   </Badge>
                 )}
 
-              {step.isTrigger && (
-                <Badge className="text-xs bg-amber-500 hover:bg-amber-600">
-                  Trigger
-                </Badge>
-              )}
+                {step.isStartingNode && !step.isTrigger && (
+                  <Badge className="text-xs bg-green-500 hover:bg-green-600 text-white">
+                    Start
+                  </Badge>
+                )}
 
-              {step.isStartingNode && !step.isTrigger && (
-                <Badge className="text-xs bg-green-500 hover:bg-green-600">
-                  Start
-                </Badge>
-              )}
+                {step.isDisconnected && (
+                  <Badge variant="destructive" className="text-xs">
+                    Disconnected
+                  </Badge>
+                )}
 
-              {step.isDisconnected && (
-                <Badge variant="destructive" className="text-xs">
-                  Disconnected
-                </Badge>
-              )}
-
-              {hasParameters && (
-                <Badge variant="secondary" className="text-xs">
-                  {parameterCount} parameter{parameterCount !== 1 ? "s" : ""}
-                </Badge>
-              )}
+                {hasParameters && (
+                  <Badge variant="secondary" className="text-xs">
+                    {parameterCount} parameter{parameterCount !== 1 ? "s" : ""}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2">
-            {isHTTPNode() && hasParameters && (
+          {/* Action Buttons - Always visible, responsive layout */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+            <div className="flex gap-2 flex-wrap justify-end">
+              {isHTTPNode() && hasParameters && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={copyToClipboard}
+                  className="gap-1 text-xs flex-1 sm:flex-none min-w-0"
+                  title="Copy as cURL command for testing"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-3 w-3 flex-shrink-0" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3 w-3 flex-shrink-0" />
+                      Copy cURL
+                    </>
+                  )}
+                </Button>
+              )}
+
               <Button
-                variant="destructive"
+                variant="secondary"
                 size="sm"
-                onClick={copyToClipboard}
-                className="gap-1 text-xs"
-                title="Copy as cURL command for testing"
+                onClick={copyNodeData}
+                className="gap-1 text-xs font-medium bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border-blue-200 text-blue-700 shadow-sm flex-1 sm:flex-none min-w-0"
+                title="Copy this node to use in your own n8n workflow"
               >
-                {copied ? (
+                {nodeCopied ? (
                   <>
-                    <Check className="h-3 w-3" />
+                    <Check className="h-3 w-3 flex-shrink-0" />
                     Copied!
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3 w-3" />
-                    Copy cURL
+                    <Download className="h-3 w-3 flex-shrink-0" />
+                    Export Node
                   </>
                 )}
               </Button>
-            )}
 
-            {/* Export Node Button - Always show */}
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={copyNodeData}
-              className="gap-2 text-xs font-medium bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border-blue-200 text-blue-700 shadow-sm"
-              title="Copy this node to use in your own n8n workflow"
-            >
-              {nodeCopied ? (
-                <>
-                  <Check className="h-3 w-3" />
-                  Copied to Clipboard!
-                </>
-              ) : (
-                <>
-                  <Download className="h-3 w-3" />
-                  Export Node
-                </>
-              )}
-            </Button>
-
-            {/* Copy cURL Button - Only show for HTTP steps */}
-
-            {/* Show Details Button */}
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleToggleExpanded}
-              className="transition-all duration-200"
-            >
-              {isExpanded ? (
-                <>
-                  <ChevronUp className="h-3 w-3" />
-                  Hide Details
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-3 w-3" />
-                  Show Details
-                </>
-              )}
-            </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleToggleExpanded}
+                className="transition-all duration-200 gap-1 flex-1 sm:flex-none min-w-0"
+                title={isExpanded ? "Hide step details" : "Show step details"}
+              >
+                {isExpanded ? (
+                  <>
+                    <ChevronUp className="h-3 w-3 flex-shrink-0" />
+                    Hide Details
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3 w-3 flex-shrink-0" />
+                    Show Details
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
 
       {/* Card Content - Only Show When Expanded */}
       {isExpanded && (
-        <CardContent className="pt-3">
+      <CardContent className="pt-3">
           {/* Step Information Section =================>>>>>>>>>>>> */}
 
           <EditCardHelp step={step} />

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
-
   Circle,
   Loader2,
   Trophy,
@@ -116,7 +115,9 @@ export default function MarkCompletedButton({
 
       if (result.success) {
         setIsCompleted(true);
-        setCompletedAt(result.completedAt ? new Date(result.completedAt) : null);
+        setCompletedAt(
+          result.completedAt ? new Date(result.completedAt) : null
+        );
         setJustCompleted(true);
         setShowCelebration(true);
 
@@ -277,7 +278,8 @@ export default function MarkCompletedButton({
                     Workflow Mastered!
                   </h3>
                   <p className="text-green-700 dark:text-green-300 font-medium">
-                    🎯 You&apos;ve successfully completed this automation challenge!
+                    🎯 You&apos;ve successfully completed this automation
+                    challenge!
                   </p>
                   {completedAt && (
                     <p className="text-sm text-green-600 dark:text-green-400 mt-1">
@@ -298,7 +300,10 @@ export default function MarkCompletedButton({
                   justCompleted && "animate-pulse scale-110"
                 )}
               >
-                <Link href="http://localhost:3000/dashboard/myCompletions" className="flex items-center gap-2">
+                <Link
+                  href="http://localhost:3000/dashboard/myCompletions"
+                  className="flex items-center gap-2"
+                >
                   <BarChart3 className="h-4 w-4" />
                   View Progress
                 </Link>
@@ -311,10 +316,12 @@ export default function MarkCompletedButton({
                 <Eye className="h-4 w-4 text-primary" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    📊 Track your learning journey and see all completed workflows
+                    📊 Track your learning journey and see all completed
+                    workflows
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Monitor your progress and celebrate your achievements in your personal dashboard
+                    Monitor your progress and celebrate your achievements in
+                    your personal dashboard
                   </p>
                 </div>
               </div>

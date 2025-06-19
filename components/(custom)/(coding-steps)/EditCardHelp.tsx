@@ -279,7 +279,7 @@ const EditCardHelp = ({
                   variant="outline"
                   size="sm"
                   asChild
-                  className="text-xs border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-700"
+                  className="text-xs border-orange-200 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-700 text-orange-700 dark:text-orange-300"
                 >
                   <Link
                     href={link.url}
@@ -393,30 +393,49 @@ const EditCardHelp = ({
 
                 {/* Help Links */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">
-                      Helpful Resources
-                    </Label>
+                  <Label className="text-sm font-medium">
+                    Helpful Resources
+                  </Label>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    Add links to documentation, tutorials, or other helpful resources
+                  </p>
+
+                  {helpLinks.length === 0 && (
+                    <div 
+                      className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 text-center hover:border-orange-400 dark:hover:border-orange-600 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 transition-all duration-200 cursor-pointer group"
+                      onClick={addHelpLink}
+                    >
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30 transition-colors">
+                          <Globe className="h-6 w-6 text-slate-400 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">
+                            Add your first resource link
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                            Click here to add helpful documentation or tutorials
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Plus className="h-3 w-3" />
+                          <span>Add Link</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {helpLinks.length > 0 && (
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={addHelpLink}
-                      className="text-xs"
+                      className="w-full text-sm border-dashed border-slate-300 dark:border-slate-600 hover:border-orange-400 dark:hover:border-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 transition-all duration-200"
                     >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add Link
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Another Link
                     </Button>
-                  </div>
-
-                  {helpLinks.length === 0 && (
-                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                      <Globe className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No resources added yet</p>
-                      <p className="text-xs">
-                        Add links to helpful documentation and tutorials
-                      </p>
-                    </div>
                   )}
 
                   <div className="space-y-3">
