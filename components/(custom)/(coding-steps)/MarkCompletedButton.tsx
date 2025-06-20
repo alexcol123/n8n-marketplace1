@@ -9,12 +9,12 @@ import {
   RotateCcw,
   Sparkles,
   Star,
-  PartyPopper,
   Target,
   Award,
   Rocket,
   BarChart3,
-  Eye,
+  Zap,
+  CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
@@ -65,16 +65,16 @@ export default function MarkCompletedButton({
   const [showCelebration, setShowCelebration] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
 
-  // Motivational messages for completion
+  // Engaging completion messages that encourage return
   const celebrationMessages = [
-    "🎉 Outstanding work! You're becoming an automation master!",
-    "🚀 Incredible! Another workflow conquered! You're on fire!",
-    "⭐ Fantastic achievement! Your skills are growing stronger!",
-    "🎯 Bulls-eye! You've mastered another automation workflow!",
-    "💎 Brilliant! You're building an impressive portfolio!",
-    "🏆 Champion! Another workflow added to your expertise!",
-    "⚡ Superb! You're becoming unstoppable in automation!",
-    "🎊 Amazing progress! Your dedication is truly inspiring!",
+    "🎉 Awesome! You're becoming an automation expert!",
+    "🚀 Amazing work! Ready to automate even more?",
+    "⭐ You're crushing it! Your automation skills are growing!",
+    "🎯 Perfect! You're building serious automation expertise!",
+    "💪 Incredible progress! You're unstoppable now!",
+    "🏆 Outstanding! You're mastering workflow automation!",
+    "⚡ Brilliant! Your productivity superpowers are growing!",
+    "🔥 You're on fire! Ready for the next automation challenge?",
   ];
 
   // Check completion status on mount
@@ -105,7 +105,7 @@ export default function MarkCompletedButton({
   // Handle marking as completed with celebration
   const handleMarkCompleted = async () => {
     if (!isSignedIn) {
-      toast.error("Please sign in to mark workflows as completed");
+      toast.error("Please sign in to track your progress");
       return;
     }
 
@@ -121,7 +121,7 @@ export default function MarkCompletedButton({
         setJustCompleted(true);
         setShowCelebration(true);
 
-        // Show celebration toast
+        // Show celebration toast with return encouragement
         const randomMessage =
           celebrationMessages[
             Math.floor(Math.random() * celebrationMessages.length)
@@ -169,63 +169,71 @@ export default function MarkCompletedButton({
     }
   };
 
-  // Don't render anything if user is not signed in
+  // Enhanced sign-in prompt
   if (!isSignedIn) {
     return (
-      <div className="text-center p-6 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 rounded-xl border border-dashed border-primary/30">
-        <div className="mb-4">
-          <div className="h-12 w-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-3">
-            <Trophy className="h-6 w-6 text-primary" />
-          </div>
-          <h3 className="font-semibold text-lg mb-2">Track Your Progress!</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Sign in to mark workflows as completed and build your automation
-            portfolio
-          </p>
+      <div className="relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 rounded-xl">
+          <div className="absolute top-2 right-2 w-16 h-16 bg-primary/10 rounded-full blur-xl animate-pulse" />
+          <div className="absolute bottom-2 left-2 w-12 h-12 bg-primary/5 rounded-full blur-lg animate-pulse delay-500" />
         </div>
 
-        <Button variant="default" asChild>
-          <Link
-            href="/sign-in"
-            className="gap-2  flex items-center justify-center "
-          >
-            <Rocket className="h-4 w-4 " />
-            Sign In to Start
-          </Link>
-        </Button>
+        <div className="relative text-center p-6 border border-primary/20 rounded-xl backdrop-blur-sm">
+          <div className="mb-4">
+            <div className="h-12 w-12 mx-auto rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mb-3 shadow-lg">
+              <Trophy className="h-6 w-6 text-white" />
+            </div>
+            <h3 className="font-bold text-lg mb-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+              Start Your Learning Journey
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Sign in to track completions, earn achievements, and build your automation portfolio
+            </p>
+          </div>
+
+          <Button variant="default" asChild className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg">
+            <Link href="/sign-in" className="gap-2 flex items-center justify-center">
+              <Rocket className="h-4 w-4" />
+              Join & Start Learning
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }
 
-  // Show loading state while checking status
+  // Loading state
   if (isCheckingStatus) {
     return (
-      <div className="flex items-center justify-center p-4">
+      <div className="flex items-center justify-center p-6">
         <Button variant={variant} size={size} className={className} disabled>
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          Checking status...
+          Loading progress...
         </Button>
       </div>
     );
   }
 
-  // If completed, show completed state with celebration
+  // Completed state with enhanced design
   if (isCompleted) {
     return (
-      <div className="space-y-4">
+      <div className="relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-green-50/80 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-green-950/30 rounded-xl">
+          <div className="absolute top-4 right-4 w-20 h-20 bg-green-400/20 rounded-full blur-2xl animate-pulse" />
+          <div className="absolute bottom-4 left-4 w-16 h-16 bg-emerald-400/15 rounded-full blur-xl animate-pulse delay-700" />
+        </div>
+
         {/* Celebration overlay */}
         {showCelebration && (
-          <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg">
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-pink-400/20 to-purple-400/20 animate-pulse" />
+          <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-green-400/20 to-emerald-400/20 animate-pulse" />
             {/* Floating sparkles */}
-            {[...Array(8)].map((_, i) => (
+            {[...Array(6)].map((_, i) => (
               <Sparkles
                 key={i}
-                className={cn(
-                  "absolute h-4 w-4 text-yellow-400 animate-bounce",
-                  i % 2 === 0 ? "animation-delay-200" : "",
-                  i % 3 === 0 ? "animation-delay-500" : ""
-                )}
+                className="absolute h-4 w-4 text-yellow-400 animate-bounce"
                 style={{
                   left: `${Math.random() * 80 + 10}%`,
                   top: `${Math.random() * 60 + 20}%`,
@@ -236,151 +244,85 @@ export default function MarkCompletedButton({
           </div>
         )}
 
-        {/* Main completed status display */}
-        <div
-          className={cn(
-            "relative overflow-hidden rounded-xl transition-all duration-500",
-            "bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50",
-            "dark:from-green-950/30 dark:via-emerald-950/30 dark:to-teal-950/30",
-            "border-2 border-green-200 dark:border-green-800",
-            justCompleted && "animate-pulse shadow-2xl shadow-green-400/25"
-          )}
-        >
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-full transform rotate-12 scale-150" />
-          </div>
-
-          <div className="relative p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div
-                    className={cn(
-                      "h-16 w-16 rounded-full flex items-center justify-center transition-all duration-500",
-                      "bg-gradient-to-br from-green-400 to-emerald-500 shadow-lg",
-                      justCompleted &&
-                        "animate-bounce shadow-2xl shadow-green-400/40"
-                    )}
-                  >
-                    <Trophy className="h-8 w-8 text-white" />
-                  </div>
-                  {justCompleted && (
-                    <div className="absolute -top-1 -right-1">
-                      <Star className="h-6 w-6 text-yellow-400 animate-spin" />
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-bold text-green-800 dark:text-green-200 mb-1 flex items-center gap-2">
-                    <PartyPopper className="h-5 w-5" />
-                    Workflow Mastered!
-                  </h3>
-                  <p className="text-green-700 dark:text-green-300 font-medium">
-                    🎯 You&apos;ve successfully completed this automation
-                    challenge!
-                  </p>
-                  {completedAt && (
-                    <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                      Completed{" "}
-                      {formatDistanceToNow(completedAt, { addSuffix: true })}
-                    </p>
-                  )}
-                </div>
+        <div className="relative p-6 border-2 border-green-200/50 dark:border-green-800/50 rounded-xl backdrop-blur-sm">
+          <div className="text-center space-y-4">
+            {/* Trophy with animation */}
+            <div className="relative mx-auto w-fit">
+              <div
+                className={cn(
+                  "h-16 w-16 rounded-full flex items-center justify-center mx-auto",
+                  "bg-gradient-to-br from-green-500 to-emerald-500 shadow-lg",
+                  justCompleted && "animate-bounce"
+                )}
+              >
+                <Trophy className="h-8 w-8 text-white" />
               </div>
+              {justCompleted && (
+                <div className="absolute -top-1 -right-1">
+                  <Star className="h-6 w-6 text-yellow-400 animate-spin" />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-xl font-bold bg-gradient-to-r from-green-800 to-emerald-800 dark:from-green-200 dark:to-emerald-200 bg-clip-text text-transparent mb-2">
+                🎉 Workflow Mastered!
+              </h3>
+              <p className="text-green-700 dark:text-green-300 text-sm mb-1">
+                Amazing work! You've completed this automation tutorial
+              </p>
+              {completedAt && (
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  Completed {formatDistanceToNow(completedAt, { addSuffix: true })}
+                </p>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                asChild
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg"
+              >
+                <Link href="/dashboard/myCompletions" className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  View All Progress
+                </Link>
+              </Button>
 
               <Button
                 asChild
-                className={cn(
-                  "ml-4 px-4 py-2 text-base font-semibold shadow-lg transition-all duration-300",
-                  "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0",
-                  "hover:from-green-600 hover:to-emerald-600",
-                  "hover:scale-105 active:scale-95",
-                  justCompleted && "animate-pulse scale-110"
-                )}
+                variant="outline"
+                className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-primary/20 hover:bg-primary/5"
               >
-                <Link
-                  href="http://localhost:3000/dashboard/myCompletions"
-                  className="flex items-center gap-2"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  View Progress
+                <Link href="/" className="flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  Next Challenge
                 </Link>
               </Button>
             </div>
 
-            {/* Progress tracking info */}
-            <div className="mt-4 p-3 bg-white/50 dark:bg-black/20 rounded-lg border border-green-200/50 dark:border-green-800/50">
-              <div className="flex items-center gap-3">
-                <Eye className="h-4 w-4 text-primary" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    📊 Track your learning journey and see all completed
-                    workflows
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Monitor your progress and celebrate your achievements in
-                    your personal dashboard
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Next Challenge Call-to-Action */}
-            <div className="mt-4 p-4 bg-white/50 dark:bg-black/20 rounded-lg border border-green-200/50 dark:border-green-800/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Rocket className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-sm text-foreground">
-                      🚀 Ready for your next challenge?
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Explore more workflows and level up your automation
-                      skills!
-                    </p>
-                  </div>
-                </div>
-
-                <Button
-                  asChild
-                  className={cn(
-                    "ml-4 group relative overflow-hidden transition-all duration-300",
-                    "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500",
-                    "hover:from-blue-600 hover:via-purple-600 hover:to-pink-600",
-                    "shadow-lg hover:shadow-xl hover:shadow-purple-500/25",
-                    "transform hover:scale-105 active:scale-95",
-                    "text-white font-semibold px-6 py-2 rounded-lg",
-                    "animate-pulse hover:animate-none"
-                  )}
-                >
-                  <Link href="/" className="flex items-center gap-2">
-                    {/* Button background shine animation */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 transform -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-
-                    <Target className="h-4 w-4 relative z-10" />
-                    <span className="relative z-10">Next Challenge</span>
-                    <Sparkles className="h-3 w-3 relative z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </Link>
-                </Button>
-              </div>
+            {/* Encouragement message */}
+            <div className="text-center bg-green-100/50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200/50">
+              <p className="text-xs text-green-700 dark:text-green-300 font-medium">
+                🚀 You're building serious automation skills! Keep the momentum going with more tutorials
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Remove completion option */}
+        {/* Reset option (smaller and less prominent) */}
         {showRemoveOption && (
-          <div className="flex justify-center">
+          <div className="flex justify-center mt-3">
             <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
               <DialogTrigger asChild>
                 <Button
-                  variant="ghost"
+                  variant='outline'
                   size="sm"
-                  className="text-muted-foreground hover:text-foreground opacity-70 hover:opacity-100 transition-all"
+                  className="text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100 transition-all text-xs"
                 >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Reset completion status
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Reset status
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
@@ -390,9 +332,7 @@ export default function MarkCompletedButton({
                     Reset Completion Status
                   </DialogTitle>
                   <DialogDescription>
-                    Are you sure you want to mark &quot;{workflowTitle}&quot; as
-                    incomplete? This will remove it from your completed
-                    workflows list.
+                    Remove &quot;{workflowTitle}&quot; from your completed workflows?
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="gap-2 sm:gap-0">
@@ -417,7 +357,7 @@ export default function MarkCompletedButton({
                     ) : (
                       <>
                         <RotateCcw className="h-4 w-4" />
-                        Reset Status
+                        Reset
                       </>
                     )}
                   </Button>
@@ -430,64 +370,72 @@ export default function MarkCompletedButton({
     );
   }
 
-  // Default state - not completed (the exciting call-to-action)
+  // Default state - not completed
   return (
-    <div className="space-y-4">
-      {/* Motivational header */}
-      <div className="text-center p-4 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 rounded-lg border border-primary/20">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Target className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold text-primary">
-            Ready to Master This Workflow?
-          </h3>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Complete this automation challenge and level up your skills! 🚀
-        </p>
+    <div className="relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 rounded-xl">
+        <div className="absolute top-2 right-2 w-16 h-16 bg-primary/10 rounded-full blur-xl animate-pulse" />
+        <div className="absolute bottom-2 left-2 w-12 h-12 bg-primary/5 rounded-full blur-lg animate-pulse delay-500" />
       </div>
 
-      {/* Main completion button */}
-      <Button
-        variant={variant}
-        size={size}
-        className={cn(
-          "w-full group relative overflow-hidden transition-all duration-300",
-          "bg-gradient-to-r from-primary via-primary to-primary/80",
-          "hover:from-primary/90 hover:via-primary hover:to-primary/70",
-          "shadow-lg hover:shadow-xl hover:shadow-primary/25",
-          "transform hover:scale-[1.02] active:scale-[0.98]",
-          "border-0 text-white font-semibold text-lg py-4 px-8",
-          className
-        )}
-        onClick={handleMarkCompleted}
-        disabled={isLoading}
-      >
-        {/* Button background animation */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-
-        {/* Button content */}
-        <div className="relative flex items-center justify-center gap-3">
-          {isLoading ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span>Marking as completed...</span>
-            </>
-          ) : (
-            <>
-              <Circle className="h-5 w-5 group-hover:text-green-300 transition-colors duration-300" />
-              <span>Mark as Completed</span>
-              <Sparkles className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </>
-          )}
+      <div className="relative space-y-4 p-6 border border-primary/20 rounded-xl backdrop-blur-sm">
+        {/* Motivational header */}
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Target className="h-5 w-5 text-primary" />
+            <h3 className="font-bold text-primary">
+              Complete This Challenge
+            </h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Finish this tutorial and add it to your growing automation skillset! 🎯
+          </p>
         </div>
-      </Button>
 
-      {/* Encouragement footer */}
-      <div className="text-center text-xs text-muted-foreground">
-        <p className="flex items-center justify-center gap-1">
-          <Award className="h-3 w-3" />
-          Join thousands of students mastering automation workflows
-        </p>
+        {/* Main completion button */}
+        <Button
+          variant={variant}
+          size={size}
+          className={cn(
+            "w-full group relative overflow-hidden transition-all duration-300",
+            "bg-gradient-to-r from-primary to-primary/90",
+            "hover:from-primary/90 hover:to-primary",
+            "shadow-lg hover:shadow-xl hover:shadow-primary/25",
+            "transform hover:scale-[1.02] active:scale-[0.98]",
+            "text-white font-semibold text-base py-3 px-6",
+            className
+          )}
+          onClick={handleMarkCompleted}
+          disabled={isLoading}
+        >
+          {/* Button background animation */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+
+          {/* Button content */}
+          <div className="relative flex items-center justify-center gap-2">
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Completing...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle className="h-4 w-4 group-hover:text-green-300 transition-colors duration-300" />
+                <span>Save My Progress</span>
+                <Sparkles className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </>
+            )}
+          </div>
+        </Button>
+
+        {/* Encouragement footer */}
+        <div className="text-center">
+          <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+            <Award className="h-3 w-3" />
+            Join 5,000+ automation experts building their skills daily
+          </p>
+        </div>
       </div>
     </div>
   );

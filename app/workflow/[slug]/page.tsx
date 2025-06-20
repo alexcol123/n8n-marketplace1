@@ -38,6 +38,7 @@ import YouTubeVideoPlayer from "@/components/(custom)/(video)/YoutubeVideoPlayer
 
 import WorkflowStepsViewer from "@/components/(custom)/(coding-steps)/WorkflowStepsViewer";
 import { Workflow, Profile, WorkflowStep } from "@prisma/client";
+import ZoomableWorkflowImage from "@/components/(custom)/(coding-steps)/ZoomableWorkflowImage";
 // Import the YouTube player component
 
 type WorkflowWithAuthor = Workflow & {
@@ -103,8 +104,6 @@ const SingleWorkflowPage = async ({
   const result = await fetchSingleWorkflow(slug);
 
   const orderedSteps = [...result.workflowSteps];
-
-
 
   // Check if result is an error response
   if (!result || isErrorResponse(result)) {
@@ -204,7 +203,7 @@ const SingleWorkflowPage = async ({
         </div>
 
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
-          {workflow.title}  
+          {workflow.title}
         </h1>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pt-2">
@@ -464,6 +463,12 @@ const SingleWorkflowPage = async ({
           </div>
         </section>
       )}
+
+      <ZoomableWorkflowImage
+        imageSrc="/workflow-sample.png"
+        imageAlt="My Workflow Diagram"
+        className="mb-6"
+      />
 
       {/* Author section with improved styling */}
       <section className="mb-12 mt-14">
