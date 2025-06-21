@@ -472,7 +472,14 @@ export const fetchWorkflows = async ({
 
 export const fetchSingleWorkflow = async (slug: string) => {
   try {
-    const user = await getAuthUser(); // Get current user
+    // Try to get current user, but don't fail if not logged in
+    let user = null;
+    try {
+      user = await getAuthUser();
+    } catch (error) {
+      // User is not logged in, continue without user
+      console.log("User not logged in, continuing as public user");
+    }
 
     const workflow = await db.workflow.findUnique({
       where: { slug },
@@ -488,23 +495,22 @@ export const fetchSingleWorkflow = async (slug: string) => {
       return { message: "Workflow not found", success: false };
     }
 
-    // Update view count and user's last viewed workflow
-    await Promise.all([
-      // Update workflow view count
-      db.workflow.update({
-        where: { slug },
-        data: { viewCount: { increment: 1 } },
-      }),
+    // Always update workflow view count
+    await db.workflow.update({
+      where: { slug },
+      data: { viewCount: { increment: 1 } },
+    });
 
-      // NEW: Update user's last viewed workflow
-      db.profile.update({
+    // Only update user's last viewed workflow if user is logged in
+    if (user) {
+      await db.profile.update({
         where: { clerkId: user.id },
         data: {
           lastWorkflowId: workflow.id,
           lastViewedAt: new Date(),
         },
-      }),
-    ]);
+      });
+    }
 
     return workflow;
   } catch (error) {
@@ -690,17 +696,22 @@ export const deleteWorkflowAction = async (
 
     // Collect all images that need to be deleted from Supabase
     const imagesToDelete: string[] = [];
-    
+
     // Add workflow image if it exists and is from Supabase
-    if (workflow.workflowImage && workflow.workflowImage.includes("supabase.co")) {
+    if (
+      workflow.workflowImage &&
+      workflow.workflowImage.includes("supabase.co")
+    ) {
       imagesToDelete.push(workflow.workflowImage);
     }
-    
+
     // Add all step images from Supabase
     const stepImages = workflow.workflowSteps
-      .map(step => step.stepImage)
-      .filter(imageUrl => imageUrl && imageUrl.includes("supabase.co")) as string[];
-    
+      .map((step) => step.stepImage)
+      .filter(
+        (imageUrl) => imageUrl && imageUrl.includes("supabase.co")
+      ) as string[];
+
     imagesToDelete.push(...stepImages);
 
     // Delete the workflow from the database first
@@ -712,14 +723,16 @@ export const deleteWorkflowAction = async (
     // Delete all associated images from Supabase storage
     // Do this after database deletion to ensure data consistency
     if (imagesToDelete.length > 0) {
-      const deletePromises = imagesToDelete.map(imageUrl => 
+      const deletePromises = imagesToDelete.map((imageUrl) =>
         deleteImage(imageUrl)
       );
-      
+
       // Wait for all image deletions to complete
       await Promise.allSettled(deletePromises);
-      
-      console.log(`Attempted to delete ${imagesToDelete.length} images from storage`);
+
+      console.log(
+        `Attempted to delete ${imagesToDelete.length} images from storage`
+      );
     }
 
     // Revalidate relevant paths to update the UI
