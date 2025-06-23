@@ -335,10 +335,19 @@ export const createWorkflowAction = async (
 
     // Get form data
     const rawData = Object.fromEntries(formData);
-    const file = formData.get("image") as File;
+    const workflowImageFile = formData.get("image") as File;
+    const creationImageFile = formData.get("creationImage") as File;
 
-    if (!file || file.size === 0) {
-      return { message: "Image file is required" };
+    console.log("one workflowImageFile------------------------------------");
+    console.log(workflowImageFile);
+    console.log(
+      "one workflowCreationsImage------------------------------------"
+    );
+    console.log(creationImageFile);
+
+    // Workflow image is required
+    if (!workflowImageFile || workflowImageFile.size === 0) {
+      return { message: "Workflow image file is required" };
     }
 
     const workflowCreatedAt = getDateTime();
@@ -352,9 +361,25 @@ export const createWorkflowAction = async (
       videoUrl: rawData.videoUrl || "",
     });
 
-    // Validate and process the file
-    const validatedFile = validateWithZodSchema(imageSchema, { image: file });
-    const fullPath = await uploadImage(validatedFile.image);
+    // Validate and upload workflow image (required)
+    const validatedWorkflowImage = validateWithZodSchema(imageSchema, {
+      image: workflowImageFile,
+    });
+    const workflowImagePath = await uploadImage(validatedWorkflowImage.image);
+
+    // Handle creation image (optional)
+    let creationImagePath: string | null = null;
+    if (creationImageFile && creationImageFile.size > 0) {
+      try {
+        const validatedCreationImage = validateWithZodSchema(imageSchema, {
+          image: creationImageFile,
+        });
+        creationImagePath = await uploadImage(validatedCreationImage.image);
+      } catch (error) {
+        console.error("Error uploading creation image:", error);
+        // Don't fail the entire workflow creation if creation image upload fails
+      }
+    }
 
     // Create slug
     const slugContent = `${validatedFields.title} author ${user.firstName} ${user.lastName} date ${workflowCreatedAt}`;
@@ -396,7 +421,8 @@ export const createWorkflowAction = async (
       content: validatedFields.content,
       slug: slugString,
       viewCount: 0,
-      workflowImage: fullPath,
+      workflowImage: workflowImagePath,
+      creationImage: creationImagePath || null, // NEW: Add creation image
       category: validatedFields.category,
       authorId: user.id,
       workFlowJson,
@@ -424,6 +450,7 @@ export const createWorkflowAction = async (
     }
 
     // Revalidate the dashboard to show the new workflow
+    revalidatePath("/dashboard/wf");
   } catch (error) {
     console.error("Error creating workflow:", error);
     return {
@@ -456,6 +483,7 @@ export const fetchWorkflows = async ({
       title: true,
       content: true,
       workflowImage: true,
+      creationImage: true,
       authorId: true,
       author: true,
       category: true,
@@ -678,6 +706,7 @@ export const deleteWorkflowAction = async (
       select: {
         title: true,
         workflowImage: true,
+        creationImage: true,
         workflowSteps: {
           select: {
             stepImage: true,
@@ -937,6 +966,7 @@ export const getUserProfileWithWorkflows = async (username: string) => {
             title: true,
             category: true,
             workflowImage: true,
+            creationImage: true,
             viewCount: true,
             createdAt: true,
             _count: {

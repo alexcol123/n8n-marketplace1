@@ -23,11 +23,13 @@ interface WorkflowDownload {
     title: string;
     content: string;
     workflowImage: string;
+    creationImage?: string | null;
+
     slug: string;
     authorId: string;
     category: string;
     viewCount: number;
-    workFlowJson: string | JsonValue | JsonObject // You can define a more specific type if needed
+    workFlowJson: string | JsonValue | JsonObject; // You can define a more specific type if needed
     author: {
       id: string;
       clerkId: string;
@@ -43,15 +45,12 @@ interface WorkflowDownload {
   };
 }
 
-
 export default function MyDownloadsPage() {
-const [downloads, setDownloads] = useState<WorkflowDownload[]>([]);
-
-
+  const [downloads, setDownloads] = useState<WorkflowDownload[]>([]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Fetch downloads when component mounts
   useEffect(() => {
     const getDownloads = async () => {
@@ -70,31 +69,36 @@ const [downloads, setDownloads] = useState<WorkflowDownload[]>([]);
         setIsLoading(false);
       }
     };
-    
+
     getDownloads();
   }, []);
-  
+
   // Filter downloads by title or category
-  const filteredDownloads = downloads.filter(download => {
+  const filteredDownloads = downloads.filter((download) => {
     const title = download.workflow.title.toLowerCase();
     const category = download.workflow.category.toLowerCase();
     const search = searchTerm.toLowerCase();
-    
+
     return title.includes(search) || category.includes(search);
   });
-  
+
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setSearchTerm(e.target.value);
   };
-  
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">My Downloads</h1>
         </div>
-        <Button variant="outline" size="sm" asChild className="gap-1 self-start sm:self-auto">
+        <Button
+          variant="outline"
+          size="sm"
+          asChild
+          className="gap-1 self-start sm:self-auto"
+        >
           <Link href="/">
             <ArrowLeft className="h-4 w-4" />
             <span>Browse Workflows</span>
@@ -114,9 +118,12 @@ const [downloads, setDownloads] = useState<WorkflowDownload[]>([]);
           <div className="bg-primary/10 rounded-full p-4 sm:p-6 mx-auto w-16 sm:w-24 h-16 sm:h-24 flex items-center justify-center mb-4 sm:mb-6">
             <Download className="h-8 sm:h-12 w-8 sm:w-12 text-primary" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-medium mb-2 sm:mb-3">No downloads yet</h2>
+          <h2 className="text-xl sm:text-2xl font-medium mb-2 sm:mb-3">
+            No downloads yet
+          </h2>
           <p className="text-sm text-muted-foreground mb-6 sm:mb-8 max-w-md mx-auto">
-            When you download workflows, they&apos;ll appear here for easy access.
+            When you download workflows, they&apos;ll appear here for easy
+            access.
           </p>
           <Button asChild size="lg" className="px-6">
             <Link href="/">Discover Workflows</Link>
@@ -134,9 +141,10 @@ const [downloads, setDownloads] = useState<WorkflowDownload[]>([]);
                 onChange={handleSearchChange}
               />
             </div>
-            
+
             <div className="text-sm text-muted-foreground whitespace-nowrap">
-              {filteredDownloads.length} workflow{filteredDownloads.length !== 1 ? "s" : ""}
+              {filteredDownloads.length} workflow
+              {filteredDownloads.length !== 1 ? "s" : ""}
             </div>
           </div>
 
@@ -145,7 +153,9 @@ const [downloads, setDownloads] = useState<WorkflowDownload[]>([]);
               <div className="flex justify-center mb-4">
                 <Search className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-medium mb-2">No matching workflows</h3>
+              <h3 className="text-lg font-medium mb-2">
+                No matching workflows
+              </h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Try a different search term or clear your filter
               </p>
@@ -156,13 +166,13 @@ const [downloads, setDownloads] = useState<WorkflowDownload[]>([]);
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {filteredDownloads.map((download) => (
-                <div 
-                  key={download.id} 
+                <div
+                  key={download.id}
                   className="flex flex-col sm:flex-row gap-4 border rounded-lg p-4 hover:border-primary/30 hover:shadow-sm transition-all duration-200"
                 >
                   <div className="w-full sm:w-28 h-32 sm:h-28 relative rounded-md overflow-hidden flex-shrink-0">
                     <Image
-                      src={download.workflow.workflowImage}
+                      src={download.workflow.creationImage ? download.workflow.creationImage :  download.workflow.workflowImage}
                       alt={download.workflow.title}
                       fill
                       className="object-cover"
@@ -171,40 +181,46 @@ const [downloads, setDownloads] = useState<WorkflowDownload[]>([]);
                       {download.workflow.category}
                     </Badge>
                   </div>
-                  
+
                   <div className="flex-grow min-w-0">
-                    <Link href={`/workflow/${download.workflow.slug}`} className="hover:text-primary block">
-                      <h3 className="font-semibold text-lg line-clamp-1">{download.workflow.title}</h3>
+                    <Link
+                      href={`/workflow/${download.workflow.slug}`}
+                      className="hover:text-primary block"
+                    >
+                      <h3 className="font-semibold text-lg line-clamp-1">
+                        {download.workflow.title}
+                      </h3>
                     </Link>
-                    
+
                     <div className="flex items-center gap-2 mt-2">
                       <div className="w-6 h-6 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                        <Image 
-                          src={download.workflow.author.profileImage} 
+                        <Image
+                          src={download.workflow.author.profileImage}
                           alt={download.workflow.author.firstName}
                           width={24}
                           height={24}
                         />
                       </div>
                       <span className="text-sm">
-                        {download.workflow.author.firstName} {download.workflow.author.lastName}
+                        {download.workflow.author.firstName}{" "}
+                        {download.workflow.author.lastName}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center text-sm text-muted-foreground mt-2">
                       <Download className="h-4 w-4 mr-1.5" />
                       {formatDistanceToNow(new Date(download.downloadedAt), {
                         addSuffix: true,
                       })}
                     </div>
-                    
+
                     <div className="flex flex-col sm:flex-row gap-2 mt-4">
                       <WorkflowJsonDownloadButton
                         workflowContent={download.workflow.workFlowJson}
                         workflowId={download.id}
                         title={download.workflow.title}
                       />
-                      
+
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`/workflow/${download.workflow.slug}`}>
                           <ExternalLink className="h-4 w-4 mr-2" />

@@ -22,7 +22,7 @@ import {
   CheckCircle2,
   Lock,
   AlertCircle,
-  Youtube,  // Added for the YouTube icon
+  Youtube, // Added for the YouTube icon
 } from "lucide-react";
 import WorkflowAIGenerator from "@/components/(custom)/(ai)/WorkflowAiGenerator";
 import { validateWorkflowJsonElement } from "@/components/(custom)/(dashboard)/Form/ValidateWorkflowJsonElement";
@@ -211,7 +211,8 @@ const CreateWorkflow = () => {
 
             <Separator className="my-4 sm:my-8" />
 
-            {/* Step 2: Upload Workflow Image - Only shown when JSON is uploaded */}
+            {/* Step 2: Upload Workflow Images - Only shown when JSON is uploaded */}
+            {/* Step 2: Upload Workflow Images - Only shown when JSON is uploaded */}
             <div
               className={`relative transition-all duration-300 ${
                 jsonUploaded ? "opacity-100" : "opacity-50 pointer-events-none"
@@ -232,7 +233,7 @@ const CreateWorkflow = () => {
                       jsonUploaded ? "text-primary" : "text-muted-foreground"
                     }`}
                   />
-                  <span>Add Workflow Image</span>
+                  <span>Add Workflow Images</span>
                 </h2>
 
                 {!jsonUploaded && (
@@ -248,15 +249,56 @@ const CreateWorkflow = () => {
                     !jsonUploaded && "blur-[2px]"
                   }`}
                 >
-                  <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-6">
-                    Upload an image that represents your workflow. This will be
-                    displayed in the workflow card.
-                  </p>
-                  <ImageInput />
+                  {/* Workflow Image Section */}
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
+                        <span className="text-xs font-bold text-primary-foreground">
+                          1
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-semibold">
+                        Workflow Image (Required)
+                      </h3>
+                    </div>
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-3 ml-8">
+                      Upload an image that represents your workflow. This will
+                      be displayed in the workflow card.
+                    </p>
+                    <div className="ml-8">
+                      <ImageInput name="image" label="Workflow Image" />
+                    </div>
+                  </div>
+
+                  <Separator className="my-6" />
+
+                  {/* Creation Image Section */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-6 w-6 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                        <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
+                          2
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-semibold">
+                        Creation Example Image (Optional)
+                      </h3>
+                    </div>
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-3 ml-8">
+                      Upload an example of what your workflow creates. For
+                      example: an invoice for an invoice creator, an animated
+                      video preview for Veo3 animation, etc.
+                    </p>
+                    <div className="ml-8">
+                      <ImageInput
+                        name="creationImage"
+                        label="Creation Example"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-
             <Separator className="my-4 sm:my-8" />
 
             {/* Step 3: AI-Powered Content Generation - Only shown when JSON is uploaded */}
@@ -433,7 +475,8 @@ const CreateWorkflow = () => {
                   }`}
                 >
                   <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-6">
-                    Add a YouTube video that demonstrates your workflow in action. This will be embedded on your workflow detail page.
+                    Add a YouTube video that demonstrates your workflow in
+                    action. This will be embedded on your workflow detail page.
                   </p>
 
                   <FormInput

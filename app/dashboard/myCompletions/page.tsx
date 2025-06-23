@@ -39,7 +39,9 @@ interface WorkflowCompletion {
     title: string;
     category: string;
     slug: string;
-    workflowImage: string;
+  workflowImage: string;
+    creationImage?: string | null;
+
     author: {
       firstName: string;
       lastName: string;
@@ -198,7 +200,8 @@ export default function MyCompletionsPage() {
                 >
                   <div className="w-full sm:w-28 h-32 sm:h-28 relative rounded-md overflow-hidden flex-shrink-0">
                     <Image
-                      src={completion.workflow.workflowImage}
+                      src={completion.workflow.creationImage !== null ? completion.workflow.creationImage : completion.workflow.workflowImage}   
+                      
                       alt={completion.workflow.title}
                       fill
                       className="object-cover"

@@ -3,7 +3,6 @@
 import { useActionState, useEffect } from "react";
 import { actionFunction } from "@/utils/types";
 import { toast } from "sonner";
-import { set } from "date-fns";
 
 const initialState = {
   message: "",
@@ -16,15 +15,32 @@ function FormContainer({
 }: {
   action: actionFunction;
   children: React.ReactNode;
-  setIsUpdateFormVisible
+  setIsUpdateFormVisible?: (visible: boolean) => void;
 }) {
-  const [state, formAction] = useActionState(action, initialState);
+  // Wrap the action to log form data
+  const wrappedAction = async (prevState: any, formData: FormData) => {
+    // Console log all form inputs
+    console.log("=== FORM SUBMISSION ===");
+    console.log("FormData entries:");
+    
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
+    
+    // Convert to object for easier viewing
+    const formObject = Object.fromEntries(formData.entries());
+    console.log("Form data as object:", formObject);
+    
+    // Call the original action
+    return await action(prevState, formData);
+  };
+
+  const [state, formAction] = useActionState(wrappedAction, initialState);
 
   useEffect(() => {
     if (state?.message) {
       toast(state.message);
       
-      // If this is a successful step image update, dispatch custom event
       if (state.success && state.imageUrl && state.stepId) {
         setIsUpdateFormVisible?.(false);
         window.dispatchEvent(

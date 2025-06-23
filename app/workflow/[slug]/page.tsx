@@ -245,7 +245,11 @@ const SingleWorkflowPage = async ({
               propertyId={workflow.slug}
               name={workflow.title}
               description={workflow.content}
-              imageUrl={workflow.workflowImage}
+              imageUrl={
+                workflow.creationImage !== null
+                  ? workflow.creationImage
+                  : workflow.workflowImage
+              }
               variant="default"
             />
           </div>
@@ -256,7 +260,12 @@ const SingleWorkflowPage = async ({
         {/* Featured image with enhanced styling */}
         <figure className="relative aspect-video rounded-xl overflow-hidden bg-muted md:col-span-2 shadow-md border border-primary/10 transform hover:scale-[1.01] transition-transform duration-300">
           <Image
-            src={workflow.workflowImage}
+            src={
+              workflow.creationImage !== null
+                ? workflow.creationImage
+                : workflow.workflowImage
+            }
+            // width={896}
             alt={workflow.title}
             fill
             priority
@@ -440,9 +449,8 @@ const SingleWorkflowPage = async ({
         </section>
       )}
 
-
       <ZoomableWorkflowImage
-        imageSrc="/workflow-sample.png"
+        imageSrc={workflow.workflowImage}
         imageAlt="My Workflow Diagram"
         className="mb-6"
       />
@@ -469,8 +477,6 @@ const SingleWorkflowPage = async ({
           </div>
         </section>
       )}
-
-
 
       {/* Author section with improved styling */}
       <section className="mb-12 mt-14">

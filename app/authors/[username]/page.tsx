@@ -158,7 +158,7 @@ export default async function AuthorProfilePage({
                   {/* Overflow hidden here to contain image scaling */}
                   <div className="absolute inset-0 overflow-hidden">
                     <Image
-                      src={workflow.workflowImage}
+                      src={workflow.creationImage !== null ? workflow.creationImage : workflow.workflowImage}
                       alt={workflow.title}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"

@@ -218,7 +218,11 @@ export default function CardWorkflow({
                 isHovered ? "scale-110" : "scale-100"
               }`}
               style={{
-                backgroundImage: `url(${workflows?.workflowImage})`,
+                backgroundImage: `url(${
+                  workflows.creationImage
+                    ? workflows.creationImage
+                    : workflows.workflowImage
+                })`,
               }}
             />
             {/* Improved gradient overlay */}
@@ -354,10 +358,7 @@ export default function CardWorkflow({
         </CardFooter>
       </Card>
 
-
-
-
-{/* Update Workflow Dialog */}
+      {/* Update Workflow Dialog */}
       {/* <Dialog open={isUpdateDialogOpen} onOpenChange={handleUpdateDialogOpen}>
         <DialogContent className="sm:max-w-md border-primary border-4 md:py-20 md:px-8">
           <DialogHeader className="text-center space-y-4">
@@ -503,7 +504,7 @@ export default function CardWorkflow({
         </DialogContent>
       </Dialog> */}
 
-{/* Update Workflow Dialog */}
+      {/* Update Workflow Dialog */}
       <Dialog open={isUpdateDialogOpen} onOpenChange={handleUpdateDialogOpen}>
         <DialogContent className="sm:max-w-md border-primary border-4 md:py-20 md:px-8">
           <DialogHeader className="text-center space-y-4">
@@ -515,14 +516,20 @@ export default function CardWorkflow({
                 Update Workflow
               </DialogTitle>
               <DialogDescription className="text-base text-muted-foreground">
-                Enhance your workflow with a comprehensive video tutorial to help others understand and follow your process step-by-step. This makes your workflow more accessible and valuable to the community.
+                Enhance your workflow with a comprehensive video tutorial to
+                help others understand and follow your process step-by-step.
+                This makes your workflow more accessible and valuable to the
+                community.
               </DialogDescription>
             </div>
           </DialogHeader>
 
           <div className="space-y-6 py-8">
             <div className="space-y-3">
-              <Label htmlFor="videoUrl" className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Label
+                htmlFor="videoUrl"
+                className="text-sm font-semibold text-foreground flex items-center gap-2"
+              >
                 <PlayCircle className="h-4 w-4 text-primary" />
                 YouTube Video URL
               </Label>
@@ -530,7 +537,9 @@ export default function CardWorkflow({
                 <Input
                   id="videoUrl"
                   value={updateFormData.videoUrl}
-                  onChange={(e) => handleInputChange("videoUrl", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("videoUrl", e.target.value)
+                  }
                   placeholder="https://youtube.com/watch?v=dQw4w9WgXcQ or https://youtu.be/dQw4w9WgXcQ"
                   disabled={isUpdating}
                   className="h-12 pl-4 pr-4 text-base border-2 focus:border-primary transition-colors rounded-xl"
@@ -540,8 +549,11 @@ export default function CardWorkflow({
                 <p className="text-sm text-blue-700 dark:text-blue-300 flex items-start gap-2">
                   <PlayCircle className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-600" />
                   <span>
-                    <strong>YouTube URLs only:</strong> Adding a YouTube video tutorial makes your workflow significantly more engaging and easier to follow. 
-                    Paste a valid YouTube URL (youtube.com or youtu.be) to embed the video directly into your workflow page.
+                    <strong>YouTube URLs only:</strong> Adding a YouTube video
+                    tutorial makes your workflow significantly more engaging and
+                    easier to follow. Paste a valid YouTube URL (youtube.com or
+                    youtu.be) to embed the video directly into your workflow
+                    page.
                   </span>
                 </p>
               </div>
@@ -610,8 +622,8 @@ export default function CardWorkflow({
                     This action cannot be undone
                   </h4>
                   <p className="text-red-700 dark:text-red-300 text-sm leading-relaxed">
-                    This will permanently delete the workflow, its JSON data, and all 
-                    associated images. All content will be lost forever.
+                    This will permanently delete the workflow, its JSON data,
+                    and all associated images. All content will be lost forever.
                   </p>
                 </div>
               </div>
@@ -648,7 +660,6 @@ export default function CardWorkflow({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </>
   );
 }

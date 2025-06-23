@@ -261,7 +261,7 @@ export default async function Home({
                       >
                         <div className="relative">
                           <Image
-                            src={workflow.workflowImage}
+                        src={workflow.creationImage !== null ? workflow.creationImage : workflow.workflowImage}
                             alt={workflow.title}
                             width={400}
                             height={200}

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -7,11 +7,16 @@ import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { Upload, ImageIcon } from "lucide-react";
 
-function ImageInput() {
-  const name = "image";
+function ImageInput({
+  name = "image",
+  label = "image upload1",
+}: {
+  name?: string;
+  label?: string;
+}) {
+  // const name = "image";
   const required = true;
   const fileInputRef = useRef<HTMLInputElement>(null);
- 
 
   // State to hold the selected file data
   const [currentImage, setCurrentImage] = useState<File | null>(null);
@@ -52,7 +57,7 @@ function ImageInput() {
         URL.revokeObjectURL(previewUrl);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentImage]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,10 +77,13 @@ function ImageInput() {
   return (
     <div className="mb-4 space-y-2">
       <div className="flex items-center justify-between">
-        <Label htmlFor={name} className="text-sm font-medium mb-4 flex items-center gap-2">
+        <Label
+          htmlFor={name}
+          className="text-sm font-medium mb-4 flex items-center gap-2"
+        >
           <div className="flex items-center gap-2">
             <ImageIcon className="h-4 w-4 text-primary" />
-            <span className="capitalize">Image Upload</span>
+            <span className="capitalize">{label}</span>
             {required && <span className="text-destructive ml-1">*</span>}
           </div>
         </Label>
@@ -124,15 +132,20 @@ function ImageInput() {
       {currentImage && (
         <div className="mt-2 text-xs text-muted-foreground">
           <span className="font-medium">Selected:</span> {currentImage.name} (
-          <span className={currentImage.size > 900000 ? "text-amber-500 font-medium" : ""}>
+          <span
+            className={
+              currentImage.size > 900000 ? "text-amber-500 font-medium" : ""
+            }
+          >
             {(currentImage.size / (1024 * 1024)).toFixed(2)} MB
-          </span>)
+          </span>
+          )
         </div>
       )}
 
       <p className="text-xs text-muted-foreground">
-        Upload an image for your workflow (must be under 1MB in size).
-        Supported formats: JPG, PNG, GIF, SVG.
+        Upload an image for your workflow (must be under 1MB in size). Supported
+        formats: JPG, PNG, GIF, SVG.
       </p>
     </div>
   );
