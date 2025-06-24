@@ -206,245 +206,208 @@ export default function WorkflowStepsViewer({
   }
 
   return (
-    <div className="relative overflow-hidden">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20">
-        {/* Animated gradient orbs */}
-        <div className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-r from-indigo-400/15 to-blue-400/15 rounded-full blur-3xl animate-pulse delay-500" />
-
-        {/* Floating particles */}
-        {[...Array(12)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-2 h-2 bg-primary/20 rounded-full animate-bounce"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 2}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Main Content */}
-      <Card
-        className={cn(
-          "relative z-10 overflow-hidden backdrop-blur-sm bg-background/80 border-primary/20 shadow-2xl",
-          className
-        )}
-      >
-        {/* Enhanced Header */}
-        <CardHeader className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-b border-primary/20 backdrop-blur-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-lg shadow-lg">
-                <Workflow className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-lg bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-                  Step-by-Step Tutorial
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {stats.totalSteps}min Est. Time
-                </p>
-              </div>
+    <Card
+      className={cn(
+        "overflow-hidden border-primary/20 shadow-lg py-0 ",
+        className
+      )}
+    >
+      {/* Header */}
+      <CardHeader className="py-4 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-b border-primary/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-lg shadow-lg">
+              <Workflow className="h-5 w-5 text-white" />
             </div>
+            <div>
+              <CardTitle className="text-lg">
+                Step-by-Step Tutorial
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {stats.totalSteps}min Est. Time
+              </p>
+            </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="secondary"
-                className={cn(
-                  "text-xs px-3 py-1 shadow-sm",
-                  stats.complexity === "Beginner" &&
-                    "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200",
-                  stats.complexity === "Intermediate" &&
-                    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border-yellow-200",
-                  stats.complexity === "Advanced" &&
-                    "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200"
-                )}
-              >
-                {stats.complexity} Level
-              </Badge>
-
-              {disconnectedSteps.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDisconnected(!showDisconnected)}
-                  className="gap-2 bg-background/80 backdrop-blur-sm"
-                >
-                  {showDisconnected ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                  Disconnected ({disconnectedSteps.length})
-                </Button>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="secondary"
+              className={cn(
+                "text-xs px-3 py-1 shadow-sm",
+                stats.complexity === "Beginner" &&
+                  "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200",
+                stats.complexity === "Intermediate" &&
+                  "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border-yellow-200",
+                stats.complexity === "Advanced" &&
+                  "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200"
               )}
-            </div>
-          </div>
-        </CardHeader>
+            >
+              {stats.complexity} Level
+            </Badge>
 
-        <CardContent className="p-0 relative">
-          {/* Enhanced Navigation with Progress Bar */}
-          <div className="px-4 py-3 bg-gradient-to-r from-background/90 to-background/95 backdrop-blur-sm border-b border-primary/10">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="font-semibold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text ">
-                  {isOnCompletionStep
-                    ? "🎉 Tutorial Complete!"
-                    : `Step ${currentStepIndex + 1}: ${
-                        currentStep?.stepTitle || "Loading..."
-                      }`}
-                </h3>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="destructive" className="text-xs">
-                    {currentStepIndex + 1} of {totalStepsWithCompletion}
-                  </Badge>
-                  {!isOnCompletionStep && currentStep && (
-                    <div className="hidden sm:flex">
-                      <span className="text-primary/50">•</span>
-                      <span className="font-mono text-xs bg-muted/50 px-2 py-1 rounded">
-                        {currentStep.type}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Enhanced Navigation Buttons */}
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToPreviousStep}
-                  disabled={currentStepIndex === 0}
-                  className="gap-2 min-w-[100px] font-medium bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all duration-300"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-
-                <Button
-                  variant={isOnCompletionStep ? "default" : "default"}
-                  size="sm"
-                  onClick={goToNextStep}
-                  disabled={currentStepIndex >= totalStepsWithCompletion - 1}
-                  className={cn(
-                    "gap-2 min-w-[100px] font-medium transition-all duration-300 shadow-lg",
-                    isOnCompletionStep
-                      ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-green-500/25"
-                      : "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-primary/25"
-                  )}
-                >
-                  {currentStepIndex === displayedSteps.length - 1
-                    ? "Complete"
-                    : "Next"}
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Enhanced Progress Bar with Percentage */}
-            <div className="relative">
-              <Progress
-                value={completionPercentage}
-                className="h-3 bg-muted/40"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-full" />
-
-              {/* Percentage Display */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs font-semibold text-foreground bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-sm">
-                  {completionPercentage}%
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Enhanced Step Content */}
-          <div className="p-6 relative bg-gradient-to-br from-background/50 to-background/80 backdrop-blur-sm">
-            {isOnCompletionStep ? (
-              /* Enhanced Completion Step */
-              <div className="text-center space-y-6 py-8">
-                <div className="relative">
-                  <MarkCompletedButton workflowId={workflowId} />
-                </div>
-              </div>
-            ) : currentStep ? (
-              /* Enhanced Current Step */
-              <div className="space-y-4">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg blur-xl" />
-                  <div className="relative">
-                    <UnifiedStepCard
-                      key={currentStep.id}
-                      step={currentStep}
-                      stepNumber={currentStepIndex + 1}
-                      onToggleExpanded={handleStepToggleExpanded}
-                      isMarkedAsViewed={viewedSteps.has(currentStep.id)}
-                      isExpanded={expandedStepId === currentStep.id}
-                      onExpand={handleStepExpand}
-                    />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* Enhanced Error State */
-              <div className="text-center py-12">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-red-400/10 to-orange-400/10 rounded-full blur-3xl" />
-                  <div className="relative">
-                    <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">
-                      Step Not Found
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Unable to load this step.
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={() => setCurrentStepIndex(0)}
-                      className="bg-background/80 backdrop-blur-sm"
-                    >
-                      Return to First Step
-                    </Button>
-                  </div>
-                </div>
-              </div>
+            {disconnectedSteps.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDisconnected(!showDisconnected)}
+                className="gap-2"
+              >
+                {showDisconnected ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+                Disconnected ({disconnectedSteps.length})
+              </Button>
             )}
           </div>
+        </div>
+      </CardHeader>
 
-          {/* Enhanced Disconnected Steps Warning */}
-          {disconnectedSteps.length > 0 && !showDisconnected && (
-            <div className="p-4 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/30 border-t border-amber-200/50 dark:border-amber-800/50 backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <div className="p-1 bg-amber-500/20 rounded-full">
-                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                    {disconnectedSteps.length} disconnected step
-                    {disconnectedSteps.length !== 1 ? "s" : ""} detected
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowDisconnected(true)}
-                  className="text-amber-800 dark:text-amber-200 hover:bg-amber-100/50 dark:hover:bg-amber-900/20"
-                >
-                  <ArrowRight className="h-4 w-4 mr-1" />
-                  Show Details
-                </Button>
+      <CardContent className="p-0">
+        {/* Navigation with Progress Bar */}
+        <div className="px-4 py-3 border-b border-primary/10">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="font-semibold">
+                {isOnCompletionStep
+                  ? "🎉 Tutorial Complete!"
+                  : `Step ${currentStepIndex + 1}: ${
+                      currentStep?.stepTitle || "Loading..."
+                    }`}
+              </h3>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="destructive" className="text-xs">
+                  {currentStepIndex + 1} of {totalStepsWithCompletion}
+                </Badge>
+                {!isOnCompletionStep && currentStep && (
+                  <div className="hidden sm:flex">
+                    <span className="text-primary/50">•</span>
+                    <span className="font-mono text-xs bg-muted/50 px-2 py-1 rounded">
+                      {currentStep.type}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToPreviousStep}
+                disabled={currentStepIndex === 0}
+                className="gap-2 min-w-[100px] font-medium"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+
+              <Button
+                variant={isOnCompletionStep ? "default" : "default"}
+                size="sm"
+                onClick={goToNextStep}
+                disabled={currentStepIndex >= totalStepsWithCompletion - 1}
+                className={cn(
+                  "gap-2 min-w-[100px] font-medium transition-all duration-300",
+                  isOnCompletionStep
+                    ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                    : "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+                )}
+              >
+                {currentStepIndex === displayedSteps.length - 1
+                  ? "Complete"
+                  : "Next"}
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Progress Bar with Percentage */}
+          <div className="relative">
+            <Progress
+              value={completionPercentage}
+              className="h-3 bg-muted/40"
+            />
+
+            {/* Percentage Display */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs font-semibold text-foreground bg-background/80 px-2 py-0.5 rounded-full shadow-sm">
+                {completionPercentage}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Step Content */}
+        <div className="p-6">
+          {isOnCompletionStep ? (
+            /* Completion Step */
+            <div className="text-center space-y-6 py-8">
+              <div className="relative">
+                <MarkCompletedButton workflowId={workflowId} />
+              </div>
+            </div>
+          ) : currentStep ? (
+            /* Current Step */
+            <div className="space-y-4">
+              <UnifiedStepCard
+                key={currentStep.id}
+                step={currentStep}
+                stepNumber={currentStepIndex + 1}
+                onToggleExpanded={handleStepToggleExpanded}
+                isMarkedAsViewed={viewedSteps.has(currentStep.id)}
+                isExpanded={expandedStepId === currentStep.id}
+                onExpand={handleStepExpand}
+              />
+            </div>
+          ) : (
+            /* Error State */
+            <div className="text-center py-12">
+              <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">
+                Step Not Found
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Unable to load this step.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStepIndex(0)}
+              >
+                Return to First Step
+              </Button>
+            </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+
+        {/* Disconnected Steps Warning */}
+        {disconnectedSteps.length > 0 && !showDisconnected && (
+          <div className="p-4 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/30 border-t border-amber-200/50 dark:border-amber-800/50">
+            <div className="flex items-center gap-3">
+              <div className="p-1 bg-amber-500/20 rounded-full">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  {disconnectedSteps.length} disconnected step
+                  {disconnectedSteps.length !== 1 ? "s" : ""} detected
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDisconnected(true)}
+                className="text-amber-800 dark:text-amber-200 hover:bg-amber-100/50 dark:hover:bg-amber-900/20"
+              >
+                <ArrowRight className="h-4 w-4 mr-1" />
+                Show Details
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -39,9 +39,8 @@ interface WorkflowCompletion {
     title: string;
     category: string;
     slug: string;
-  workflowImage: string;
+    workflowImage: string;
     creationImage?: string | null;
-
     author: {
       firstName: string;
       lastName: string;
@@ -86,6 +85,8 @@ export default function MyCompletionsPage() {
     
     return title.includes(search) || category.includes(search);
   });
+
+  console.log("Filtered Completions:", filteredCompletions);
   
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -196,111 +197,114 @@ export default function MyCompletionsPage() {
               {filteredCompletions.map((completion) => (
                 <div 
                   key={completion.id} 
-                  className="flex flex-col sm:flex-row gap-4 border rounded-lg p-4 hover:border-primary/30 hover:shadow-sm transition-all duration-200 bg-gradient-to-r from-green-50/50 to-transparent dark:from-green-950/20"
+                  className="border rounded-lg p-4 hover:border-primary/30 hover:shadow-sm transition-all duration-200 bg-gradient-to-r from-green-50/50 to-transparent dark:from-green-950/20"
                 >
-                  <div className="w-full sm:w-28 h-32 sm:h-28 relative rounded-md overflow-hidden flex-shrink-0">
-                    <Image
-                      src={completion.workflow.creationImage !== null ? completion.workflow.creationImage : completion.workflow.workflowImage}   
-                      
-                      alt={completion.workflow.title}
-                      fill
-                      className="object-cover"
-                    />
-                    <Badge className="absolute top-2 right-2 bg-primary/80">
-                      {completion.workflow.category}
-                    </Badge>
-                    <div className="absolute bottom-2 left-2">
-                      <Badge className="bg-green-600 text-white">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Completed
+                  {/* Top Section - Image and Content */}
+                  <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                    <div className="w-full sm:w-28 h-32 sm:h-28 relative rounded-md overflow-hidden flex-shrink-0">
+                      <Image
+                        src={completion.workflow.creationImage ? completion.workflow.creationImage : completion.workflow.workflowImage}   
+                        alt={completion.workflow.title}
+                        fill
+                        className="object-cover"
+                      />
+                      <Badge className="absolute top-2 right-2 bg-primary/80">
+                        {completion.workflow.category}
                       </Badge>
+                      <div className="absolute bottom-2 left-2">
+                        <Badge className="bg-green-600 text-white">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Completed
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-grow min-w-0">
+                      <Link href={`/workflow/${completion.workflow.slug}`} className="hover:text-primary block">
+                        <h3 className="font-semibold text-lg line-clamp-1">{completion.workflow.title}</h3>
+                      </Link>
+                      
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-sm text-muted-foreground">
+                          by {completion.workflow.author.firstName} {completion.workflow.author.lastName}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center text-sm text-green-600 mt-2 font-medium">
+                        <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                        Completed {formatDistanceToNow(new Date(completion.completedAt), {
+                          addSuffix: true,
+                        })}
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="flex-grow min-w-0">
-                    <Link href={`/workflow/${completion.workflow.slug}`} className="hover:text-primary block">
-                      <h3 className="font-semibold text-lg line-clamp-1">{completion.workflow.title}</h3>
-                    </Link>
+                  {/* Bottom Section - Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-border/50">
+                    <Button variant="outline" size="sm" asChild className="flex-1">
+                      <Link href={`/workflow/${completion.workflow.slug}`}>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        <span>Revisit</span>
+                      </Link>
+                    </Button>
                     
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-sm text-muted-foreground">
-                        by {completion.workflow.author.firstName} {completion.workflow.author.lastName}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center text-sm text-green-600 mt-2 font-medium">
-                      <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                      Completed {formatDistanceToNow(new Date(completion.completedAt), {
-                        addSuffix: true,
-                      })}
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/workflow/${completion.workflow.slug}`}>
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          <span>Revisit</span>
-                        </Link>
-                      </Button>
-                      
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            disabled={removingId === completion.workflowId}
-                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200"
-                          >
-                            {removingId === completion.workflowId ? (
-                              <div className="h-4 w-4 mr-2 border-2 border-current border-r-transparent rounded-full animate-spin" />
-                            ) : (
-                              <RotateCcw className="h-4 w-4 mr-2" />
-                            )}
-                            <span>Mark Incomplete</span>
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                              <RotateCcw className="h-5 w-5 text-orange-500" />
-                              Mark as Incomplete
-                            </DialogTitle>
-                            <DialogDescription>
-                              Are you sure you want to remove the completion status for{" "}
-                              <span className="font-medium">&quot;{completion.workflow.title}&quot;</span>?
-                              <br />
-                              <br />
-                              This will remove it from your completed tutorials list.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter>
-                            <DialogTrigger asChild>
-                              <Button variant="outline">Cancel</Button>
-                            </DialogTrigger>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="secondary"
-                                onClick={() => handleRemoveCompletion(completion.workflowId)}
-                                disabled={removingId === completion.workflowId}
-                                className="gap-2"
-                              >
-                                {removingId === completion.workflowId ? (
-                                  <>
-                                    <div className="h-4 w-4 border-2 border-current border-r-transparent rounded-full animate-spin" />
-                                    Removing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <RotateCcw className="h-4 w-4" />
-                                    Mark Incomplete
-                                  </>
-                                )}
-                              </Button>
-                            </DialogTrigger>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          disabled={removingId === completion.workflowId}
+                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200 flex-1"
+                        >
+                          {removingId === completion.workflowId ? (
+                            <div className="h-4 w-4 mr-2 border-2 border-current border-r-transparent rounded-full animate-spin" />
+                          ) : (
+                            <RotateCcw className="h-4 w-4 mr-2" />
+                          )}
+                          <span>Mark Incomplete</span>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <RotateCcw className="h-5 w-5 text-orange-500" />
+                            Mark as Incomplete
+                          </DialogTitle>
+                          <DialogDescription>
+                            Are you sure you want to remove the completion status for{" "}
+                            <span className="font-medium">&quot;{completion.workflow.title}&quot;</span>?
+                            <br />
+                            <br />
+                            This will remove it from your completed tutorials list.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <DialogTrigger asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogTrigger>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="secondary"
+                              onClick={() => handleRemoveCompletion(completion.workflowId)}
+                              disabled={removingId === completion.workflowId}
+                              className="gap-2"
+                            >
+                              {removingId === completion.workflowId ? (
+                                <>
+                                  <div className="h-4 w-4 border-2 border-current border-r-transparent rounded-full animate-spin" />
+                                  Removing...
+                                </>
+                              ) : (
+                                <>
+                                  <RotateCcw className="h-4 w-4" />
+                                  Mark Incomplete
+                                </>
+                              )}
+                            </Button>
+                          </DialogTrigger>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               ))}

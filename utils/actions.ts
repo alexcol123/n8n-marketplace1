@@ -1127,6 +1127,7 @@ export const fetchUserCompletions = async () => {
             category: true,
             slug: true,
             workflowImage: true,
+            creationImage: true,
             author: {
               select: {
                 firstName: true,

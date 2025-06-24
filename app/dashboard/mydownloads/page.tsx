@@ -24,7 +24,6 @@ interface WorkflowDownload {
     content: string;
     workflowImage: string;
     creationImage?: string | null;
-
     slug: string;
     authorId: string;
     category: string;
@@ -47,7 +46,6 @@ interface WorkflowDownload {
 
 export default function MyDownloadsPage() {
   const [downloads, setDownloads] = useState<WorkflowDownload[]>([]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -168,66 +166,72 @@ export default function MyDownloadsPage() {
               {filteredDownloads.map((download) => (
                 <div
                   key={download.id}
-                  className="flex flex-col sm:flex-row gap-4 border rounded-lg p-4 hover:border-primary/30 hover:shadow-sm transition-all duration-200"
+                  className="border rounded-lg p-4 hover:border-primary/30 hover:shadow-sm transition-all duration-200"
                 >
-                  <div className="w-full sm:w-28 h-32 sm:h-28 relative rounded-md overflow-hidden flex-shrink-0">
-                    <Image
-                      src={download.workflow.creationImage ? download.workflow.creationImage :  download.workflow.workflowImage}
-                      alt={download.workflow.title}
-                      fill
-                      className="object-cover"
-                    />
-                    <Badge className="absolute top-2 right-2 bg-primary/80">
-                      {download.workflow.category}
-                    </Badge>
+                  {/* Top Section - Image and Content */}
+                  <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                    <div className="w-full sm:w-28 h-32 sm:h-28 relative rounded-md overflow-hidden flex-shrink-0">
+                      <Image
+                        src={download.workflow.creationImage ? download.workflow.creationImage : download.workflow.workflowImage}
+                        alt={download.workflow.title}
+                        fill
+                        className="object-cover"
+                      />
+                      <Badge className="absolute top-2 right-2 bg-primary/80">
+                        {download.workflow.category}
+                      </Badge>
+                    </div>
+
+                    <div className="flex-grow min-w-0">
+                      <Link
+                        href={`/workflow/${download.workflow.slug}`}
+                        className="hover:text-primary block"
+                      >
+                        <h3 className="font-semibold text-lg line-clamp-1">
+                          {download.workflow.title}
+                        </h3>
+                      </Link>
+
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="w-6 h-6 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                          <Image
+                            src={download.workflow.author.profileImage}
+                            alt={download.workflow.author.firstName}
+                            width={24}
+                            height={24}
+                          />
+                        </div>
+                        <span className="text-sm">
+                          {download.workflow.author.firstName}{" "}
+                          {download.workflow.author.lastName}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center text-sm text-muted-foreground mt-2">
+                        <Download className="h-4 w-4 mr-1.5" />
+                        {formatDistanceToNow(new Date(download.downloadedAt), {
+                          addSuffix: true,
+                        })}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex-grow min-w-0">
-                    <Link
-                      href={`/workflow/${download.workflow.slug}`}
-                      className="hover:text-primary block"
-                    >
-                      <h3 className="font-semibold text-lg line-clamp-1">
-                        {download.workflow.title}
-                      </h3>
-                    </Link>
-
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="w-6 h-6 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                        <Image
-                          src={download.workflow.author.profileImage}
-                          alt={download.workflow.author.firstName}
-                          width={24}
-                          height={24}
-                        />
-                      </div>
-                      <span className="text-sm">
-                        {download.workflow.author.firstName}{" "}
-                        {download.workflow.author.lastName}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center text-sm text-muted-foreground mt-2">
-                      <Download className="h-4 w-4 mr-1.5" />
-                      {formatDistanceToNow(new Date(download.downloadedAt), {
-                        addSuffix: true,
-                      })}
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                  {/* Bottom Section - Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-border/50">
+                    <div className="flex-1">
                       <WorkflowJsonDownloadButton
                         workflowContent={download.workflow.workFlowJson}
                         workflowId={download.id}
                         title={download.workflow.title}
                       />
-
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/workflow/${download.workflow.slug}`}>
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          <span>View</span>
-                        </Link>
-                      </Button>
                     </div>
+
+                    <Button variant="outline" size="sm" asChild className="flex-1">
+                      <Link href={`/workflow/${download.workflow.slug}`}>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        <span>View</span>
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               ))}

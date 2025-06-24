@@ -9,7 +9,6 @@ import {
   Flag,
   Edit3,
   Loader2,
-  Upload,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -181,65 +180,68 @@ const EditCardHelp = ({
   return (
     <Card className="border-2 border-orange-200 dark:border-orange-800 bg-white dark:bg-slate-950 mb-6 shadow-sm">
       <CardContent className="p-6 space-y-6">
-        {/* Header Section */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <Flag className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+        {/* Header Section - Centered */}
+        <div className="text-center space-y-3">
+          <div className="flex justify-center">
+            <div className="flex items-center justify-center w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+              <Flag className="h-6 w-6 text-orange-600 dark:text-orange-400" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                Important Information
-              </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Review the details below before proceeding
-              </p>
-            </div>
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              {displayStepTitle || "Important Information"}
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Review the details below before proceeding
+            </p>
           </div>
           <Separator className="bg-orange-200 dark:bg-orange-800" />
         </div>
 
-        {/* Step Description */}
+        {/* Step Description - Centered */}
         {displayStepDescription && (
-          <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
-            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-              {displayStepDescription}
-            </p>
+          <div className="text-center">
+            <div className="inline-block p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 max-w-2xl">
+              <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                {displayStepDescription}
+              </p>
+            </div>
           </div>
         )}
 
-        {/* Step Image Section */}
-        <div className="space-y-4">
-          {currentStepImage ? (
-            <div className="relative w-full max-w-md">
-              <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-                <Image
-                  src={currentStepImage as string}
-                  alt={(displayStepTitle as string) || "Step illustration"}
-                  width={400}
-                  height={0}
-                  className="w-full h-auto object-cover"
-                  sizes="400px"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="w-full max-w-md h-48 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <div className="mx-auto w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                  <FileText className="h-6 w-6 text-slate-500 dark:text-slate-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                    No image provided
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-500">
-                    Add an image to help illustrate this step
-                  </p>
+        {/* Step Image Section - Centered and Larger */}
+        <div className="flex justify-center">
+          <div className="space-y-4 w-full">
+            {currentStepImage ? (
+              <div className="relative w-4/5 mx-auto">
+                <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
+                  <Image
+                    src={currentStepImage as string}
+                    alt={(displayStepTitle as string) || "Step illustration"}
+                    width={600}
+                    height={400}
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="w-4/5 mx-auto h-48 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center">
+                <div className="text-center space-y-2">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                    <FileText className="h-6 w-6 text-slate-500 dark:text-slate-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                      No image provided
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-500">
+                      Add an image to help illustrate this step
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Help Text Section */}
@@ -271,6 +273,9 @@ const EditCardHelp = ({
               <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 Helpful Resources
               </h4>
+              <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">
+                (click to open)
+              </span>
             </div>
             <div className="flex flex-wrap gap-2">
               {displayHelpLinks.map((link: any, index: number) => (
@@ -279,15 +284,29 @@ const EditCardHelp = ({
                   variant="outline"
                   size="sm"
                   asChild
-                  className="text-xs border-orange-200 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-700 text-orange-700 dark:text-orange-300"
+                  className="text-xs border-orange-200 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-700 text-orange-700 dark:text-orange-300 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-sm"
                 >
                   <Link
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="no-underline hover:no-underline"
                   >
                     <Globe className="h-3 w-3 mr-1" />
                     {link.title}
+                    <svg 
+                      className="ml-1 h-3 w-3" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" 
+                      />
+                    </svg>
                   </Link>
                 </Button>
               ))}
@@ -308,7 +327,7 @@ const EditCardHelp = ({
             Update Card
           </h2>
 
-          {/* Image Update Section */}
+          {/* Image Update Section - Centered */}
           <div className="flex items-center justify-center">
             <ImageInputContainer
               image={currentStepImage as string}
@@ -397,11 +416,12 @@ const EditCardHelp = ({
                     Helpful Resources
                   </Label>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Add links to documentation, tutorials, or other helpful resources
+                    Add links to documentation, tutorials, or other helpful
+                    resources
                   </p>
 
                   {helpLinks.length === 0 && (
-                    <div 
+                    <div
                       className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 text-center hover:border-orange-400 dark:hover:border-orange-600 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 transition-all duration-200 cursor-pointer group"
                       onClick={addHelpLink}
                     >
