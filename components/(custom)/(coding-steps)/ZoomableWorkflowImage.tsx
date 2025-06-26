@@ -168,8 +168,8 @@ const ZoomableWorkflowImage: React.FC<ZoomableWorkflowImageProps> = ({
 
   return (
     <Card className={cn("w-full overflow-hidden", className)}>
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center justify-between">
+      <CardHeader >
+        <CardTitle className="flex items-center justify-between ">
           <div className="flex items-center gap-2">
             <ImageIcon className="w-5 h-5 text-primary" />
             <span>Workflow Overview</span>
@@ -183,12 +183,10 @@ const ZoomableWorkflowImage: React.FC<ZoomableWorkflowImageProps> = ({
             {Math.round(scale * 100)}%
           </div>
         </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Explore the complete workflow diagram with zoom and pan controls
-        </p>
+
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         <div className="flex items-center justify-between p-3 bg-gradient-to-r from-muted/50 to-muted/30 rounded-lg border">
           <div className="flex items-center gap-2">
             <Button
@@ -310,20 +308,7 @@ const ZoomableWorkflowImage: React.FC<ZoomableWorkflowImageProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-md">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span>Drag image to pan around</span>
-          </div>
-          <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-md">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span>Use floating +/- buttons to zoom</span>
-          </div>
-          <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-md">
-            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-            <span>Use buttons for precise control</span>
-          </div>
-        </div>
+
       </CardContent>
     </Card>
   );

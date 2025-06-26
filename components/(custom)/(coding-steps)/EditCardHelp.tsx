@@ -1,14 +1,18 @@
 import { Button } from "@/components/ui/button";
+
 import { OrderedWorkflowStep } from "@/utils/functions/WorkflowStepsInOrder";
 import {
-  FileText,
   Globe,
-  Info,
   Plus,
-  X,
-  Flag,
-  Edit3,
+  BookOpen,
+  Edit,
   Loader2,
+  ExternalLink,
+  ImageIcon,
+  Save,
+  Lightbulb,
+  Link as LinkIcon,
+  Trash2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -20,20 +24,18 @@ import { useRouter } from "next/navigation";
 
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+
 import Link from "next/link";
 import Image from "next/image";
 import ImageInputContainer from "../(dashboard)/Form/ImageInputContainer";
@@ -51,8 +53,9 @@ const EditCardHelp = ({
   onStepUpdated?: (updatedStep: Partial<OrderedWorkflowStep>) => void;
 }) => {
   const router = useRouter();
+  const [isEditMode, setIsEditMode] = useState(false);
 
-  // State for form fields (removed stepImage from form state)
+  // Form state
   const [stepTitle, setStepTitle] = useState(step.stepTitle || "");
   const [stepDescription, setStepDescription] = useState(
     (step.stepDescription as string) || ""
@@ -64,31 +67,22 @@ const EditCardHelp = ({
   );
   const [isLoading, setIsLoading] = useState(false);
 
-  // Listen for successful image updates
+  // Listen for image updates
   useEffect(() => {
     const handleImageUpdate = (event: CustomEvent) => {
       if (event.detail.stepId === step.id && event.detail.success) {
-        // Update the local state with the new image URL
         setStepImage(event.detail.imageUrl);
-
-        // Also update the parent component if callback is provided
         if (onStepUpdated) {
-          onStepUpdated({
-            stepImage: event.detail.imageUrl,
-          });
+          onStepUpdated({ stepImage: event.detail.imageUrl });
         }
-
         toast.success("Image updated successfully!");
       }
     };
 
-    // Listen for the custom event
     window.addEventListener(
       "stepImageUpdated",
       handleImageUpdate as EventListener
     );
-
-    // Cleanup
     return () => {
       window.removeEventListener(
         "stepImageUpdated",
@@ -119,12 +113,10 @@ const EditCardHelp = ({
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // Filter out incomplete links before saving
       const validHelpLinks = helpLinks.filter(
         (link) => link.title.trim() && link.url.trim()
       );
 
-      // Only save text fields, not image (image is handled separately)
       const result = await updateWorkflowStepAction(step.id, {
         stepTitle,
         stepDescription,
@@ -133,9 +125,7 @@ const EditCardHelp = ({
       });
 
       if (result.success) {
-        toast.success(result.message);
-
-        // Option 1: Update parent component with new data (if callback provided)
+        toast.success("Tutorial updated successfully!");
         if (onStepUpdated) {
           onStepUpdated({
             stepTitle,
@@ -144,17 +134,8 @@ const EditCardHelp = ({
             helpLinks: validHelpLinks,
           });
         }
-
-        // Option 2: Force a router refresh to get fresh data from server
         router.refresh();
-
-        // Close the dialog on success
-        const closeButton = document.querySelector(
-          "[data-dialog-close]"
-        ) as HTMLButtonElement;
-        if (closeButton) {
-          closeButton.click();
-        }
+        setIsEditMode(false);
       } else {
         toast.error(result.message);
       }
@@ -166,98 +147,119 @@ const EditCardHelp = ({
     }
   };
 
-  // Use the current form state values for display instead of original step data
-  const displayStepTitle = stepTitle || step.stepTitle;
-  const displayStepDescription =
-    stepDescription || (step.stepDescription as string);
-  const displayHelpText = helpText || (step.helpText as string);
+  const resetForm = () => {
+    setStepTitle(step.stepTitle || "");
+    setStepDescription((step.stepDescription as string) || "");
+    setHelpText((step.helpText as string) || "");
+    setHelpLinks((step.helpLinks as HelpLink[]) || []);
+  };
+
+  const handleCancel = () => {
+    resetForm();
+    setIsEditMode(false);
+  };
+
+  const displayTitle = stepTitle || step.stepTitle || "Untitled Step";
+  const displayDescription =
+    stepDescription || (step.stepDescription as string) || "";
+  const displayHelpText = helpText || (step.helpText as string) || "";
   const displayHelpLinks =
     helpLinks.length > 0 ? helpLinks : (step.helpLinks as HelpLink[]) || [];
-
-  // Use stepImage state for current display, fallback to step.stepImage
-  const currentStepImage = stepImage || step.stepImage;
+  const currentImage = stepImage || step.stepImage;
 
   return (
-    <Card className="border-2 border-orange-200 dark:border-orange-800 bg-white dark:bg-slate-950 mb-6 shadow-sm">
-      <CardContent className="p-6 space-y-6">
-        {/* Header Section - Centered */}
-        <div className="text-center space-y-3">
-          <div className="flex justify-center">
-            <div className="flex items-center justify-center w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <Flag className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-            </div>
+    <Card className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-all duration-300">
+      {/* Header */}
+      <CardHeader className="relative pb-3">
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+            <BookOpen className="h-4 w-4 text-white" />
           </div>
-          <div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-              {displayStepTitle || "Important Information"}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white leading-tight">
+              {displayTitle}
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Review the details below before proceeding
-            </p>
           </div>
-          <Separator className="bg-orange-200 dark:bg-orange-800" />
         </div>
+      </CardHeader>
 
-        {/* Step Description - Centered */}
-        {displayStepDescription && (
-          <div className="text-center">
-            <div className="inline-block p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 max-w-2xl">
-              <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                {displayStepDescription}
-              </p>
-            </div>
+      <CardContent className="space-y-6">
+        {/* Main Description */}
+        {displayDescription && (
+          <div className="prose prose-sm max-w-none">
+            <p className="text-slate-900 dark:text-slate-100 leading-relaxed">
+              {displayDescription}
+            </p>
           </div>
         )}
 
-        {/* Step Image Section - Centered and Larger */}
-        <div className="flex justify-center">
-          <div className="space-y-4 w-full">
-            {currentStepImage ? (
-              <div className="relative w-4/5 mx-auto">
-                <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
-                  <Image
-                    src={currentStepImage as string}
-                    alt={(displayStepTitle as string) || "Step illustration"}
-                    width={600}
-                    height={400}
-                    className="w-full h-auto object-cover"
-                  />
-                </div>
+        {/* Image Section */}
+        <div className="space-y-3">
+          {currentImage ? (
+            <div className="relative">
+              <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm">
+                <Image
+                  src={currentImage as string}
+                  alt={displayTitle}
+                  width={800}
+                  height={400}
+                  className="w-full h-auto object-cover"
+                />
               </div>
-            ) : (
-              <div className="w-4/5 mx-auto h-48 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center">
-                <div className="text-center space-y-2">
-                  <div className="mx-auto w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                    <FileText className="h-6 w-6 text-slate-500 dark:text-slate-400" />
+            </div>
+          ) : (
+            <div className="relative group/empty">
+              <div className="h-52 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center transition-all duration-300 group-hover/empty:border-blue-400 dark:group-hover/empty:border-blue-600 group-hover/empty:bg-gradient-to-br group-hover/empty:from-blue-50 group-hover/empty:to-slate-50 dark:group-hover/empty:from-blue-950/20 dark:group-hover/empty:to-slate-800">
+                <div className="text-center space-y-4">
+                  <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-600 dark:to-slate-500 flex items-center justify-center shadow-sm group-hover/empty:from-blue-200 group-hover/empty:to-blue-300 dark:group-hover/empty:from-blue-600 dark:group-hover/empty:to-blue-500 transition-all duration-300">
+                    <ImageIcon className="h-8 w-8 text-slate-500 dark:text-slate-400 group-hover/empty:text-blue-600 dark:group-hover/empty:text-blue-300 transition-colors duration-300" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                      No image provided
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-200 group-hover/empty:text-blue-700 dark:group-hover/empty:text-blue-300 transition-colors duration-300">
+                      No visual guide available
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-500">
-                      Add an image to help illustrate this step
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 group-hover/empty:text-blue-600 dark:group-hover/empty:text-blue-400 transition-colors duration-300">
+                      Upload an image to enhance this tutorial step
                     </p>
+                  </div>
+
+                  {/* Call to action hint */}
+                  <div className="opacity-0 group-hover/empty:opacity-100 transition-opacity duration-300">
+                    <div className="inline-flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                      </svg>
+                      <span>Use "Update Image" below</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* Help Text Section */}
+        {/* Help Text */}
         {displayHelpText && (
-          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <div className="p-4 bg-primary/20 border border-amber-200 dark:border-slate-600 rounded-xl">
             <div className="flex items-start gap-3">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/50 rounded-lg flex items-center justify-center">
-                  <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                </div>
+              <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shadow-sm">
+                <Lightbulb className="h-4 w-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-2">
-                  Additional Information
+                <h4 className="text-sm font-semibold text-amber-900 dark:text-slate-200 mb-2">
+                  Pro Tips
                 </h4>
-                <p className="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">
+                <p className="text-sm text-amber-800 dark:text-slate-300 leading-relaxed">
                   {displayHelpText}
                 </p>
               </div>
@@ -265,26 +267,23 @@ const EditCardHelp = ({
           </div>
         )}
 
-        {/* Help Links Section */}
+        {/* Help Links */}
         {displayHelpLinks && displayHelpLinks.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Globe className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+              <LinkIcon className="h-4 w-4 text-slate-600 dark:text-slate-100" />
               <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                Helpful Resources
+                Additional Resources
               </h4>
-              <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">
-                (click to open)
-              </span>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2">
               {displayHelpLinks.map((link: any, index: number) => (
                 <Button
                   key={index}
                   variant="outline"
                   size="sm"
                   asChild
-                  className="text-xs border-orange-200 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-700 text-orange-700 dark:text-orange-300 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-sm"
+                  className="justify-start h-auto p-3 border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-800 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 group/link"
                 >
                   <Link
                     href={link.url}
@@ -292,21 +291,20 @@ const EditCardHelp = ({
                     rel="noopener noreferrer"
                     className="no-underline hover:no-underline"
                   >
-                    <Globe className="h-3 w-3 mr-1" />
-                    {link.title}
-                    <svg 
-                      className="ml-1 h-3 w-3" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" 
-                      />
-                    </svg>
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-slate-700 rounded-lg flex items-center justify-center group-hover/link:bg-blue-100 dark:group-hover/link:bg-blue-900 transition-colors">
+                        <Globe className="h-4 w-4 text-slate-600 dark:text-slate-400 group-hover/link:text-blue-600 dark:group-hover/link:text-blue-400" />
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                          {link.title}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-200 truncate">
+                          {link.url}
+                        </p>
+                      </div>
+                      <ExternalLink className="h-4 w-4 text-slate-400 group-hover/link:text-blue-500 transition-colors" />
+                    </div>
                   </Link>
                 </Button>
               ))}
@@ -314,228 +312,201 @@ const EditCardHelp = ({
           </div>
         )}
 
-        <Separator />
-
-        {/* Update Section */}
-        <div className="space-y-4 p-4 bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg relative">
-          {/* Editable indicator */}
-          <div className="absolute top-2 right-2 flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 font-medium">
-            <Edit3 className="h-3 w-3" />
-            <span>Editable</span>
-          </div>
-          <h2 className="text-xl font-semibold text-center text-slate-900 dark:text-slate-100">
-            Update Card
-          </h2>
-
-          {/* Image Update Section - Centered */}
-          <div className="flex items-center justify-center">
-            <ImageInputContainer
-              image={currentStepImage as string}
-              name={"image"}
-              text="Change Image"
-              stepId={step.id}
-              action={updateWorkflowStepImageAction}
-            />
-          </div>
-
-          {/* Edit Step Details Button */}
-          <Dialog>
-            <DialogTrigger asChild>
+        {/* Edit Mode Toggle */}
+        {!isEditMode && (
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-600">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ImageInputContainer
+                  image={currentImage as string}
+                  name="image"
+                  text="Update Image"
+                  stepId={step.id}
+                  action={updateWorkflowStepImageAction}
+                />
+              </div>
               <Button
                 variant="default"
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white border-0"
-                size="lg"
+                onClick={() => setIsEditMode(true)}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-sm"
               >
-                <Edit3 className="h-4 w-4 mr-2" />
-                Edit Step Details
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Details
               </Button>
-            </DialogTrigger>
-            <DialogContent className="border-2 border-orange-200 dark:border-orange-800 sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-              <DialogHeader className="space-y-3">
-                <DialogTitle className="flex items-center gap-2 text-xl">
-                  <Flag className="h-5 w-5 text-orange-600" />
-                  Edit Step Details
-                </DialogTitle>
-                <DialogDescription className="text-base">
-                  Customize this workflow step to provide better guidance and
-                  context for learners.
-                </DialogDescription>
-              </DialogHeader>
+            </div>
+          </div>
+        )}
+      </CardContent>
 
-              <div className="space-y-6 py-4">
-                {/* Step Title */}
-                <div className="space-y-2">
-                  <Label htmlFor="stepTitle" className="text-sm font-medium">
-                    Step Title
-                  </Label>
-                  <Input
-                    id="stepTitle"
-                    value={stepTitle as string}
-                    onChange={(e) => setStepTitle(e.target.value)}
-                    placeholder="Enter a clear, descriptive title"
-                    className="text-base"
-                  />
+      {/* Edit Mode Dialog */}
+      <Dialog open={isEditMode} onOpenChange={setIsEditMode}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Edit className="h-5 w-5 text-blue-600" />
+              Edit Tutorial Step
+            </DialogTitle>
+            <DialogDescription>
+              Customize this tutorial step to provide better guidance and
+              context.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Title */}
+            <div className="space-y-2">
+              <Label htmlFor="title" className="text-sm font-medium">
+                Step Title
+              </Label>
+              <Input
+                id="title"
+                value={stepTitle}
+                onChange={(e) => setStepTitle(e.target.value)}
+                placeholder="Enter a clear, descriptive title"
+                className="text-base"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-sm font-medium">
+                Step Description
+              </Label>
+              <Textarea
+                id="description"
+                value={stepDescription}
+                onChange={(e) => setStepDescription(e.target.value)}
+                placeholder="Explain what this step teaches or accomplishes..."
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+
+            {/* Help Text */}
+            <div className="space-y-2">
+              <Label htmlFor="helpText" className="text-sm font-medium">
+                Pro Tips & Additional Info
+              </Label>
+              <Textarea
+                id="helpText"
+                value={helpText}
+                onChange={(e) => setHelpText(e.target.value)}
+                placeholder="Share helpful tips, troubleshooting advice, or important notes..."
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+
+            {/* Help Links */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">
+                  Learning Resources
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addHelpLink}
+                  className="h-8"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Resource
+                </Button>
+              </div>
+
+              {helpLinks.length === 0 ? (
+                <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
+                  No resources added yet. Click "Add Resource" to include
+                  helpful links.
                 </div>
-
-                {/* Step Description */}
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="stepDescription"
-                    className="text-sm font-medium"
-                  >
-                    Step Description
-                  </Label>
-                  <Textarea
-                    id="stepDescription"
-                    value={stepDescription}
-                    onChange={(e) => setStepDescription(e.target.value)}
-                    placeholder="Explain what this step accomplishes and any important details..."
-                    rows={4}
-                    className="resize-none"
-                  />
-                </div>
-
-                {/* Help Text */}
-                <div className="space-y-2">
-                  <Label htmlFor="helpText" className="text-sm font-medium">
-                    Additional Information
-                  </Label>
-                  <Textarea
-                    id="helpText"
-                    value={helpText}
-                    onChange={(e) => setHelpText(e.target.value)}
-                    placeholder="Provide helpful tips, troubleshooting advice, or important notes..."
-                    rows={4}
-                    className="resize-none"
-                  />
-                </div>
-
-                {/* Help Links */}
-                <div className="space-y-4">
-                  <Label className="text-sm font-medium">
-                    Helpful Resources
-                  </Label>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Add links to documentation, tutorials, or other helpful
-                    resources
-                  </p>
-
-                  {helpLinks.length === 0 && (
+              ) : (
+                <div className="space-y-3">
+                  {helpLinks.map((link, index) => (
                     <div
-                      className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 text-center hover:border-orange-400 dark:hover:border-orange-600 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 transition-all duration-200 cursor-pointer group"
-                      onClick={addHelpLink}
+                      key={index}
+                      className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900/50 space-y-3"
                     >
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30 transition-colors">
-                          <Globe className="h-6 w-6 text-slate-400 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors" />
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          Resource #{index + 1}
+                        </h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeHelpLink(index)}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                            Title
+                          </Label>
+                          <Input
+                            value={link.title}
+                            onChange={(e) =>
+                              updateHelpLink(index, "title", e.target.value)
+                            }
+                            placeholder="e.g., Official Documentation"
+                            className="text-sm"
+                          />
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">
-                            Add your first resource link
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                            Click here to add helpful documentation or tutorials
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Plus className="h-3 w-3" />
-                          <span>Add Link</span>
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                            URL
+                          </Label>
+                          <Input
+                            value={link.url}
+                            onChange={(e) =>
+                              updateHelpLink(index, "url", e.target.value)
+                            }
+                            placeholder="https://example.com"
+                            type="url"
+                            className="text-sm"
+                          />
                         </div>
                       </div>
                     </div>
-                  )}
-
-                  {helpLinks.length > 0 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addHelpLink}
-                      className="w-full text-sm border-dashed border-slate-300 dark:border-slate-600 hover:border-orange-400 dark:hover:border-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 transition-all duration-200"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Another Link
-                    </Button>
-                  )}
-
-                  <div className="space-y-3">
-                    {helpLinks.map((link, index) => (
-                      <div
-                        key={index}
-                        className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900/50 space-y-3"
-                      >
-                        <div className="flex gap-3 items-end">
-                          <div className="flex-1 space-y-2">
-                            <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                              Link Title
-                            </Label>
-                            <Input
-                              value={link.title}
-                              onChange={(e) =>
-                                updateHelpLink(index, "title", e.target.value)
-                              }
-                              placeholder="e.g., Official Documentation"
-                              className="text-sm"
-                            />
-                          </div>
-                          <div className="flex-1 space-y-2">
-                            <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                              URL
-                            </Label>
-                            <Input
-                              value={link.url}
-                              onChange={(e) =>
-                                updateHelpLink(index, "url", e.target.value)
-                              }
-                              placeholder="https://docs.example.com"
-                              type="url"
-                              className="text-sm"
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeHelpLink(index)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  ))}
                 </div>
-              </div>
+              )}
+            </div>
+          </div>
 
-              <DialogFooter className="pt-6 border-t border-slate-200 dark:border-slate-700">
-                <DialogClose asChild>
-                  <Button type="button" variant="outline" data-dialog-close>
-                    Cancel
-                  </Button>
-                </DialogClose>
-
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={handleSave}
-                  disabled={isLoading}
-                  className="bg-orange-600 hover:bg-orange-700 text-white"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </CardContent>
+          <DialogFooter className="pt-6 border-t border-slate-200 dark:border-slate-600">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={isLoading}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

@@ -188,12 +188,20 @@ export default function MarkCompletedButton({
               Start Your Learning Journey
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Sign in to track completions, earn achievements, and build your automation portfolio
+              Sign in to track completions, earn achievements, and build your
+              automation portfolio
             </p>
           </div>
 
-          <Button variant="default" asChild className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg">
-            <Link href="/sign-in" className="gap-2 flex items-center justify-center">
+          <Button
+            variant="default"
+            asChild
+            className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg"
+          >
+            <Link
+              href="/sign-in"
+              className="gap-2 flex items-center justify-center"
+            >
               <Rocket className="h-4 w-4" />
               Join & Start Learning
             </Link>
@@ -218,7 +226,7 @@ export default function MarkCompletedButton({
   // Completed state with enhanced design
   if (isCompleted) {
     return (
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden py-2">
         {/* Background effects */}
         <div className="absolute inset-0 bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-green-50/80 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-green-950/30 rounded-xl">
           <div className="absolute top-4 right-4 w-20 h-20 bg-green-400/20 rounded-full blur-2xl animate-pulse" />
@@ -273,7 +281,8 @@ export default function MarkCompletedButton({
               </p>
               {completedAt && (
                 <p className="text-xs text-green-600 dark:text-green-400">
-                  Completed {formatDistanceToNow(completedAt, { addSuffix: true })}
+                  Completed{" "}
+                  {formatDistanceToNow(completedAt, { addSuffix: true })}
                 </p>
               )}
             </div>
@@ -284,7 +293,10 @@ export default function MarkCompletedButton({
                 asChild
                 className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg"
               >
-                <Link href="/dashboard/myCompletions" className="flex items-center gap-2">
+                <Link
+                  href="/dashboard/myCompletions"
+                  className="flex items-center gap-2"
+                >
                   <BarChart3 className="h-4 w-4" />
                   View All Progress
                 </Link>
@@ -305,24 +317,25 @@ export default function MarkCompletedButton({
             {/* Encouragement message */}
             <div className="text-center bg-green-100/50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200/50">
               <p className="text-xs text-green-700 dark:text-green-300 font-medium">
-                🚀 You're building serious automation skills! Keep the momentum going with more tutorials
+                🚀 You're building serious automation skills! Keep the momentum
+                going with more tutorials
               </p>
             </div>
           </div>
         </div>
 
-        {/* Reset option (smaller and less prominent) */}
+        {/* Reset option - FIXED: Better positioning and styling */}
         {showRemoveOption && (
-          <div className="flex justify-center mt-3">
+          <div className="relative z-50 flex justify-center mt-4">
             <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
               <DialogTrigger asChild>
                 <Button
-                  variant='outline'
+                  variant="outline"
                   size="sm"
-                  className="text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100 transition-all text-xs"
+                  className="relative z-50 bg-background/90 backdrop-blur-sm border-2 border-muted hover:border-primary/50 hover:bg-background text-muted-foreground hover:text-foreground transition-all duration-200 shadow-sm hover:shadow-md"
                 >
-                  <RotateCcw className="h-3 w-3 mr-1" />
-                  Reset status
+                  <RotateCcw className="h-3 w-3 mr-2" />
+                  Reset Status
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
@@ -332,7 +345,9 @@ export default function MarkCompletedButton({
                     Reset Completion Status
                   </DialogTitle>
                   <DialogDescription>
-                    Remove &quot;{workflowTitle}&quot; from your completed workflows?
+                    Remove &quot;{workflowTitle}&quot; from your completed
+                    workflows? This action will reset your progress for this
+                    tutorial.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="gap-2 sm:gap-0">
@@ -384,12 +399,11 @@ export default function MarkCompletedButton({
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Target className="h-5 w-5 text-primary" />
-            <h3 className="font-bold text-primary">
-              Complete This Challenge
-            </h3>
+            <h3 className="font-bold text-primary">Complete This Challenge</h3>
           </div>
           <p className="text-sm text-muted-foreground">
-            Finish this tutorial and add it to your growing automation skillset! 🎯
+            Finish this tutorial and add it to your growing automation skillset!
+            🎯
           </p>
         </div>
 

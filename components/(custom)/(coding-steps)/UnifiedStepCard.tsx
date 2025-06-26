@@ -16,7 +16,6 @@ import {
   ChevronDown,
   ChevronUp,
   Zap,
-  Hash,
   Code,
   Globe,
   Brain,
@@ -30,7 +29,7 @@ import {
   Check,
   Copy,
   Download,
-  ThumbsUp,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import EditCardHelp from "./EditCardHelp";
@@ -804,7 +803,7 @@ export default function UnifiedStepCard({
   return (
     <Card
       className={cn(
-        "transition-all duration-300 pt-0 relative overflow-hidden py-0 my-2",
+        "transition-all duration-300 pt-0 relative overflow-hidden py-0 ",
         colors.border,
         colors.bg,
         colors.isViewed && "ring-2 ring-primary/20 shadow-md",
@@ -814,206 +813,324 @@ export default function UnifiedStepCard({
           "dark:from-green-950/30 dark:via-emerald-950/30 dark:to-green-950/30",
           "border-2 border-green-400/60 shadow-xl shadow-green-500/25",
           "dark:border-green-500/50 dark:shadow-green-400/15",
-          "before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-green-200/20 before:to-transparent",
-          "before:animate-pulse before:pointer-events-none before:rounded-lg",
+          // ✅ Removed the flashing animation lines
         ]
       )}
     >
       {/* Card Header - Always Visible */}
       <CardHeader
         className={cn(
-          "pb-3 transition-all duration-300 relative z-10 py-4",
+          "pb-2 transition-all duration-300 relative z-10 py-4",
           colors.headerBg
         )}
       >
         <div className="flex flex-col gap-3">
           {/* Main Content Row */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="flex-1 min-w-0 order-2 sm:order-1">
+              <div className="flex items-center gap-3 mb-2">
                 {getStepIcon()}
-                <h4 className="font-semibold text-lg truncate">{step.name}</h4>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-lg truncate">
+                    {step.name}
+                  </h4>
+                  {/* Add helpful description based on node type */}
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {(() => {
+                      const category = getNodeCategory(step.type);
+                      switch (category) {
+                        case "ai":
+                          return "Processes text using AI/LLM models for chat, completion, or analysis";
+                        case "http":
+                          return "Makes HTTP requests to APIs and external services";
+                        case "code":
+                          return "Executes custom JavaScript or Python code logic";
+                        case "database":
+                          return "Connects to and queries databases for data operations";
+                        case "email":
+                          return "Sends, receives, or processes email messages";
+                        case "file":
+                          return "Handles file operations, uploads, downloads, and processing";
+                        case "social":
+                          return "Integrates with social platforms and messaging services";
+                        default:
+                          if (step.isTrigger) {
+                            return "Starts the workflow when specific conditions are met";
+                          }
+                          return "Performs specialized workflow operations";
+                      }
+                    })()}
+                  </p>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className={cn("text-xs", colors.text)}>
+              {/* Enhanced Badge Row with Better Organization */}
+              <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                {/* Primary Type Badge - Always First */}
+                <Badge
+                  variant="outline"
+                  className={cn("text-xs font-medium", colors.text)}
+                >
                   {getNodeTypeDisplay(step.type)}
                 </Badge>
 
-                {/* Category Badge */}
+                {/* Category Badge - Second Priority */}
                 {colors.category !== "default" &&
-                  colors.category !== "trigger" &&
-                  colors.category !== "disconnected" && (
-                    <Badge
-                      className={cn("text-xs text-white capitalize", {
-                        "bg-blue-500 hover:bg-blue-600":
-                          colors.category === "http",
-                        "bg-purple-500 hover:bg-purple-600":
-                          colors.category === "ai",
-                        "bg-green-500 hover:bg-green-600":
-                          colors.category === "code",
-                        "bg-orange-500 hover:bg-orange-600":
-                          colors.category === "database",
-                        "bg-red-500 hover:bg-red-600":
-                          colors.category === "email",
-                        "bg-indigo-500 hover:bg-indigo-600":
-                          colors.category === "file",
-                        "bg-pink-500 hover:bg-pink-600":
-                          colors.category === "social",
-                      })}
-                    >
-                      {colors.category}
-                    </Badge>
-                  )}
+                colors.category !== "trigger" &&
+                colors.category !== "disconnected" ? (
+                  <Badge
+                    className={cn("text-xs text-white capitalize font-medium", {
+                      "bg-blue-500 hover:bg-blue-600":
+                        colors.category === "http",
+                      "bg-purple-500 hover:bg-purple-600":
+                        colors.category === "ai",
+                      "bg-green-500 hover:bg-green-600":
+                        colors.category === "code",
+                      "bg-orange-500 hover:bg-orange-600":
+                        colors.category === "database",
+                      "bg-red-500 hover:bg-red-600":
+                        colors.category === "email",
+                      "bg-indigo-500 hover:bg-indigo-600":
+                        colors.category === "file",
+                      "bg-pink-500 hover:bg-pink-600":
+                        colors.category === "social",
+                    })}
+                  >
+                    {colors.category}
+                  </Badge>
+                ) : null}
 
-                {step.isTrigger && (
-                  <Badge className="text-xs bg-amber-500 hover:bg-amber-600 text-white">
+                {/* Status Badges - High Priority Alerts */}
+                {step.isTrigger ? (
+                  <Badge className="text-xs bg-amber-500 hover:bg-amber-600 text-white font-medium">
+                    <Zap className="h-3 w-3 mr-1" />
                     Trigger
                   </Badge>
-                )}
+                ) : null}
 
-                {step.isStartingNode && !step.isTrigger && (
-                  <Badge className="text-xs bg-green-500 hover:bg-green-600 text-white">
-                    Start
-                  </Badge>
-                )}
-
-                {step.isDisconnected && (
-                  <Badge variant="destructive" className="text-xs">
+                {step.isDisconnected ? (
+                  <Badge variant="destructive" className="text-xs font-medium">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
                     Disconnected
                   </Badge>
-                )}
+                ) : null}
 
-                {hasParameters && (
+                {step.isStartingNode && !step.isTrigger ? (
+                  <Badge className="text-xs bg-green-500 hover:bg-green-600 text-white font-medium">
+                    <ArrowRight className="h-3 w-3 mr-1" />
+                    Entry Point
+                  </Badge>
+                ) : null}
+
+                {/* Configuration Info - Lower Priority */}
+                {hasParameters ? (
                   <Badge variant="secondary" className="text-xs">
-                    {parameterCount} parameter{parameterCount !== 1 ? "s" : ""}
+                    <Settings className="h-3 w-3 mr-1" />
+                    {parameterCount} config{parameterCount !== 1 ? "s" : ""}
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="text-xs text-muted-foreground"
+                  >
+                    <Check className="h-3 w-3 mr-1" />
+                    No config needed
                   </Badge>
                 )}
+
+                {/* Add complexity indicator for AI and Code nodes */}
+                {isAINode() &&
+                  (() => {
+                    const prompts = getAIPrompts();
+                    if (
+                      prompts &&
+                      (prompts.system || prompts.user || prompts.text)
+                    ) {
+                      const totalChars =
+                        (prompts.system?.length || 0) +
+                        (prompts.user?.length || 0) +
+                        (prompts.text?.length || 0);
+                      const estimatedTokens = Math.ceil(totalChars / 4);
+                      if (estimatedTokens > 0) {
+                        return (
+                          <Badge variant="outline" className="text-xs">
+                            <Brain className="h-3 w-3 mr-1" />~
+                            {estimatedTokens.toLocaleString()} tokens
+                          </Badge>
+                        );
+                      }
+                    }
+                    return null;
+                  })()}
+
+                {isCodeNode() &&
+                  (() => {
+                    const codeContent = getCodeContent();
+                    if (codeContent) {
+                      const lines = codeContent.code.split("\n").length;
+                      return (
+                        <Badge variant="outline" className="text-xs">
+                          <Code className="h-3 w-3 mr-1" />
+                          {lines} lines
+                        </Badge>
+                      );
+                    }
+                    return null;
+                  })()}
               </div>
             </div>
           </div>
 
-          {/* Action Buttons - Always visible, responsive layout */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-            <div className="flex gap-2 flex-wrap justify-end">
-              {isHTTPNode() && hasParameters && (
+          <Separator className="my-2" />
+
+          {/* Enhanced Action Buttons with Better Hierarchy */}
+
+          <div className="flex flex-col gap-2 order-1 sm:order-2 sm:flex-row sm:justify-end">
+            <div className="flex gap-2 sm:gap-4 flex-wrap justify-stretch sm:justify-end">
+              {/* Primary Action - Most Important */}
+              {isHTTPNode() && hasParameters ? (
                 <Button
-                  variant="destructive"
+                  variant="default"
                   size="sm"
                   onClick={copyToClipboard}
-                  className="gap-1 text-xs flex-1 sm:flex-none min-w-0"
-                  title="Copy as cURL command for testing"
+                  className="gap-2 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[100px] flex-1 sm:flex-none"
+                  title="Copy as cURL command for testing this HTTP request"
                 >
                   {copied ? (
                     <>
-                      <Check className="h-3 w-3 flex-shrink-0" />
-                      Copied!
+                      <Check className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span className="truncate">Copied cURL!</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="h-3 w-3 flex-shrink-0" />
-                      Copy cURL
+                      <Globe className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span className="truncate">
+                        <span className="hidden sm:inline">Test with </span>cURL
+                      </span>
                     </>
                   )}
                 </Button>
-              )}
+              ) : null}
 
+              {/* Secondary Action - Export Node */}
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={copyNodeData}
-                className="gap-1 text-xs font-medium bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border-blue-200 text-blue-700 shadow-sm flex-1 sm:flex-none min-w-0"
-                title="Copy this node to use in your own n8n workflow"
+                className="gap-2 text-xs font-medium bg-gradient-to-r from-emerald-50 to-green-50 hover:from-emerald-100 hover:to-green-100 border-emerald-200 text-emerald-700 shadow-sm min-w-[100px] flex-1 sm:flex-none"
+                title="Copy this node configuration to use in your own n8n workflow"
               >
                 {nodeCopied ? (
                   <>
-                    <Check className="h-3 w-3 flex-shrink-0" />
-                    Copied!
+                    <Check className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="truncate">Exported!</span>
                   </>
                 ) : (
                   <>
-                    <Download className="h-3 w-3 flex-shrink-0" />
-                    Export Node
+                    <Download className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="truncate">
+                      Export<span className="hidden sm:inline"> Node</span>
+                    </span>
                   </>
                 )}
               </Button>
 
+              {/* Tertiary Action - Expand/Collapse */}
               <Button
-                variant="default"
+                variant="destructive"
                 size="sm"
                 onClick={handleToggleExpanded}
-                className="transition-all duration-200 gap-1 flex-1 sm:flex-none min-w-0"
-                title={isExpanded ? "Hide step details" : "Show step details"}
+                className="transition-all duration-200 gap-2 hover:bg-muted/50 min-w-[90px] flex-1 sm:flex-none"
+                title={
+                  isExpanded
+                    ? "Hide detailed configuration"
+                    : "Show detailed configuration and code"
+                }
               >
                 {isExpanded ? (
                   <>
-                    <ChevronUp className="h-3 w-3 flex-shrink-0" />
-                    Hide Details
+                    <ChevronUp className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="truncate">
+                      Hide<span className="hidden sm:inline"> Details</span>
+                    </span>
                   </>
                 ) : (
                   <>
-                    <ChevronDown className="h-3 w-3 flex-shrink-0" />
-                    Show Details
+                    <ChevronDown className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="truncate">
+                      View<span className="hidden sm:inline"> Details</span>
+                    </span>
                   </>
                 )}
               </Button>
             </div>
           </div>
+
+          {/* Add Connection Hints for Better Workflow Building */}
+          {!isExpanded &&
+          step.connectionInfo &&
+          (step.connectionInfo.nextSteps.length > 0 ||
+            step.connectionInfo.previousSteps.length > 0) ? (
+            <div className="mt-2 p-2 bg-muted/30 rounded-lg border border-muted/50">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <ArrowRight className="h-3 w-3" />
+                <span className="font-medium">Connections:</span>
+                {step.connectionInfo.previousSteps.length > 0 && (
+                  <span>
+                    ← {step.connectionInfo.previousSteps.length} input
+                    {step.connectionInfo.previousSteps.length !== 1 ? "s" : ""}
+                  </span>
+                )}
+                {step.connectionInfo.nextSteps.length > 0 && (
+                  <span>
+                    → {step.connectionInfo.nextSteps.length} output
+                    {step.connectionInfo.nextSteps.length !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : null}
         </div>
       </CardHeader>
 
       {/* Card Content - Only Show When Expanded */}
-      {isExpanded && (
-      <CardContent className="pt-3">
+      {isExpanded ? (
+        <CardContent className="py-6">
           {/* Step Information Section =================>>>>>>>>>>>> */}
 
           <EditCardHelp step={step} />
 
-          {/* Basic Information */}
-          <div className="space-y-2 text-sm">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                <Hash className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Node ID:</span>
-                <code className="bg-muted px-2 py-1 rounded text-xs">
-                  {step.id}
-                </code>
-              </div>
+          {/* Basic Information section removed - users don't need to see technical IDs and positions */}
 
-              <div className="flex items-center gap-2">
-                <Code className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Type:</span>
-                <code className="bg-muted px-2 py-1 rounded text-xs">
-                  {step.type}
-                </code>
-              </div>
-            </div>
-
-            {step.position && (
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Position:</span>
-                <code className="bg-muted px-2 py-1 rounded text-xs">
-                  x: {step.position[0]}, y: {step.position[1]}
-                </code>
-              </div>
-            )}
-          </div>
-
-          {isHTTPNode() && hasParameters && copied && (
-            <div>
+          {/* cURL Command Section - Enhanced Visibility */}
+          {isHTTPNode() && hasParameters && copied ? (
+            <div className="mt-6">
               <Separator className="my-4" />
-              <div className="space-y-3">
-                <h5 className="font-medium flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-blue-500" />
-                  Generated cURL Command
-                </h5>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/10 rounded-lg">
+                    <Globe className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-base">
+                      Generated cURL Command
+                    </h5>
+                    <p className="text-xs text-muted-foreground">
+                      Ready to test in your terminal
+                    </p>
+                  </div>
+                </div>
 
-                <div className="bg-slate-950 dark:bg-slate-900 p-4 rounded-lg border border-slate-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                <div className="bg-slate-950 dark:bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 bg-slate-900 dark:bg-slate-800 border-b border-slate-700">
+                    <div className="flex items-center gap-3">
+                      <div className="flex gap-1.5">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      </div>
                       <span className="text-xs text-slate-400 font-mono">
-                        HTTP Request
+                        Terminal
                       </span>
                     </div>
                     <Button
@@ -1022,438 +1139,476 @@ export default function UnifiedStepCard({
                       onClick={() => {
                         navigator.clipboard.writeText(generateCurlCommand());
                       }}
-                      className="h-6 px-2 text-xs text-slate-400 hover:text-slate-200"
+                      className="h-7 px-3 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-colors"
                     >
+                      <Copy className="h-3 w-3 mr-1" />
                       Copy
                     </Button>
                   </div>
 
-                  <ScrollArea className="h-40 w-full">
-                    <pre className="text-sm text-slate-100 font-mono leading-relaxed whitespace-pre overflow-x-auto">
+                  <ScrollArea className="h-48 w-full">
+                    <pre className="p-4 text-sm text-slate-100 font-mono leading-relaxed whitespace-pre overflow-x-auto">
                       <code>{generateCurlCommand()}</code>
                     </pre>
                   </ScrollArea>
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
 
-          {/* Disconnected Warning */}
-          {step.isDisconnected && (
-            <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <div className="flex items-center gap-2 text-destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm font-medium">Disconnected Node</span>
+          {/* Disconnected Warning - Enhanced Alert */}
+          {step.isDisconnected ? (
+            <div className="mt-6">
+              <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-destructive/10 rounded-lg">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                  </div>
+                  <div className="space-y-1">
+                    <h6 className="font-semibold text-destructive">
+                      Disconnected Node
+                    </h6>
+                    <p className="text-sm text-destructive/80">
+                      This node is not connected to the main workflow execution
+                      path. It won't run unless you connect it properly.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-destructive/80 mt-1">
-                This node is not connected to the main workflow execution path
-              </p>
             </div>
-          )}
+          ) : null}
 
-          {/* Code Section (Special handling for Code nodes) */}
-          {isCodeNode() &&
-            (() => {
-              const codeContent = getCodeContent();
-              return codeContent ? (
-                <>
-                  <Separator className="my-4" />
-                  <div className="space-y-3">
-                    <h5 className="font-medium flex items-center gap-2">
-                      <Code className="h-4 w-4 text-green-500" />
-                      {codeContent.language === "python"
-                        ? "Python Code"
-                        : "JavaScript Code"}
-                    </h5>
-
-                    <div className="bg-slate-950 dark:bg-slate-900 p-4 rounded-lg border border-slate-800">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={cn("w-2 h-2 rounded-full", {
-                              "bg-yellow-400":
-                                codeContent.language === "javascript",
-                              "bg-blue-400": codeContent.language === "python",
-                            })}
-                          ></div>
-                          <span className="text-xs text-slate-400 font-mono">
-                            {codeContent.paramKey} ({codeContent.language})
-                          </span>
+          {/* Code Section - Enhanced Code Display */}
+          {isCodeNode()
+            ? (() => {
+                const codeContent = getCodeContent();
+                return codeContent ? (
+                  <div className="mt-6">
+                    <Separator className="my-4" />
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-500/10 rounded-lg">
+                          <Code className="h-5 w-5 text-green-600" />
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(codeContent.code);
-                          }}
-                          className="h-6 px-2 text-xs text-slate-400 hover:text-slate-200"
-                        >
-                          Copy
-                        </Button>
+                        <div>
+                          <h5 className="font-semibold text-base">
+                            {codeContent.language === "python"
+                              ? "Python Code"
+                              : "JavaScript Code"}
+                          </h5>
+                          <p className="text-xs text-muted-foreground">
+                            Custom code execution in {codeContent.language}
+                          </p>
+                        </div>
                       </div>
 
-                      <ScrollArea className="h-80 w-full">
-                        <pre className="text-sm text-slate-100 font-mono leading-relaxed whitespace-pre overflow-x-auto">
-                          <code>{codeContent.code}</code>
-                        </pre>
-                      </ScrollArea>
+                      <div className="bg-slate-950 dark:bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-3 bg-slate-900 dark:bg-slate-800 border-b border-slate-700">
+                          <div className="flex items-center gap-3">
+                            <div className="flex gap-1.5">
+                              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={cn("w-2 h-2 rounded-full", {
+                                  "bg-yellow-400":
+                                    codeContent.language === "javascript",
+                                  "bg-blue-400":
+                                    codeContent.language === "python",
+                                })}
+                              ></div>
+                              <span className="text-xs text-slate-400 font-mono">
+                                {codeContent.paramKey}.
+                                {codeContent.language === "python"
+                                  ? "py"
+                                  : "js"}
+                              </span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(codeContent.code);
+                            }}
+                            className="h-7 px-3 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-colors"
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copy
+                          </Button>
+                        </div>
+
+                        <ScrollArea className="h-96 w-full">
+                          <pre className="p-4 text-sm text-slate-100 font-mono leading-relaxed whitespace-pre overflow-x-auto">
+                            <code>{codeContent.code}</code>
+                          </pre>
+                        </ScrollArea>
+                      </div>
                     </div>
                   </div>
-                </>
-              ) : null;
-            })()}
+                ) : null;
+              })()
+            : null}
 
-          {/* AI Prompts Section (Special handling for AI nodes) */}
-          {isAINode() &&
-            (() => {
-              const prompts = getAIPrompts();
-              return prompts &&
-                (prompts.system ||
-                  prompts.user ||
-                  prompts.text ||
-                  prompts.messages.length > 0 ||
-                  prompts.nestedPrompts.length > 0) ? (
-                <>
-                  <Separator className="my-4" />
-                  <div className="space-y-3">
-                    <h5 className="font-medium flex items-center gap-2">
-                      <Brain className="h-4 w-4 text-purple-500" />
-                      AI Prompts & Messages
-                    </h5>
-
-                    <div className="space-y-3">
-                      {/* System Message */}
-                      {prompts.system && (
-                        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-                          <div className="flex items-center justify-between px-3 py-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                            <div className="flex items-center gap-2">
-                              <Settings className="h-3 w-3 text-slate-600 dark:text-slate-400" />
-                              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                                System Message
-                              </span>
-                              <Badge variant="outline" className="text-xs">
-                                {prompts.system.length} chars
-                              </Badge>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                navigator.clipboard.writeText(prompts.system)
-                              }
-                              className="h-6 px-2 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                            >
-                              Copy
-                            </Button>
-                          </div>
-                          <ScrollArea className="h-64 w-full">
-                            <div className="p-4">
-                              <pre className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-sans break-words">
-                                {formatAIPrompt(prompts.system)}
-                              </pre>
-                            </div>
-                          </ScrollArea>
+          {/* AI Prompts Section - Enhanced AI Content Display */}
+          {isAINode()
+            ? (() => {
+                const prompts = getAIPrompts();
+                return prompts &&
+                  (prompts.system ||
+                    prompts.user ||
+                    prompts.text ||
+                    prompts.messages.length > 0 ||
+                    prompts.nestedPrompts.length > 0) ? (
+                  <div className="mt-6">
+                    <Separator className="my-4" />
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-500/10 rounded-lg">
+                          <Brain className="h-5 w-5 text-purple-600" />
                         </div>
-                      )}
-
-                      {/* User Prompt */}
-                      {prompts.user && (
-                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg overflow-hidden">
-                          <div className="flex items-center justify-between px-3 py-2 bg-blue-100 dark:bg-blue-900/40 border-b border-blue-200 dark:border-blue-800">
-                            <div className="flex items-center gap-2">
-                              <User className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                                User Prompt
-                              </span>
-                              <Badge variant="outline" className="text-xs">
-                                {prompts.user.length} chars
-                              </Badge>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                navigator.clipboard.writeText(prompts.user)
-                              }
-                              className="h-6 px-2 text-xs text-blue-500 hover:text-blue-700 dark:hover:text-blue-300"
-                            >
-                              Copy
-                            </Button>
-                          </div>
-                          <ScrollArea className="h-64 w-full">
-                            <div className="p-4">
-                              <pre className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed whitespace-pre-wrap font-sans break-words">
-                                {formatAIPrompt(prompts.user)}
-                              </pre>
-                            </div>
-                          </ScrollArea>
+                        <div>
+                          <h5 className="font-semibold text-base">
+                            AI Prompts & Messages
+                          </h5>
+                          <p className="text-xs text-muted-foreground">
+                            System instructions and user prompts for AI
+                            processing
+                          </p>
                         </div>
-                      )}
+                      </div>
 
-                      {/* Text Field (for nodes that use 'text' parameter) */}
-                      {prompts.text && (
-                        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg overflow-hidden">
-                          <div className="flex items-center justify-between px-3 py-2 bg-emerald-100 dark:bg-emerald-900/40 border-b border-emerald-200 dark:border-emerald-800">
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                              <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                                Text/Prompt Content
-                              </span>
-                              <Badge variant="outline" className="text-xs">
-                                {prompts.text.length} chars
-                              </Badge>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                navigator.clipboard.writeText(prompts.text)
-                              }
-                              className="h-6 px-2 text-xs text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300"
-                            >
-                              Copy
-                            </Button>
-                          </div>
-                          <ScrollArea className="h-64 w-full">
-                            <div className="p-4">
-                              <pre className="text-sm text-emerald-700 dark:text-emerald-300 leading-relaxed whitespace-pre-wrap font-sans break-words">
-                                {formatAIPrompt(prompts.text)}
-                              </pre>
-                            </div>
-                          </ScrollArea>
-                        </div>
-                      )}
-
-                      {/* Nested Prompts (for complex parameter structures) */}
-                      {prompts.nestedPrompts.length > 0 &&
-                        !prompts.system &&
-                        !prompts.user &&
-                        !prompts.text && (
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2">
-                              <Brain className="h-3 w-3 text-purple-600" />
-                              <span className="text-sm font-medium text-purple-600">
-                                Detected Prompts ({prompts.nestedPrompts.length}
-                                )
-                              </span>
-                            </div>
-
-                            {prompts.nestedPrompts.map(
-                              (nestedPrompt, index) => (
-                                <div
-                                  key={index}
-                                  className={cn(
-                                    "border rounded-lg overflow-hidden",
-                                    {
-                                      "bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700":
-                                        nestedPrompt.type === "system",
-                                      "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800":
-                                        nestedPrompt.type === "user",
-                                      "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800":
-                                        nestedPrompt.type === "text",
-                                    }
-                                  )}
-                                >
-                                  <div className="flex items-center justify-between px-3 py-2 border-b border-current/10">
-                                    <div className="flex items-center gap-2">
-                                      {nestedPrompt.type === "system" && (
-                                        <Settings className="h-3 w-3" />
-                                      )}
-                                      {nestedPrompt.type === "user" && (
-                                        <User className="h-3 w-3" />
-                                      )}
-                                      {nestedPrompt.type === "text" && (
-                                        <FileText className="h-3 w-3" />
-                                      )}
-                                      <span className="text-sm font-medium capitalize">
-                                        {nestedPrompt.type} Content
-                                      </span>
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs"
-                                      >
-                                        {nestedPrompt.path}
-                                      </Badge>
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs"
-                                      >
-                                        {nestedPrompt.content.length} chars
-                                      </Badge>
-                                    </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        navigator.clipboard.writeText(
-                                          nestedPrompt.content
-                                        )
-                                      }
-                                      className="h-6 px-2 text-xs opacity-70 hover:opacity-100"
-                                    >
-                                      Copy
-                                    </Button>
-                                  </div>
-                                  <ScrollArea className="h-64 w-full">
-                                    <div className="p-4">
-                                      <pre className="text-sm leading-relaxed whitespace-pre-wrap font-sans break-words">
-                                        {formatAIPrompt(nestedPrompt.content)}
-                                      </pre>
-                                    </div>
-                                  </ScrollArea>
+                      <div className="space-y-4">
+                        {/* System Message - Enhanced Card */}
+                        {prompts.system ? (
+                          <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-3 bg-slate-100/70 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700">
+                              <div className="flex items-center gap-3">
+                                <div className="p-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg">
+                                  <Settings className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
                                 </div>
-                              )
-                            )}
-                          </div>
-                        )}
-
-                      {/* Messages Array */}
-                      {prompts.messages.length > 0 && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <MessageSquare className="h-3 w-3 text-purple-600" />
-                              <span className="text-xs font-medium text-purple-600">
-                                Conversation ({prompts.messages.length}{" "}
-                                messages)
-                              </span>
+                                <div>
+                                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    System Instructions
+                                  </span>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs h-5"
+                                    >
+                                      {prompts.system.length.toLocaleString()}{" "}
+                                      chars
+                                    </Badge>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs h-5"
+                                    >
+                                      {Math.ceil(prompts.system.length / 4)}{" "}
+                                      tokens
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  navigator.clipboard.writeText(prompts.system)
+                                }
+                                className="h-7 px-3 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                              >
+                                <Copy className="h-3 w-3 mr-1" />
+                                Copy
+                              </Button>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                navigator.clipboard.writeText(
-                                  JSON.stringify(prompts.messages, null, 2)
-                                )
-                              }
-                              className="h-6 px-2 text-xs text-purple-500 hover:text-purple-700"
-                            >
-                              Copy All
-                            </Button>
-                          </div>
-
-                          <div className="bg-gradient-to-b from-purple-50 to-purple-25 dark:from-purple-900/20 dark:to-purple-900/10 border border-purple-200 dark:border-purple-800 rounded-lg overflow-hidden">
-                            <ScrollArea className="h-64 w-full">
-                              <div className="p-3 space-y-3">
-                                {prompts.messages.map(
-                                  (message: AIMessage, index: number) => {
-                                    const role =
-                                      message.role || message.type || "unknown";
-                                    const content =
-                                      message.content ||
-                                      message.text ||
-                                      message.message ||
-                                      String(message);
-
-                                    return (
-                                      <div
-                                        key={index}
-                                        className={cn("relative group", {
-                                          "bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700":
-                                            role === "system",
-                                          "bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700":
-                                            role === "user",
-                                          "bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-700":
-                                            role === "assistant",
-                                          "bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700":
-                                            ![
-                                              "system",
-                                              "user",
-                                              "assistant",
-                                            ].includes(role),
-                                        })}
-                                      >
-                                        <div className="flex items-center justify-between p-2 border-b border-current/10">
-                                          <div className="flex items-center gap-2">
-                                            {role === "system" && (
-                                              <Settings className="h-3 w-3" />
-                                            )}
-                                            {role === "user" && (
-                                              <User className="h-3 w-3" />
-                                            )}
-                                            {role === "assistant" && (
-                                              <Bot className="h-3 w-3" />
-                                            )}
-                                            <span className="text-xs font-medium capitalize">
-                                              {role}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                              #{index + 1}
-                                            </span>
-                                          </div>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() =>
-                                              navigator.clipboard.writeText(
-                                                String(content)
-                                              )
-                                            }
-                                            className="h-5 px-1.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                                          >
-                                            Copy
-                                          </Button>
-                                        </div>
-                                        <div className="p-3">
-                                          <pre className="text-xs leading-relaxed whitespace-pre-wrap font-sans break-words">
-                                            {formatAIPrompt(
-                                              typeof content === "string"
-                                                ? content
-                                                : JSON.stringify(content)
-                                            )}
-                                          </pre>
-                                        </div>
-                                      </div>
-                                    );
-                                  }
-                                )}
+                            <ScrollArea className="h-80 w-full">
+                              <div className="p-4">
+                                <pre className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-sans break-words">
+                                  {formatAIPrompt(prompts.system)}
+                                </pre>
                               </div>
                             </ScrollArea>
                           </div>
-                        </div>
-                      )}
+                        ) : null}
+
+                        {/* User Prompt - Enhanced Card */}
+                        {prompts.user ? (
+                          <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/10 border border-blue-200 dark:border-blue-800 rounded-xl overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-3 bg-blue-100/70 dark:bg-blue-900/40 border-b border-blue-200 dark:border-blue-800">
+                              <div className="flex items-center gap-3">
+                                <div className="p-1.5 bg-blue-200 dark:bg-blue-800 rounded-lg">
+                                  <User className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                                    User Prompt
+                                  </span>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs h-5"
+                                    >
+                                      {prompts.user.length.toLocaleString()}{" "}
+                                      chars
+                                    </Badge>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs h-5"
+                                    >
+                                      {Math.ceil(prompts.user.length / 4)}{" "}
+                                      tokens
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  navigator.clipboard.writeText(prompts.user)
+                                }
+                                className="h-7 px-3 text-xs text-blue-600 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                              >
+                                <Copy className="h-3 w-3 mr-1" />
+                                Copy
+                              </Button>
+                            </div>
+                            <ScrollArea className="h-80 w-full">
+                              <div className="p-4">
+                                <pre className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed whitespace-pre-wrap font-sans break-words">
+                                  {formatAIPrompt(prompts.user)}
+                                </pre>
+                              </div>
+                            </ScrollArea>
+                          </div>
+                        ) : null}
+
+                        {/* Text Field - Enhanced Card */}
+                        {prompts.text ? (
+                          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/10 border border-emerald-200 dark:border-emerald-800 rounded-xl overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-3 bg-emerald-100/70 dark:bg-emerald-900/40 border-b border-emerald-200 dark:border-emerald-800">
+                              <div className="flex items-center gap-3">
+                                <div className="p-1.5 bg-emerald-200 dark:bg-emerald-800 rounded-lg">
+                                  <FileText className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                                    Text Content
+                                  </span>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs h-5"
+                                    >
+                                      {prompts.text.length.toLocaleString()}{" "}
+                                      chars
+                                    </Badge>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs h-5"
+                                    >
+                                      {Math.ceil(prompts.text.length / 4)}{" "}
+                                      tokens
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  navigator.clipboard.writeText(prompts.text)
+                                }
+                                className="h-7 px-3 text-xs text-emerald-600 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800 transition-colors"
+                              >
+                                <Copy className="h-3 w-3 mr-1" />
+                                Copy
+                              </Button>
+                            </div>
+                            <ScrollArea className="h-80 w-full">
+                              <div className="p-4">
+                                <pre className="text-sm text-emerald-700 dark:text-emerald-300 leading-relaxed whitespace-pre-wrap font-sans break-words">
+                                  {formatAIPrompt(prompts.text)}
+                                </pre>
+                              </div>
+                            </ScrollArea>
+                          </div>
+                        ) : null}
+
+                        {/* Messages Array - Enhanced Conversation View */}
+                        {prompts.messages.length > 0 ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                              <div className="flex items-center gap-3">
+                                <div className="p-1.5 bg-purple-200 dark:bg-purple-800 rounded-lg">
+                                  <MessageSquare className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                                    Conversation History
+                                  </span>
+                                  <p className="text-xs text-purple-600 dark:text-purple-400">
+                                    {prompts.messages.length} messages
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  navigator.clipboard.writeText(
+                                    JSON.stringify(prompts.messages, null, 2)
+                                  )
+                                }
+                                className="h-7 px-3 text-xs text-purple-600 hover:text-purple-700 dark:hover:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
+                              >
+                                <Copy className="h-3 w-3 mr-1" />
+                                Copy All
+                              </Button>
+                            </div>
+
+                            <div className="bg-gradient-to-b from-purple-50 to-purple-25 dark:from-purple-900/20 dark:to-purple-900/10 border border-purple-200 dark:border-purple-800 rounded-xl overflow-hidden">
+                              <ScrollArea className="h-80 w-full">
+                                <div className="p-4 space-y-3">
+                                  {prompts.messages.map(
+                                    (message: AIMessage, index: number) => {
+                                      const role =
+                                        message.role ||
+                                        message.type ||
+                                        "unknown";
+                                      const content =
+                                        message.content ||
+                                        message.text ||
+                                        message.message ||
+                                        String(message);
+
+                                      return (
+                                        <div
+                                          key={index}
+                                          className={cn(
+                                            "relative group rounded-lg border overflow-hidden",
+                                            {
+                                              "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700":
+                                                role === "system",
+                                              "bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700":
+                                                role === "user",
+                                              "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-700":
+                                                role === "assistant",
+                                              "bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700":
+                                                ![
+                                                  "system",
+                                                  "user",
+                                                  "assistant",
+                                                ].includes(role),
+                                            }
+                                          )}
+                                        >
+                                          <div className="flex items-center justify-between p-3 border-b border-current/10">
+                                            <div className="flex items-center gap-2">
+                                              {role === "system" ? (
+                                                <Settings className="h-3.5 w-3.5" />
+                                              ) : null}
+                                              {role === "user" ? (
+                                                <User className="h-3.5 w-3.5" />
+                                              ) : null}
+                                              {role === "assistant" ? (
+                                                <Bot className="h-3.5 w-3.5" />
+                                              ) : null}
+                                              <span className="text-sm font-medium capitalize">
+                                                {role}
+                                              </span>
+                                              <Badge
+                                                variant="outline"
+                                                className="text-xs h-5"
+                                              >
+                                                #{index + 1}
+                                              </Badge>
+                                            </div>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() =>
+                                                navigator.clipboard.writeText(
+                                                  String(content)
+                                                )
+                                              }
+                                              className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                              <Copy className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                          <div className="p-3">
+                                            <pre className="text-sm leading-relaxed whitespace-pre-wrap font-sans break-words">
+                                              {formatAIPrompt(
+                                                typeof content === "string"
+                                                  ? content
+                                                  : JSON.stringify(content)
+                                              )}
+                                            </pre>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                  )}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                </>
-              ) : null;
-            })()}
+                ) : null;
+              })()
+            : null}
 
-          {/* Parameters Section */}
-          {hasParameters && (
-            <>
+          {/* Parameters Section - Enhanced Layout */}
+          {hasParameters ? (
+            <div className="mt-6">
               <Separator className="my-4" />
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h5 className="font-medium flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    {isAINode()
-                      ? "Configuration Parameters"
-                      : "Node Parameters"}{" "}
-                    ({parameterCount})
-                  </h5>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Settings className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h5 className="font-semibold text-base">
+                        {isAINode()
+                          ? "Configuration Parameters"
+                          : "Node Parameters"}
+                      </h5>
+                      <p className="text-xs text-muted-foreground">
+                        {parameterCount} parameter
+                        {parameterCount !== 1 ? "s" : ""} configured
+                      </p>
+                    </div>
+                  </div>
 
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowRawData(!showRawData)}
-                    className="gap-1 text-xs"
+                    className="gap-2 text-xs h-8 px-3"
                   >
                     {showRawData ? (
                       <>
-                        <EyeOff className="h-3 w-3" />
+                        <EyeOff className="h-3.5 w-3.5" />
                         Hide Raw
                       </>
                     ) : (
                       <>
-                        <Eye className="h-3 w-3" />
+                        <Eye className="h-3.5 w-3.5" />
                         Show Raw
                       </>
                     )}
                   </Button>
                 </div>
 
-                {/* For AI nodes, filter out prompt-related parameters from the main view */}
+                {/* Parameters Content */}
                 {(() => {
                   let filteredParams = step.parameters;
 
@@ -1483,7 +1638,6 @@ export default function UnifiedStepCard({
                       )
                     );
                   } else if (isCodeNode()) {
-                    // Filter out code-related parameters from the main parameters view
                     const codeKeys = [
                       "jsCode",
                       "code",
@@ -1509,13 +1663,18 @@ export default function UnifiedStepCard({
 
                   if (filteredParamCount === 0) {
                     return (
-                      <div className="text-center py-3 text-muted-foreground">
-                        <Info className="h-5 w-5 mx-auto mb-2" />
+                      <div className="text-center py-8 text-muted-foreground">
+                        <div className="p-3 bg-muted/30 rounded-lg w-fit mx-auto mb-3">
+                          <Info className="h-6 w-6 opacity-50" />
+                        </div>
+                        <h6 className="font-medium mb-1">
+                          All Parameters Displayed Above
+                        </h6>
                         <p className="text-sm">
                           {isAINode()
-                            ? "All parameters are displayed in the AI prompts section above"
+                            ? "All parameters are shown in the AI prompts section"
                             : isCodeNode()
-                            ? "All parameters are displayed in the code section above"
+                            ? "All parameters are shown in the code section"
                             : "No additional parameters configured"}
                         </p>
                       </div>
@@ -1525,44 +1684,61 @@ export default function UnifiedStepCard({
                   return (
                     <div className="space-y-3">
                       {showRawData ? (
-                        // Raw JSON view
-                        <div className="bg-muted/20 p-4 rounded-lg border">
-                          <pre className="text-xs text-foreground overflow-x-auto whitespace-pre-wrap">
-                            {JSON.stringify(
-                              isAINode() ? filteredParams : step.parameters,
-                              null,
-                              2
-                            )}
-                          </pre>
+                        <div className="bg-slate-950 dark:bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+                          <div className="flex items-center justify-between px-4 py-3 bg-slate-900 dark:bg-slate-800 border-b border-slate-700">
+                            <div className="flex items-center gap-2">
+                              <Code className="h-4 w-4 text-slate-400" />
+                              <span className="text-sm font-medium text-slate-300">
+                                Raw JSON
+                              </span>
+                            </div>
+                          </div>
+                          <ScrollArea className="h-80 w-full">
+                            <pre className="p-4 text-sm text-slate-100 overflow-x-auto whitespace-pre-wrap font-mono">
+                              {JSON.stringify(
+                                isAINode() ? filteredParams : step.parameters,
+                                null,
+                                2
+                              )}
+                            </pre>
+                          </ScrollArea>
                         </div>
                       ) : (
-                        // Formatted view
-                        <div className="space-y-2">
+                        <div className="grid gap-3">
                           {Object.entries(filteredParams || {}).map(
                             ([key, value]) => (
                               <div
                                 key={key}
-                                className="bg-muted/20 p-3 rounded border"
+                                className="p-4 bg-muted/30 rounded-lg border border-muted/50 hover:bg-muted/40 transition-colors"
                               >
-                                <div className="flex items-start justify-between gap-2 mb-1">
-                                  <code className="text-xs font-medium bg-muted px-2 py-1 rounded">
-                                    {key}
-                                  </code>
-                                  <Badge variant="outline" className="text-xs">
-                                    {typeof value}
-                                  </Badge>
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <code className="text-sm font-semibold bg-primary/10 text-primary px-2 py-1 rounded">
+                                      {key}
+                                    </code>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs h-5"
+                                    >
+                                      {typeof value}
+                                    </Badge>
+                                  </div>
                                 </div>
 
                                 <div className="mt-2">
                                   {typeof value === "object" &&
                                   value !== null ? (
-                                    <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
-                                      {JSON.stringify(value, null, 2)}
-                                    </pre>
+                                    <ScrollArea className="h-32 w-full">
+                                      <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap font-mono p-2 bg-muted/50 rounded border">
+                                        {JSON.stringify(value, null, 2)}
+                                      </pre>
+                                    </ScrollArea>
                                   ) : (
-                                    <p className="text-xs text-foreground break-all">
-                                      {String(value)}
-                                    </p>
+                                    <div className="p-2 bg-muted/50 rounded border">
+                                      <p className="text-sm text-foreground break-all font-mono">
+                                        {String(value)}
+                                      </p>
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -1574,45 +1750,31 @@ export default function UnifiedStepCard({
                   );
                 })()}
               </div>
-            </>
-          )}
+            </div>
+          ) : null}
 
-          {/* No Parameters Section - Show even when no parameters */}
-          {!hasParameters && (
-            <>
+          {/* No Parameters Section - Enhanced Empty State */}
+          {!hasParameters ? (
+            <div className="mt-6">
               <Separator className="my-4" />
-              <div className="text-center py-6 text-muted-foreground">
-                <Info className="h-8 w-8 mx-auto mb-3 opacity-50" />
-                <h6 className="font-medium mb-1">No Configuration Required</h6>
-                <p className="text-sm">
-                  This node doesn&apos;t require any additional parameters to
-                  function.
+              <div className="text-center py-8 text-muted-foreground">
+                <div className="p-4 bg-muted/30 rounded-xl w-fit mx-auto mb-4">
+                  <Info className="h-8 w-8 opacity-50" />
+                </div>
+                <h6 className="font-semibold mb-2">
+                  No Configuration Required
+                </h6>
+                <p className="text-sm max-w-md mx-auto">
+                  This node works out of the box without any additional
+                  parameters or configuration.
                 </p>
               </div>
-            </>
-          )}
+            </div>
+          ) : null}
 
-          {/* Additional Metadata */}
-          <Separator className="my-4" />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-muted-foreground">
-            <div>
-              <span className="font-medium">Step:</span> #{stepNumber}
-            </div>
-            <div>
-              <span className="font-medium">Trigger:</span>{" "}
-              {step.isTrigger ? "Yes" : "No"}
-            </div>
-            <div>
-              <span className="font-medium">Connected:</span>{" "}
-              {step.isDisconnected ? "No" : "Yes"}
-            </div>
-            <div>
-              <span className="font-medium">Starting:</span>{" "}
-              {step.isStartingNode ? "Yes" : "No"}
-            </div>
-          </div>
+          {/* Additional Metadata section removed - users don't need to see technical node status info */}
         </CardContent>
-      )}
+      ) : null}
     </Card>
   );
 }
