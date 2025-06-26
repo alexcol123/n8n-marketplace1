@@ -32,59 +32,15 @@ import { Workflow, Profile, WorkflowStep } from "@prisma/client";
 import ZoomableWorkflowImage from "@/components/(custom)/(coding-steps)/ZoomableWorkflowImage";
 import CreatorCard from "@/components/(custom)/(coding-steps)/CreatorCard";
 
+import getWorkflowComplexityFunc from "@/utils/functions/getWorkflowComplexityFunc";
+import getWorkflowComplexityColorFunc from "@/utils/functions/getWorkflowComplexityColorFunc";
+import formatDateFunc from "@/utils/functions/formmatDate";
+import getNodeCountFunc from "@/utils/functions/getNodeCountFunc";
+import readingTimeFunc from "@/utils/functions/readingTimeFunc";
+
 type WorkflowWithAuthor = Workflow & {
   author: Profile;
   workflowSteps: WorkflowStep[];
-};
-
-interface ErrorResponse {
-  message: string;
-  success: boolean;
-}
-
-function isErrorResponse(obj: unknown): obj is ErrorResponse {
-  return (
-    typeof obj === "object" &&
-    obj !== null &&
-    "message" in obj &&
-    "success" in obj &&
-    typeof (obj as ErrorResponse).message === "string" &&
-    typeof (obj as ErrorResponse).success === "boolean"
-  );
-}
-
-const getWorkflowComplexity = (
-  workflowJson: unknown,
-  workflowCharactersLength: number
-) => {
-  let nodeCount = 0;
-  try {
-    nodeCount =
-      typeof workflowJson === "object" &&
-      workflowJson !== null &&
-      Array.isArray((workflowJson as { nodes: unknown[] }).nodes)
-        ? (workflowJson as { nodes: unknown[] }).nodes.length
-        : 0;
-  } catch {
-    nodeCount = 0;
-  }
-
-  if (nodeCount >= 13) return "Advanced";
-  if (nodeCount >= 7) return "Intermediate";
-  if (workflowCharactersLength > 6000) return "Advanced";
-  if (workflowCharactersLength > 4000) return "Intermediate";
-  return "Basic";
-};
-
-const getComplexityColor = (complexity: string) => {
-  switch (complexity) {
-    case "Advanced":
-      return "text-red-600 bg-red-50 border-red-200";
-    case "Intermediate":
-      return "text-orange-600 bg-orange-50 border-orange-200";
-    default:
-      return "text-green-600 bg-green-50 border-green-200";
-  }
 };
 
 const SingleWorkflowPage = async ({
@@ -95,64 +51,36 @@ const SingleWorkflowPage = async ({
   const { slug } = await params;
   const result = await fetchSingleWorkflow(slug);
 
-  if (!result || isErrorResponse(result)) {
+  if (!result) {
     return notFound();
   }
 
   const workflow = result as WorkflowWithAuthor;
   if (!workflow) return <EmptyList />;
 
-  const orderedSteps = [...result.workflowSteps];
-  const workflowCharactersLength = JSON.stringify(
+ const orderedSteps = workflow.workflowSteps ? [...workflow.workflowSteps] : [];
+
+   const workflowCharactersLength = JSON.stringify(
     workflow?.workFlowJson
   ).length;
 
-  const getNodeCount = () => {
-    try {
-      const data = workflow.workFlowJson;
-      return data &&
-        typeof data === "object" &&
-        "nodes" in data &&
-        Array.isArray(data.nodes)
-        ? data.nodes.length
-        : 0;
-    } catch {
-      return 0;
-    }
-  };
-
-  const nodeCount = getNodeCount();
-  const complexity = getWorkflowComplexity(
+  const nodeCount = getNodeCountFunc(workflow.workFlowJson);
+  const complexity = getWorkflowComplexityFunc(
     workflow.workFlowJson,
     workflowCharactersLength
   );
-  const contentParagraphs = workflow?.content?.split(/\n+/) || [];
 
-  const formatDate = (dateString: Date) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+
+  const contentParagraphs = workflow?.content?.split(/\n+/) || [];
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`;
   };
 
   // Calculate reading time
-  const wordsPerMinute = 200;
-  const wordsContentLength = workflow?.content?.split(/\s+/).length || 0;
-  const wordStepsLength = workflow?.steps
-    ? workflow.steps.reduce((total, step) => {
-        return (
-          total + (typeof step === "string" ? step.split(/\s+/).length : 0)
-        );
-      }, 0)
-    : 0;
-  const wordsTotal = wordsContentLength + wordStepsLength;
-  const readingTime = Math.max(1, Math.ceil(wordsTotal / wordsPerMinute));
+
+
+  const readingTime = readingTimeFunc(workflow?.content, workflow?.steps);
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
@@ -205,7 +133,7 @@ const SingleWorkflowPage = async ({
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <CalendarIcon className="h-3 w-3" />
-                    <span>{formatDate(workflow.createdAt)}</span>
+                    <span>{formatDateFunc(workflow.createdAt)}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
@@ -275,7 +203,7 @@ const SingleWorkflowPage = async ({
                   <span className="text-muted-foreground">Difficulty</span>
                   <Badge
                     variant="outline"
-                    className={`text-xs font-medium ${getComplexityColor(
+                    className={`text-xs font-medium ${getWorkflowComplexityColorFunc(
                       complexity
                     )}`}
                   >
