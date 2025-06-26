@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { Calendar, Eye, FileCode, User } from "lucide-react";
+import { Calendar, Eye, FileCode, User, Mail } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -47,72 +47,108 @@ export default async function AuthorProfilePage({
       </div>
 
       <main className="flex-grow container mx-auto px-4 py-8">
-        {/* Profile Header - Improved styling */}
+        {/* Profile Header - Alternative compact styling with attention border */}
         <div className="mb-10">
-          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-8 rounded-xl border border-primary/20 shadow-sm">
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-              {/* Profile Image - Added subtle glow */}
-              <div className="flex-shrink-0 relative">
-                <div className="absolute inset-0 bg-primary/20 rounded-full blur-md -z-10"></div>
-                <Avatar className="h-32 w-32 border-4 border-background shadow-lg hover:shadow-xl transition-shadow">
-                  <AvatarImage
-                    src={profile.profileImage}
-                    alt={`${profile.firstName} ${profile.lastName}`}
-                  />
-                  <AvatarFallback className="text-3xl bg-primary text-primary-foreground">
-                    {getInitials(profile.firstName, profile.lastName)}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
+          <div className="relative overflow-hidden bg-card p-6 rounded-2xl border-2 border-primary/30 shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300">
+            {/* Subtle background pattern */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/8 to-primary/3 opacity-60"></div>
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-primary/15 via-primary/8 to-transparent rounded-full blur-3xl"></div>
+            {/* Accent border glow */}
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/20 via-transparent to-primary/20 opacity-30 blur-sm -z-10"></div>
+            
+            <div className="relative z-10">
+              <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+                {/* Profile Image Section */}
+                <div className="flex-shrink-0 relative">
+                  <div className="absolute inset-0 bg-primary/25 rounded-full blur-md opacity-50 scale-115 animate-pulse"></div>
+                  <Avatar className="h-28 w-28 border-4 border-background shadow-2xl ring-4 ring-primary/20 transition-all duration-300 hover:scale-105 hover:ring-primary/40">
+                    <AvatarImage
+                      src={profile.profileImage}
+                      alt={`${profile.firstName} ${profile.lastName}`}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="text-2xl bg-primary text-primary-foreground font-bold">
+                      {getInitials(profile.firstName, profile.lastName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {/* Enhanced status indicator */}
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 border-3 border-background rounded-full shadow-xl flex items-center justify-center ring-2 ring-emerald-200">
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                  </div>
+                </div>
 
-              {/* Profile Info - Improved typography */}
-              <div className="flex-grow text-center md:text-left">
-                <h1 className="text-3xl font-bold mb-2 text-foreground">
-                  {profile.firstName} {profile.lastName}
-                </h1>
-                <p className="text-muted-foreground mb-4 flex items-center justify-center md:justify-start gap-1">
-                  <User className="h-4 w-4" />@{profile.username}
-                </p>
-
-                {/* User stats - Improved card-like design */}
-                <div className="flex flex-wrap justify-center md:justify-start gap-6 mb-4">
-                  <div className="flex items-center gap-2 bg-muted/20 p-3 rounded-lg shadow-sm">
-                    <div className="bg-primary/10 p-2 rounded-full">
-                      <FileCode className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-xl">
-                        {profile.totalWorkflows}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Workflows
-                      </div>
+                {/* Main Content */}
+                <div className="flex-grow text-center md:text-left space-y-4">
+                  {/* Header Info */}
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground mb-2 drop-shadow-sm">
+                      {profile.firstName} {profile.lastName}
+                    </h1>
+                    <div className="flex items-center justify-center md:justify-start gap-2">
+                      <Badge variant="secondary" className="text-xs font-medium border border-primary/30 bg-primary/10">
+                        <User className="h-3 w-3 mr-1" />
+                        @{profile.username}
+                      </Badge>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 bg-muted/20 p-3 rounded-lg shadow-sm">
-                    <div className="bg-primary/10 p-2 rounded-full">
-                      <Calendar className="h-5 w-5 text-primary" />
+                  {/* Bio */}
+                  {profile.bio && (
+                    <div className="bg-muted/60 p-4 rounded-xl border-l-4 border-primary shadow-sm">
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {profile.bio}
+                      </p>
                     </div>
-                    <div>
-                      <div className="font-medium">
+                  )}
+
+                  {/* Stats Row */}
+                  <div className="flex flex-wrap justify-center md:justify-start gap-8">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary drop-shadow-sm">{profile.totalWorkflows}</div>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Workflows</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-semibold text-foreground drop-shadow-sm">
                         {formatDistanceToNow(new Date(profile.createdAt), {
                           addSuffix: true,
                         })}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        Joined
-                      </div>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Member</div>
                     </div>
                   </div>
-                </div>
 
-                {/* User bio - Added subtle card-like background */}
-                {profile.bio && (
-                  <p className="max-w-prose bg-muted/10 p-4 rounded-lg border-l-2 border-primary/30">
-                    {profile.bio}
-                  </p>
-                )}
+                  {/* Contact CTA - Enhanced attention */}
+                  {profile.email && (
+                    <div className="relative">
+                      {/* Glowing background effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl blur-sm animate-pulse"></div>
+                      <div className="relative flex flex-col sm:flex-row items-center gap-4 p-5 bg-gradient-to-r from-primary/15 via-primary/10 to-primary/15 rounded-xl border-2 border-primary/40 shadow-xl hover:border-primary/60 hover:shadow-2xl transition-all duration-300">
+                        {/* Accent dot */}
+                        <div className="absolute top-3 right-3 w-3 h-3 bg-emerald-400 rounded-full animate-ping"></div>
+                        <div className="absolute top-3 right-3 w-3 h-3 bg-emerald-500 rounded-full"></div>
+                        
+                        <div className="flex-grow text-center sm:text-left">
+                          <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                            <p className="text-base font-bold text-foreground">
+                              Available for Hire
+                            </p>
+                          </div>
+                          <p className="text-sm text-muted-foreground font-medium">
+                            Ready to build custom automation solutions for your business
+                          </p>
+                        </div>
+                        <Link target="_blank" href={`mailto:${profile.email}`}>
+                          <Button size="lg" className="bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary/80 hover:to-primary/70 text-primary-foreground font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-primary-foreground/20">
+                            <Mail className="mr-2 h-5 w-5 animate-bounce" />
+                            Hire Me Now
+                            <span className="ml-2 text-lg">💼</span>
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

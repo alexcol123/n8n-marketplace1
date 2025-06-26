@@ -58,9 +58,11 @@ const SingleWorkflowPage = async ({
   const workflow = result as WorkflowWithAuthor;
   if (!workflow) return <EmptyList />;
 
- const orderedSteps = workflow.workflowSteps ? [...workflow.workflowSteps] : [];
+  const orderedSteps = workflow.workflowSteps
+    ? [...workflow.workflowSteps]
+    : [];
 
-   const workflowCharactersLength = JSON.stringify(
+  const workflowCharactersLength = JSON.stringify(
     workflow?.workFlowJson
   ).length;
 
@@ -70,7 +72,6 @@ const SingleWorkflowPage = async ({
     workflowCharactersLength
   );
 
-
   const contentParagraphs = workflow?.content?.split(/\n+/) || [];
 
   const getInitials = (firstName: string, lastName: string) => {
@@ -78,7 +79,6 @@ const SingleWorkflowPage = async ({
   };
 
   // Calculate reading time
-
 
   const readingTime = readingTimeFunc(workflow?.content, workflow?.steps);
 
@@ -368,6 +368,7 @@ const SingleWorkflowPage = async ({
           firstName={workflow.author.firstName}
           lastName={workflow.author.lastName}
           bio={workflow.author.bio}
+          email={workflow.author.email}
         />
       </div>
     </main>
