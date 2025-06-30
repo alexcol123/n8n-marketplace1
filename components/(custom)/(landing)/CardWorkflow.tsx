@@ -46,6 +46,7 @@ import {
 interface CardWorkflowProps {
   workflows: WorkflowCardTypes;
   canDelete?: boolean;
+  canEditSteps?: boolean;
   onDeleteWorkflow?: (id: string) => Promise<void>;
   onUpdateWorkflow?: (
     id: string,
@@ -55,6 +56,7 @@ interface CardWorkflowProps {
 
 export default function CardWorkflow({
   workflows,
+  canEditSteps = false,
   canDelete = false,
   onDeleteWorkflow,
   onUpdateWorkflow,
@@ -309,200 +311,127 @@ export default function CardWorkflow({
               </Link>
             </div>
 
-            {/* Actions Section */}
+            {/* Creator Actions Section */}
             {canDelete && (
-              <div className="space-y-4">
-                <Separator decorative className="bg-primary/30 mt-8" />
-                <h5 className="text-center text-sm font-medium text-muted-foreground">
-                  Actions
-                </h5>
+              <div>
+                <Separator className="mt-8" />
+                <div className="space-y-4 mt-4 bg-gradient-to-br from-muted/40 to-muted/70 border border-primary/15 p-4 rounded-2xl shadow-sm backdrop-blur-sm">
+                  {/* Header with Creator Actions */}
+                  <div className="text-center pb-1">
+                    <div className="inline-flex items-center gap-2 bg-primary/15 px-4 py-2 rounded-full border border-primary/25 shadow-sm">
+                      <Edit className="h-4 w-4 text-primary" />
+                      <h5 className="text-xs font-bold text-primary uppercase tracking-wider">
+                        Creator Actions
+                      </h5>
+                    </div>
+                  </div>
 
-                <div className="flex gap-3 justify-center px-2">
-                  {/* Update Workflow Button */}
-                  <Dialog
-                    open={isUpdateDialogOpen}
-                    onOpenChange={handleUpdateDialogOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/50 bg-card border-2 border-blue-200 dark:border-blue-800/50 shadow-sm transition-all duration-200"
-                      >
-                        <VideoIcon className="h-4 w-4 mr-2" />
-                        Add Video
-                      </Button>
-                    </DialogTrigger>
-                  </Dialog>
+                  {/* Management Actions */}
+                  <div className="space-y-3">
+                    <div className="text-center">
+                      <h6 className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
+                        Quick Actions
+                      </h6>
+                    </div>
 
-                  {/* Delete Workflow Button */}
-                  <Dialog
-                    open={isDeleteDialogOpen}
-                    onOpenChange={setIsDeleteDialogOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 text-destructive hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50 bg-card border-2 border-red-200 dark:border-red-800/50 shadow-sm transition-all duration-200"
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Update Video Button */}
+                      <Dialog
+                        open={isUpdateDialogOpen}
+                        onOpenChange={handleUpdateDialogOpen}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
-                    </DialogTrigger>
-                  </Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/50 bg-background/80 backdrop-blur-sm border border-blue-200 dark:border-blue-800/50 shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                          >
+                            <VideoIcon className="h-4 w-4 mr-2" />
+                            <span className="hidden sm:inline">Add Video</span>
+                            <span className="sm:hidden">Video</span>
+                          </Button>
+                        </DialogTrigger>
+                      </Dialog>
+
+                      {/* Delete Workflow Button */}
+                      <Dialog
+                        open={isDeleteDialogOpen}
+                        onOpenChange={setIsDeleteDialogOpen}
+                      >
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 text-xs font-medium text-destructive hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50 bg-background/80 backdrop-blur-sm border border-red-200 dark:border-red-800/50 shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            <span className="hidden sm:inline">Delete</span>
+                            <span className="sm:hidden">Remove</span>
+                          </Button>
+                        </DialogTrigger>
+                      </Dialog>
+                    </div>
+                  </div>
+
+                  {/* Edit Actions - Only show if canEditSteps is true */}
+                  {canEditSteps && (
+                    <>
+                      <div className="relative">
+                        <Separator decorative className="bg-primary/25" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="bg-gradient-to-br from-muted/40 to-muted/70 px-3 py-1 rounded-full">
+                            <Edit className="h-3 w-3 text-primary" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-3 pt-1">
+                        <div className="text-center">
+                          <h6 className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
+                            Advanced Editor
+                          </h6>
+                        </div>
+
+                        <Link
+                          href={`/dashboard/wf/${workflows?.slug}`}
+                          className="block w-full"
+                        >
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full h-9 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 bg-background/80 backdrop-blur-sm border border-emerald-200 dark:border-emerald-800/50 shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] group"
+                          >
+                            <Edit className="h-3.5 w-3.5 mr-2" />
+                            Edit Steps
+                            <ArrowRight className="ml-auto h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Quick Stats Footer */}
+                  <div className="pt-3 border-t border-primary/15">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground/70">
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-background/50 rounded-full">
+                        <Eye className="h-3 w-3" />
+                        <span className="font-medium">
+                          {workflows.viewCount || 0} views
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-background/50 rounded-full">
+                        <CalendarIcon className="h-3 w-3" />
+                        <span className="font-medium">
+                          {formatDate(workflows.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
           </div>
         </CardFooter>
       </Card>
-
-      {/* Update Workflow Dialog */}
-      {/* <Dialog open={isUpdateDialogOpen} onOpenChange={handleUpdateDialogOpen}>
-        <DialogContent className="sm:max-w-md border-primary border-4 md:py-20 md:px-8">
-          <DialogHeader className="text-center space-y-4">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Edit className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <DialogTitle className="text-2xl font-bold text-foreground mb-2">
-                Update Video
-              </DialogTitle>
-              <DialogDescription className="text-base text-muted-foreground">
-                Enhance your workflow with a video tutorial to help others follow along.
-              </DialogDescription>
-            </div>
-          </DialogHeader>
-
-          <div className="space-y-6 py-8">
-            <div className="space-y-3">
-              <Label htmlFor="videoUrl" className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <PlayCircle className="h-4 w-4 text-primary" />
-                Video URL
-              </Label>
-              <div className="relative">
-                <Input
-                  id="videoUrl"
-                  value={updateFormData.videoUrl}
-                  onChange={(e) => handleInputChange("videoUrl", e.target.value)}
-                  placeholder="https://youtube.com/watch?v=..."
-                  disabled={isUpdating}
-                  className="h-12 pl-4 pr-4 text-base border-2 focus:border-primary transition-colors rounded-xl"
-                />
-              </div>
-              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 p-4 rounded-lg">
-                <p className="text-sm text-blue-700 dark:text-blue-300 flex items-start gap-2">
-                  <PlayCircle className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-600" />
-                  <span>
-                    Adding a video tutorial makes your workflow more engaging and easier to follow. 
-                    Paste a YouTube URL to embed the video.
-                  </span>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-3 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => setIsUpdateDialogOpen(false)}
-              disabled={isUpdating}
-              className="flex-1 h-12 text-base font-medium border-2 hover:border-primary transition-colors rounded-xl"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUpdate}
-              disabled={isUpdating}
-              className="flex-1 h-12 text-base font-medium bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl gap-2"
-            >
-              {isUpdating ? (
-                <>
-                  <div className="h-5 w-5 border-2 border-current border-r-transparent rounded-full animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <Edit className="h-4 w-4" />
-                  Update Workflow
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog> */}
-
-      {/* Delete Confirmation Dialog */}
-      {/* <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-md border-primary border-4 md:py-20 md:px-8">
-          <DialogHeader className="text-center space-y-4">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <AlertTriangle className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <DialogTitle className="text-2xl font-bold text-foreground mb-2">
-                Delete Workflow
-              </DialogTitle>
-              <DialogDescription className="text-base text-muted-foreground">
-                Are you sure you want to delete{" "}
-                <span className="font-semibold text-foreground">
-                  &quot;{workflows?.title.replace(/^"(.+)"$/, "$1")}&quot;
-                </span>
-                ?
-              </DialogDescription>
-            </div>
-          </DialogHeader>
-
-          <div className="py-6">
-            <div className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/30 border-2 border-red-200 dark:border-red-800/50 p-6 rounded-xl">
-              <div className="flex gap-4">
-                <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="h-5 w-5 text-white" />
-                </div>
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-red-800 dark:text-red-200 text-base">
-                    This action cannot be undone
-                  </h4>
-                  <p className="text-red-700 dark:text-red-300 text-sm leading-relaxed">
-                    This will permanently delete the workflow, its JSON data, and all 
-                    associated images. All content will be lost forever.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-3 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-              disabled={isDeleting}
-              className="flex-1 h-12 text-base font-medium border-2 hover:border-primary transition-colors rounded-xl"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="flex-1 h-12 text-base font-medium bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl gap-2"
-            >
-              {isDeleting ? (
-                <>
-                  <div className="h-5 w-5 border-2 border-current border-r-transparent rounded-full animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="h-4 w-4" />
-                  Delete Workflow
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog> */}
 
       {/* Update Workflow Dialog */}
       <Dialog open={isUpdateDialogOpen} onOpenChange={handleUpdateDialogOpen}>

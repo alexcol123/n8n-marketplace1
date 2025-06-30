@@ -8,7 +8,6 @@ import {
   Edit,
   Loader2,
   ExternalLink,
-  ImageIcon,
   Save,
   Lightbulb,
   Link as LinkIcon,
@@ -48,9 +47,11 @@ interface HelpLink {
 const EditCardHelp = ({
   step,
   onStepUpdated,
+  canEditSteps = false,
 }: {
   step: OrderedWorkflowStep;
   onStepUpdated?: (updatedStep: Partial<OrderedWorkflowStep>) => void;
+  canEditSteps: boolean;
 }) => {
   const router = useRouter();
   const [isEditMode, setIsEditMode] = useState(false);
@@ -159,7 +160,7 @@ const EditCardHelp = ({
     setIsEditMode(false);
   };
 
-  const displayTitle = stepTitle || step.stepTitle || "Untitled Step";
+  const displayTitle = String(stepTitle || step.stepTitle || "Untitled Step");
   const displayDescription =
     stepDescription || (step.stepDescription as string) || "";
   const displayHelpText = helpText || (step.helpText as string) || "";
@@ -186,7 +187,7 @@ const EditCardHelp = ({
       <CardContent className="space-y-6">
         {/* Main Description */}
         {displayDescription && (
-          <div className="prose prose-sm max-w-none">
+          <div className="prose prose-sm max-w-none border p-3 rounded-lg bg-muted">
             <p className="text-slate-900 dark:text-slate-100 leading-relaxed">
               {displayDescription}
             </p>
@@ -195,54 +196,16 @@ const EditCardHelp = ({
 
         {/* Image Section */}
         <div className="space-y-3">
-          {currentImage ? (
+          {typeof currentImage === "string" && currentImage && (
             <div className="relative">
-              <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm">
+              <div className="overflow-hidden  max-w-2xl mx-auto rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm">
                 <Image
-                  src={currentImage as string}
-                  alt={displayTitle}
+                  src={currentImage}
+                  alt={String(displayTitle)}
                   width={800}
                   height={400}
                   className="w-full h-auto object-cover"
                 />
-              </div>
-            </div>
-          ) : (
-            <div className="relative group/empty">
-              <div className="h-52 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center transition-all duration-300 group-hover/empty:border-blue-400 dark:group-hover/empty:border-blue-600 group-hover/empty:bg-gradient-to-br group-hover/empty:from-blue-50 group-hover/empty:to-slate-50 dark:group-hover/empty:from-blue-950/20 dark:group-hover/empty:to-slate-800">
-                <div className="text-center space-y-4">
-                  <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-600 dark:to-slate-500 flex items-center justify-center shadow-sm group-hover/empty:from-blue-200 group-hover/empty:to-blue-300 dark:group-hover/empty:from-blue-600 dark:group-hover/empty:to-blue-500 transition-all duration-300">
-                    <ImageIcon className="h-8 w-8 text-slate-500 dark:text-slate-400 group-hover/empty:text-blue-600 dark:group-hover/empty:text-blue-300 transition-colors duration-300" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-200 group-hover/empty:text-blue-700 dark:group-hover/empty:text-blue-300 transition-colors duration-300">
-                      No visual guide available
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 group-hover/empty:text-blue-600 dark:group-hover/empty:text-blue-400 transition-colors duration-300">
-                      Upload an image to enhance this tutorial step
-                    </p>
-                  </div>
-
-                  {/* Call to action hint */}
-                  <div className="opacity-0 group-hover/empty:opacity-100 transition-opacity duration-300">
-                    <div className="inline-flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
-                      <svg
-                        className="w-3 h-3"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                        />
-                      </svg>
-                      <span>Use "Update Image" below</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -270,13 +233,13 @@ const EditCardHelp = ({
         {/* Help Links */}
         {displayHelpLinks && displayHelpLinks.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center  justify-center mt-12 gap-2">
               <LinkIcon className="h-4 w-4 text-slate-600 dark:text-slate-100" />
-              <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                Additional Resources
-              </h4>
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 ">
+                Additional Resources (click to visit)
+              </h4> 
             </div>
-            <div className="grid gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {displayHelpLinks.map((link: any, index: number) => (
                 <Button
                   key={index}
@@ -312,28 +275,32 @@ const EditCardHelp = ({
           </div>
         )}
 
-        {/* Edit Mode Toggle */}
-        {!isEditMode && (
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-600">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ImageInputContainer
-                  image={currentImage as string}
-                  name="image"
-                  text="Update Image"
-                  stepId={step.id}
-                  action={updateWorkflowStepImageAction}
-                />
+        {canEditSteps && (
+          <div>
+            {/* Edit Mode Toggle */}
+            {!isEditMode && (
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-600">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ImageInputContainer
+                      image={currentImage as string}
+                      name="image"
+                      text="Update Image"
+                      stepId={step.id}
+                      action={updateWorkflowStepImageAction}
+                    />
+                  </div>
+                  <Button
+                    variant="default"
+                    onClick={() => setIsEditMode(true)}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-sm"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Details
+                  </Button>
+                </div>
               </div>
-              <Button
-                variant="default"
-                onClick={() => setIsEditMode(true)}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-sm"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Details
-              </Button>
-            </div>
+            )}
           </div>
         )}
       </CardContent>

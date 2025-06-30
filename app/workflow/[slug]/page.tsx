@@ -38,6 +38,7 @@ import formatDateFunc from "@/utils/functions/formmatDate";
 import getNodeCountFunc from "@/utils/functions/getNodeCountFunc";
 import readingTimeFunc from "@/utils/functions/readingTimeFunc";
 
+
 type WorkflowWithAuthor = Workflow & {
   author: Profile;
   workflowSteps: WorkflowStep[];
@@ -78,7 +79,7 @@ const SingleWorkflowPage = async ({
     return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`;
   };
 
-  // Calculate reading time
+
 
   const readingTime = readingTimeFunc(workflow?.content, workflow?.steps);
 
@@ -269,48 +270,50 @@ const SingleWorkflowPage = async ({
         )}
 
         {/* Automation steps */}
-        {workflow?.steps &&
-          Array.isArray(workflow.steps) &&
-          workflow.steps.length > 0 && (
-            <section className="mb-16">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-primary mb-3">
-                  How It Works
-                </h2>
-                <p className="text-muted-foreground max-w-2xl mx-auto">
-                  Follow this sequence to understand what this automation will
-                  do for you
-                </p>
-              </div>
+        <div className="hidden sm:block">
+          {workflow?.steps &&
+            Array.isArray(workflow.steps) &&
+            workflow.steps.length > 0 && (
+              <section className="mb-16">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-primary mb-3">
+                    How It Works
+                  </h2>
+                  <p className="text-muted-foreground max-w-2xl mx-auto">
+                    Follow this sequence to understand what this automation will
+                    do for you
+                  </p>
+                </div>
 
-              <Card className="max-w-3xl mx-auto border-primary/20 shadow-xl bg-gradient-to-br from-background to-muted/10">
-                <CardContent className="p-0">
-                  {workflow.steps.map((step, index) => (
-                    <div
-                      key={index}
-                      className="border-b border-primary/10 last:border-0 p-6 hover:bg-primary/5 transition-colors group"
-                    >
-                      <div className="flex gap-4 items-start">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-bold flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                          {index + 1}
+                <Card className="max-w-3xl mx-auto border-primary/20 shadow-xl bg-gradient-to-br from-background to-muted/10">
+                  <CardContent className="p-0">
+                    {workflow.steps.map((step, index) => (
+                      <div
+                        key={index}
+                        className="border-b border-primary/10 last:border-0 p-6 hover:bg-primary/5 transition-colors group"
+                      >
+                        <div className="flex gap-4 items-start">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-bold flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 pt-1">
+                            <p className="text-foreground/90 leading-relaxed">
+                              {typeof step === "object"
+                                ? JSON.stringify(step, null, 2)
+                                : step}
+                            </p>
+                          </div>
+                          {index < workflow.steps.length - 1 && (
+                            <ArrowRight className="h-4 w-4 text-muted-foreground mt-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          )}
                         </div>
-                        <div className="flex-1 pt-1">
-                          <p className="text-foreground/90 leading-relaxed">
-                            {typeof step === "object"
-                              ? JSON.stringify(step, null, 2)
-                              : step}
-                          </p>
-                        </div>
-                        {index < workflow.steps.length - 1 && (
-                          <ArrowRight className="h-4 w-4 text-muted-foreground mt-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        )}
                       </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </section>
-          )}
+                    ))}
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+        </div>
 
         {/* Download section */}
         {workflow.workFlowJson && (
@@ -356,6 +359,7 @@ const SingleWorkflowPage = async ({
               workflowJson={workflow.workFlowJson}
               workflowId={workflow.id}
               showStats={true}
+              canEditSteps={false}
             />
           </section>
         )}
@@ -367,7 +371,7 @@ const SingleWorkflowPage = async ({
           profileImage={workflow.author.profileImage}
           firstName={workflow.author.firstName}
           lastName={workflow.author.lastName}
-          bio={workflow.author.bio}
+          bio={workflow.author.bio ?? undefined}
           email={workflow.author.email}
         />
       </div>

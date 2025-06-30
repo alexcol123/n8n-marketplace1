@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -67,7 +66,7 @@ const ZoomableWorkflowImage: React.FC<ZoomableWorkflowImageProps> = ({
     const scaleY = containerHeight / imageDimensions.height;
     const optimalScale = Math.min(scaleX, scaleY);
 
-    const zoomLevels = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+    const zoomLevels = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
     const closestZoom = zoomLevels.reduce((prev, curr) =>
       Math.abs(curr - optimalScale) < Math.abs(prev - optimalScale)
         ? curr
@@ -80,7 +79,8 @@ const ZoomableWorkflowImage: React.FC<ZoomableWorkflowImageProps> = ({
   };
 
   const zoomIn = () => {
-    if (scale === 0.75) setScale(1.0);
+    if (scale === 0.5) setScale(0.75);
+    else if (scale === 0.75) setScale(1.0);
     else if (scale === 1.0) setScale(1.25);
     else if (scale === 1.25) setScale(1.5);
     else if (scale === 1.5) setScale(1.75);
@@ -93,11 +93,12 @@ const ZoomableWorkflowImage: React.FC<ZoomableWorkflowImageProps> = ({
     else if (scale === 1.5) setScale(1.25);
     else if (scale === 1.25) setScale(1.0);
     else if (scale === 1.0) setScale(0.75);
+    else if (scale === 0.75) setScale(0.5);
   };
 
   const getZoomColor = () => {
     if (scale <= 0.75) return "text-orange-600";
-    if (scale >= 1.75) return "text-blue-600";
+    if (scale >= 1.5) return "text-blue-600";
     return "text-green-600";
   };
 
@@ -162,13 +163,13 @@ const ZoomableWorkflowImage: React.FC<ZoomableWorkflowImageProps> = ({
       container.removeEventListener("touchmove", handleTouchMove);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-    
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDragging, dragStart]);
 
   return (
     <Card className={cn("w-full overflow-hidden", className)}>
-      <CardHeader >
+      <CardHeader>
         <CardTitle className="flex items-center justify-between ">
           <div className="flex items-center gap-2">
             <ImageIcon className="w-5 h-5 text-primary" />
@@ -183,7 +184,6 @@ const ZoomableWorkflowImage: React.FC<ZoomableWorkflowImageProps> = ({
             {Math.round(scale * 100)}%
           </div>
         </CardTitle>
-
       </CardHeader>
 
       <CardContent className="space-y-3">
@@ -193,7 +193,7 @@ const ZoomableWorkflowImage: React.FC<ZoomableWorkflowImageProps> = ({
               onClick={zoomOut}
               variant="outline"
               size="sm"
-              disabled={scale <= 0.75}
+              disabled={scale <= 0.5}
               className="h-9 px-3"
             >
               <ZoomOut className="w-4 h-4" />
@@ -278,7 +278,7 @@ const ZoomableWorkflowImage: React.FC<ZoomableWorkflowImageProps> = ({
               onClick={zoomOut}
               variant="outline"
               size="sm"
-              disabled={scale <= 0.75}
+              disabled={scale <= 0.5}
               className="h-8 w-8 p-0 bg-background/90 backdrop-blur-sm border-primary/70 hover:border-primary hover:bg-primary/10 shadow-md"
             >
               <ZoomOut className="w-4 h-4 text-primary" />
@@ -307,8 +307,6 @@ const ZoomableWorkflowImage: React.FC<ZoomableWorkflowImageProps> = ({
             <span className="sm:hidden">Drag to pan</span>
           </div>
         </div>
-
-
       </CardContent>
     </Card>
   );

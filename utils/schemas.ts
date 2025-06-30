@@ -124,13 +124,13 @@ export const workflowStepSchema = z.object({
   stepDescription: z
     .string()
     .min(10, "Step description must be at least 10 characters")
-    .max(1000, "Step description must be less than 1000 characters")
+    .max(3000, "Step description must be less than 3000 characters")
     .optional()
     .or(z.literal("")), // Allow empty string
   helpText: z
     .string()
     .min(10, "Help text must be at least 10 characters")
-    .max(1000, "Help text must be less than 1000 characters")
+    .max(3000, "Help text must be less than 3000 characters")
     .optional()
     .or(z.literal("")), // Allow empty string
   helpLinks: z

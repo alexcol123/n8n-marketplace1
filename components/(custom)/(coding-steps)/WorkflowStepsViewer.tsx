@@ -2,13 +2,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -21,7 +15,6 @@ import {
   Workflow,
   ChevronLeft,
   ChevronRight,
-  Trophy,
   ArrowRight,
   Clock,
   BarChart3,
@@ -61,13 +54,13 @@ interface WorkflowStepsViewerProps {
   className?: string;
   showStats?: boolean;
   workflowSteps: WorkflowStep[];
+  canEditSteps?: boolean;
 }
 
 export default function WorkflowStepsViewer({
-  workflowJson,
   workflowId,
   className,
-  showStats = true,
+  canEditSteps = false,
   workflowSteps,
 }: WorkflowStepsViewerProps) {
   const [showDisconnected, setShowDisconnected] = useState(false);
@@ -206,7 +199,8 @@ export default function WorkflowStepsViewer({
               No Workflow Steps Found
             </h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Unable to parse workflow structure or no valid steps detected. Please check your workflow configuration.
+              Unable to parse workflow structure or no valid steps detected.
+              Please check your workflow configuration.
             </p>
           </div>
         </CardContent>
@@ -224,19 +218,19 @@ export default function WorkflowStepsViewer({
             <div className="flex items-center justify-between mb-4">
               {/* Left: Progress Info */}
               <div className="flex items-center gap-4">
-                <Badge 
-                  variant="secondary" 
+                <Badge
+                  variant="secondary"
                   className="bg-primary/10 text-primary border border-primary/20 text-xs px-2 py-1 font-medium"
                 >
                   <Workflow className="h-3 w-3 mr-1" />
                   Tutorial
                 </Badge>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
+                  <div className="hidden md:flex items-center gap-1  ">
                     <Clock className="h-4 w-4" />
                     <span>{stats.totalSteps}min</span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="hidden md:flex   items-center gap-1">
                     <BarChart3 className="h-4 w-4" />
                     <span>{stats.totalSteps} Steps</span>
                   </div>
@@ -263,7 +257,9 @@ export default function WorkflowStepsViewer({
                   <div className="text-sm font-medium">
                     {isOnCompletionStep
                       ? "Tutorial Complete!"
-                      : `Step ${currentStepIndex + 1} of ${displayedSteps.length}`}
+                      : `Step ${currentStepIndex + 1} of ${
+                          displayedSteps.length
+                        }`}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {viewedSteps.size} viewed • {completionPercentage}% complete
@@ -331,7 +327,7 @@ export default function WorkflowStepsViewer({
               </Button>
 
               {/* Center: Current Step Title */}
-              <div className="text-center px-4">
+              <div className="text-center px-4 hidden sm:block">
                 <div className="text-sm font-medium truncate max-w-[300px]">
                   {isOnCompletionStep
                     ? "🎉 All Steps Complete!"
@@ -355,7 +351,9 @@ export default function WorkflowStepsViewer({
                     : "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md"
                 )}
               >
-                {currentStepIndex === displayedSteps.length - 1 ? "Complete" : "Next"}
+                {currentStepIndex === displayedSteps.length - 1
+                  ? "Complete"
+                  : "Next"}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -367,10 +365,8 @@ export default function WorkflowStepsViewer({
           <div className="p-1">
             {isOnCompletionStep ? (
               /* Completion Step */
-      
-      
-                <MarkCompletedButton workflowId={workflowId} />
-              
+
+              <MarkCompletedButton workflowId={workflowId} />
             ) : currentStep ? (
               /* Current Step */
               <div className="space-y-2">
@@ -384,6 +380,7 @@ export default function WorkflowStepsViewer({
                     isMarkedAsViewed={viewedSteps.has(currentStep.id)}
                     isExpanded={expandedStepId === currentStep.id}
                     onExpand={handleStepExpand}
+                    canEditSteps={canEditSteps}
                   />
                 </div>
               </div>
@@ -395,10 +392,11 @@ export default function WorkflowStepsViewer({
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Step Not Found</h3>
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  We couldn't load this step. This might be a temporary issue or the step may have been removed.
+                  We couldn't load this step. This might be a temporary issue or
+                  the step may have been removed.
                 </p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setCurrentStepIndex(0)}
                   className="gap-2"
                 >

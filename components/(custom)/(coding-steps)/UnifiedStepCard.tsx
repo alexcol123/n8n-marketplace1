@@ -34,6 +34,7 @@ import {
 import { cn } from "@/lib/utils";
 import EditCardHelp from "./EditCardHelp";
 
+
 interface AIMessage {
   role?: string;
   type?: string;
@@ -48,12 +49,14 @@ interface UnifiedStepCardProps {
   onToggleExpanded?: (stepId: string, isExpanded: boolean) => void;
   isMarkedAsViewed?: boolean;
   isExpanded?: boolean; // Add external control of expanded state
+  canEditSteps?: boolean;
   onExpand?: (stepId: string) => void; // Add callback for when this card wants to expand
 }
 
 export default function UnifiedStepCard({
   step,
-  stepNumber,
+
+  canEditSteps ,
   onToggleExpanded,
   isMarkedAsViewed = false,
   isExpanded = false, // Use external expanded state
@@ -62,6 +65,9 @@ export default function UnifiedStepCard({
   const [showRawData, setShowRawData] = useState(false);
   const [copied, setCopied] = useState(false);
   const [nodeCopied, setNodeCopied] = useState(false);
+
+
+
 
   // Handle expansion toggle - this now requests expansion from parent
   const handleToggleExpanded = () => {
@@ -1098,7 +1104,7 @@ export default function UnifiedStepCard({
         <CardContent className="py-6">
           {/* Step Information Section =================>>>>>>>>>>>> */}
 
-          <EditCardHelp step={step} />
+          <EditCardHelp step={step}  canEditSteps={canEditSteps} />
 
           {/* Basic Information section removed - users don't need to see technical IDs and positions */}
 
