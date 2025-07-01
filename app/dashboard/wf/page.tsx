@@ -4,14 +4,12 @@ import { fetchMyWorkflows } from "@/utils/actions";
 
 const MyWorkflowsPage = async () => {
   const workflows = await fetchMyWorkflows();
-
   const noWorkflows = workflows.length === 0;
+  const isAdminOrCreator = true; // User is always creator on "My Workflows" page
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-1">
-        {noWorkflows ? "My Workflows Collection" : "My Workflows Collection"}
-      </h1>
+      <h1 className="text-3xl font-bold mb-1">My Workflows Collection</h1>
       <p className="text-muted-foreground">
         Manage and track your shared automation workflows
       </p>
@@ -26,9 +24,14 @@ const MyWorkflowsPage = async () => {
           btnLink={"/dashboard/wf/create"}
         />
       ) : (
-        <CardsList workflows={workflows}  canDelete={true}  />
+        <CardsList
+          workflows={workflows}
+          canDelete={true}
+          canEditSteps={isAdminOrCreator}
+        />
       )}
     </div>
   );
 };
+
 export default MyWorkflowsPage;
