@@ -81,7 +81,10 @@ const SingleWorkflowPage = async ({
 
 
 
-  const readingTime = readingTimeFunc(workflow?.content, workflow?.steps);
+  const readingTime = readingTimeFunc(
+    workflow?.content,
+    Array.isArray(workflow?.steps) ? (workflow.steps as (string | object)[]) : undefined
+  );
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
@@ -270,6 +273,7 @@ const SingleWorkflowPage = async ({
         )}
 
         {/* Automation steps */}
+{/* Automation steps */}
         <div className="hidden sm:block">
           {workflow?.steps &&
             Array.isArray(workflow.steps) &&
@@ -287,28 +291,34 @@ const SingleWorkflowPage = async ({
 
                 <Card className="max-w-3xl mx-auto border-primary/20 shadow-xl bg-gradient-to-br from-background to-muted/10">
                   <CardContent className="p-0">
-                    {workflow.steps.map((step, index) => (
-                      <div
-                        key={index}
-                        className="border-b border-primary/10 last:border-0 p-6 hover:bg-primary/5 transition-colors group"
-                      >
-                        <div className="flex gap-4 items-start">
-                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-bold flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                            {index + 1}
+                    {(workflow.steps as (string | object)[]).map((step, index) => {
+                      // Type-safe access to array length
+                      const stepsArray = workflow.steps as (string | object)[];
+                      const stepsLength = stepsArray.length;
+                      
+                      return (
+                        <div
+                          key={index}
+                          className="border-b border-primary/10 last:border-0 p-6 hover:bg-primary/5 transition-colors group"
+                        >
+                          <div className="flex gap-4 items-start">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-bold flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                              {index + 1}
+                            </div>
+                            <div className="flex-1 pt-1">
+                              <p className="text-foreground/90 leading-relaxed">
+                                {typeof step === "object"
+                                  ? JSON.stringify(step, null, 2)
+                                  : step}
+                              </p>
+                            </div>
+                            {index < stepsLength - 1 && (
+                              <ArrowRight className="h-4 w-4 text-muted-foreground mt-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            )}
                           </div>
-                          <div className="flex-1 pt-1">
-                            <p className="text-foreground/90 leading-relaxed">
-                              {typeof step === "object"
-                                ? JSON.stringify(step, null, 2)
-                                : step}
-                            </p>
-                          </div>
-                          {index < workflow.steps.length - 1 && (
-                            <ArrowRight className="h-4 w-4 text-muted-foreground mt-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </CardContent>
                 </Card>
               </section>

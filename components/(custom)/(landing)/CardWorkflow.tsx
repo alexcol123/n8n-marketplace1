@@ -290,7 +290,7 @@ export default function CardWorkflow({
 
             <div className="flex items-center text-xs text-muted-foreground">
               <CalendarIcon className="mr-1 h-3 w-3" />
-              <span>{formatDate(workflows?.author?.createdAt)}</span>
+              <span>{formatDate(workflows?.createdAt)}</span>
             </div>
           </div>
         </CardContent>
@@ -533,7 +533,7 @@ export default function CardWorkflow({
               <DialogDescription className="text-base text-muted-foreground">
                 Are you sure you want to delete{" "}
                 <span className="font-semibold text-foreground">
-                  "{workflows?.title.replace(/^"(.+)"$/, "$1")}"
+                  {workflows?.title.replace(/^"(.+)"$/, "$1")}
                 </span>
                 ?
               </DialogDescription>

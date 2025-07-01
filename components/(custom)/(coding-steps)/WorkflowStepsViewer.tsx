@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import UnifiedStepCard from "./UnifiedStepCard";
-import { type WorkflowJson } from "@/utils/functions/WorkflowStepsInOrder";
+import { ConnectionInfo, type WorkflowJson } from "@/utils/functions/WorkflowStepsInOrder";
 import {
   Eye,
   EyeOff,
@@ -22,8 +22,9 @@ import {
 import { cn } from "@/lib/utils";
 import MarkCompletedButton from "./MarkCompletedButton";
 import { WorkflowStep } from "@prisma/client";
+import { JsonValue } from "@prisma/client/runtime/library";
 
-// Define the OrderedWorkflowStep interface locally
+// ✅ FIXED: Update local interface to match the imported one (including index signature)
 interface OrderedWorkflowStep {
   id: string;
   name: string;
@@ -35,17 +36,19 @@ interface OrderedWorkflowStep {
   isMergeNode: boolean;
   isDependency: boolean;
   isDisconnected?: boolean;
-  // Additional fields from database
-  stepDescription?: string;
-  credentials?: any;
+  // Additional fields from database - Fixed null handling
+  stepDescription?: string | null;
+  credentials?: unknown;
   typeVersion?: number;
-  webhookId?: string;
+  webhookId?: string | null;
   isCustomStep?: boolean;
-  stepTitle?: string;
-  stepImage?: string;
-  helpText?: string;
-  helpLinks?: any;
+  stepTitle?: string | null;
+  stepImage?: string | null;
+  helpText?: string | null;
+  helpLinks?: { label: string; url: string }[] | null;
   originalApiStep?: WorkflowStep;
+  connectionInfo?: ConnectionInfo; // ✅ FIXED: Make this optional to match imported type
+  [key: string]: unknown; // ✅ FIXED: Add index signature to match WorkflowNode
 }
 
 interface WorkflowStepsViewerProps {
@@ -57,6 +60,15 @@ interface WorkflowStepsViewerProps {
   canEditSteps?: boolean;
 }
 
+// ✅ NEW: Helper function to create default ConnectionInfo
+const createDefaultConnectionInfo = (): ConnectionInfo => ({
+  connectsTo: [],
+  connectsFrom: [],
+  nextSteps: [],
+  previousSteps: [],
+  connectionInstructions: "No connection information available."
+});
+
 export default function WorkflowStepsViewer({
   workflowId,
   className,
@@ -66,14 +78,22 @@ export default function WorkflowStepsViewer({
   const [showDisconnected, setShowDisconnected] = useState(false);
   const [viewedSteps, setViewedSteps] = useState<Set<string>>(new Set());
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
-  const [localWorkflowSteps, setLocalWorkflowSteps] =
-    useState<WorkflowStep[]>(workflowSteps);
+  const [localWorkflowSteps] = useState<WorkflowStep[]>(workflowSteps);
 
   // Step navigation state
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
 
   // Transform API workflow steps to OrderedWorkflowStep format
   const orderedSteps: OrderedWorkflowStep[] = useMemo(() => {
+    // Helper function to safely convert position
+    const convertPosition = (position: JsonValue): [number, number] => {
+      if (Array.isArray(position) && position.length >= 2) {
+        const [x, y] = position;
+        return [typeof x === "number" ? x : 0, typeof y === "number" ? y : 0];
+      }
+      return [0, 0]; // Default position if invalid or null
+    };
+
     return localWorkflowSteps
       .filter((step) => {
         const nodeType = step.nodeType.toLowerCase();
@@ -86,14 +106,20 @@ export default function WorkflowStepsViewer({
       })
       .map((step) => ({
         id: step.id,
-        name: step.stepTitle,
+        name: step.stepTitle || "Untitled Step", // Handle null stepTitle
         type: step.nodeType,
-        parameters: step.parameters || {},
-        position: step.position,
+        parameters:
+          step.parameters &&
+          typeof step.parameters === "object" &&
+          !Array.isArray(step.parameters)
+            ? (step.parameters as Record<string, unknown>)
+            : {},
+        position: convertPosition(step.position), // Safe conversion
         stepNumber: step.stepNumber,
         isTrigger: step.isTrigger,
         isMergeNode: step.isMergeNode,
         isDependency: step.isDependency,
+        // Fixed: Keep null values as null, don't convert to undefined
         stepDescription: step.stepDescription,
         credentials: step.credentials,
         typeVersion: step.typeVersion,
@@ -102,9 +128,11 @@ export default function WorkflowStepsViewer({
         stepTitle: step.stepTitle,
         stepImage: step.stepImage,
         helpText: step.helpText,
-        helpLinks: step.helpLinks,
+        helpLinks: step.helpLinks as { label: string; url: string }[] | null,
         isDisconnected: false,
         originalApiStep: step,
+        // ✅ FIXED: Provide default connectionInfo or use optional chaining
+        connectionInfo: createDefaultConnectionInfo(),
       }));
   }, [localWorkflowSteps]);
 
@@ -331,7 +359,9 @@ export default function WorkflowStepsViewer({
                 <div className="text-sm font-medium truncate max-w-[300px]">
                   {isOnCompletionStep
                     ? "🎉 All Steps Complete!"
-                    : currentStep?.stepTitle || "Loading..."}
+                    : currentStep?.stepTitle ||
+                      currentStep?.name ||
+                      "Loading..."}
                 </div>
                 {!isOnCompletionStep && currentStep && (
                   <div className="text-xs text-muted-foreground mt-1">
@@ -365,7 +395,6 @@ export default function WorkflowStepsViewer({
           <div className="p-1">
             {isOnCompletionStep ? (
               /* Completion Step */
-
               <MarkCompletedButton workflowId={workflowId} />
             ) : currentStep ? (
               /* Current Step */
@@ -392,8 +421,8 @@ export default function WorkflowStepsViewer({
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Step Not Found</h3>
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  We couldn't load this step. This might be a temporary issue or
-                  the step may have been removed.
+                  We couldn&#39;t load this step. This might be a temporary
+                  issue or the step may have been removed.
                 </p>
                 <Button
                   variant="outline"

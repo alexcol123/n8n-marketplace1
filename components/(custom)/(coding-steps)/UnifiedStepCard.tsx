@@ -34,7 +34,6 @@ import {
 import { cn } from "@/lib/utils";
 import EditCardHelp from "./EditCardHelp";
 
-
 interface AIMessage {
   role?: string;
   type?: string;
@@ -48,32 +47,28 @@ interface UnifiedStepCardProps {
   stepNumber: number;
   onToggleExpanded?: (stepId: string, isExpanded: boolean) => void;
   isMarkedAsViewed?: boolean;
-  isExpanded?: boolean; // Add external control of expanded state
+  isExpanded?: boolean;
   canEditSteps?: boolean;
-  onExpand?: (stepId: string) => void; // Add callback for when this card wants to expand
+  onExpand?: (stepId: string) => void;
+  
 }
 
 export default function UnifiedStepCard({
   step,
 
-  canEditSteps ,
+  canEditSteps,
   onToggleExpanded,
   isMarkedAsViewed = false,
-  isExpanded = false, // Use external expanded state
-  onExpand, // Callback for expansion requests
+  isExpanded = false,
+  onExpand,
 }: UnifiedStepCardProps) {
   const [showRawData, setShowRawData] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [nodeCopied, setNodeCopied] = useState(false);
-
-
-
 
   // Handle expansion toggle - this now requests expansion from parent
   const handleToggleExpanded = () => {
     if (isExpanded) {
       // If currently expanded, close it
-
       if (onExpand) {
         onExpand(step.id);
       }
@@ -83,7 +78,6 @@ export default function UnifiedStepCard({
       }
     } else {
       // If currently closed, request to expand
-
       if (onExpand) {
         onExpand(step.id);
       }
@@ -94,180 +88,26 @@ export default function UnifiedStepCard({
     }
   };
 
-  // Generate cURL command for HTTP nodes
-  const generateCurlCommand = (): string => {
-    if (!isHTTPNode() || !hasParameters) return "";
-
-    const params = step.parameters;
-    if (!params) return "";
-
-    // Extract HTTP details from n8n HTTP node parameters
-    const method = params.method || "GET";
-    const url = params.url || "";
-    const options = params.options || {};
-
-    // Handle different body types in n8n
-    let body = null;
-
-    if (params.sendBody) {
-      switch (params.specifyBody) {
-        case "json":
-          body = params.jsonBody;
-          break;
-        case "form":
-          body = params.formData;
-          break;
-        case "string":
-          body = params.bodyData;
-          break;
-        case "formData":
-          body = params.multipartData;
-          break;
-        default:
-          body = params.body || params.jsonBody;
-      }
-    }
-
-    if (!url) return "";
-
-    // Clean up n8n expression syntax in URL (={{ }} expressions)
-    let cleanUrl = String(url).replace(/^=/, ""); // Remove leading = from expressions
-
-    // Add query parameters from options
-    if (options.qs && typeof options.qs === "object") {
-      const queryString = new URLSearchParams(
-        Object.entries(options.qs).reduce((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {} as Record<string, string>)
-      ).toString();
-      if (queryString) {
-        cleanUrl += cleanUrl.includes("?")
-          ? `&${queryString}`
-          : `?${queryString}`;
-      }
-    }
-
-    // Start building curl command
-    let curl = "";
-
-    // Only add method if it's not GET
-    if (String(method).toUpperCase() !== "GET") {
-      curl = `curl -X ${String(method).toUpperCase()} "${cleanUrl}"`;
-    } else {
-      curl = `curl "${cleanUrl}"`;
-    }
-
-    // Add headers from options
-    if (options.headers && typeof options.headers === "object") {
-      Object.entries(options.headers).forEach(([key, value]) => {
-        if (value) {
-          curl += ` \\\n  -H "${key}: ${String(value)}"`;
-        }
-      });
-    }
-
-    // Add Content-Type header if sending body and not already specified
-    const bodyMethods = ["POST", "PUT", "PATCH"];
-    if (body && bodyMethods.includes(String(method).toUpperCase())) {
-      const hasContentType =
-        options.headers &&
-        Object.keys(options.headers).some(
-          (key) => key.toLowerCase() === "content-type"
-        );
-
-      if (!hasContentType) {
-        curl += ` \\\n  -H "Content-Type: application/json"`;
-      }
-    }
-
-    // --- START OF MODIFIED SECTION ---
-
-    // Add authentication placeholder based on type
-    if (params.authentication && params.authentication !== "none") {
-      if (
-        params.genericAuthType === "httpHeaderAuth" ||
-        params.genericAuthType === "httpCustomAuth"
-      ) {
-        // We ALWAYS use a clear, instructional placeholder for Authorization.
-        curl += ` \\\n  -H "Authorization:  IMPORTANT_YOUR_REAL_API_KEY"`;
-      } else if (params.genericAuthType === "httpBasicAuth") {
-        curl += ` \\\n  -u "YOUR_USERNAME:YOUR_PASSWORD"`;
-      } else if (params.genericAuthType === "oAuth2Api") {
-        curl += ` \\\n  -H "Authorization:  IMPORTANT_YOUR_OAUTH_ACCESS_TOKEN"`;
-      } else {
-        // Generic auth placeholder
-        curl += ` \\\n  -H "Authorization:  IMPORTANT_YOUR_REAL_API_KEY"`;
-      }
-    }
-
-    // --- END OF MODIFIED SECTION ---
-
-    // Add body for applicable methods
-    if (body && bodyMethods.includes(String(method).toUpperCase())) {
-      let bodyString = "";
-
-      if (params.specifyBody === "formData" && typeof body === "object") {
-        Object.entries(body).forEach(([key, value]) => {
-          curl += ` \\\n  -F "${key}=${String(value)}"`;
-        });
-      } else if (params.specifyBody === "form" && typeof body === "object") {
-        const formString = new URLSearchParams(
-          Object.entries(body).reduce((acc, [key, value]) => {
-            acc[key] = String(value);
-            return acc;
-          }, {} as Record<string, string>)
-        ).toString();
-        curl += ` \\\n  -d "${formString}"`;
-      } else {
-        if (typeof body === "string") {
-          bodyString = body.replace(/^=/, "");
-          try {
-            const parsed = JSON.parse(bodyString);
-            bodyString = JSON.stringify(parsed, null, 2);
-          } catch {
-            /* not valid JSON, leave as is */
-          }
-        } else {
-          bodyString = JSON.stringify(body, null, 2);
-        }
-
-        // Use single quotes for the body to handle JSON double quotes easily
-        curl += ` \\\n  -d '${bodyString}'`;
-      }
-    }
-
-    return curl;
-  };
-
-  // Copy cURL to clipboard
-  const copyToClipboard = async () => {
-    const curlCommand = generateCurlCommand();
-    if (!curlCommand) return;
-
-    try {
-      await navigator.clipboard.writeText(curlCommand);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy to clipboard:", err);
-    }
-  };
-
-  // Copy node data in n8n workflow format
   // Copy node data in n8n workflow format AND mark as completed
   const copyNodeData = async () => {
     // Create single node in n8n workflow format
-    const nodeData = {
+    const nodeData: Record<string, unknown> = {
       parameters: step.parameters || {},
       type: step.type,
       typeVersion: step.typeVersion || 1,
       position: step.position || [0, 0],
       id: step.id,
       name: step.name,
-      ...(step.webhookId && { webhookId: step.webhookId }),
-      ...(step.credentials && { credentials: step.credentials }),
     };
+
+    // Add optional properties if they exist
+    if (step.webhookId) {
+      nodeData.webhookId = step.webhookId;
+    }
+
+    if (step.credentials) {
+      nodeData.credentials = step.credentials;
+    }
 
     // Wrap in n8n workflow format
     const workflowFormat = {
@@ -391,10 +231,7 @@ export default function UnifiedStepCard({
     return "default";
   };
 
-  // Check if this is an HTTP node
-  const isHTTPNode = () => {
-    return getNodeCategory(step.type) === "http";
-  };
+
 
   // Get step color classes based on type, state, and viewed status
   const getStepColors = () => {
@@ -640,14 +477,6 @@ export default function UnifiedStepCard({
       type: "system" | "user" | "text";
     }
 
-    interface AIMessage {
-      role?: string;
-      type?: string;
-      content?: string;
-      text?: string;
-      message?: string;
-    }
-
     const prompts = {
       system: "",
       user: "",
@@ -740,7 +569,7 @@ export default function UnifiedStepCard({
         step.parameters[key] &&
         Array.isArray(step.parameters[key])
       ) {
-        prompts.messages = step.parameters[key];
+        prompts.messages = step.parameters[key] as AIMessage[];
         break;
       }
     }
@@ -819,7 +648,6 @@ export default function UnifiedStepCard({
           "dark:from-green-950/30 dark:via-emerald-950/30 dark:to-green-950/30",
           "border-2 border-green-400/60 shadow-xl shadow-green-500/25",
           "dark:border-green-500/50 dark:shadow-green-400/15",
-          // ✅ Removed the flashing animation lines
         ]
       )}
     >
@@ -990,35 +818,9 @@ export default function UnifiedStepCard({
           <Separator className="my-2" />
 
           {/* Enhanced Action Buttons with Better Hierarchy */}
-
           <div className="flex flex-col gap-2 order-1 sm:order-2 sm:flex-row sm:justify-end">
             <div className="flex gap-2 sm:gap-4 flex-wrap justify-stretch sm:justify-end">
-              {/* Primary Action - Most Important */}
-              {isHTTPNode() && hasParameters ? (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={copyToClipboard}
-                  className="gap-2 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[100px] flex-1 sm:flex-none"
-                  title="Copy as cURL command for testing this HTTP request"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 flex-shrink-0" />
-                      <span className="truncate">Copied cURL!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Globe className="h-3.5 w-3.5 flex-shrink-0" />
-                      <span className="truncate">
-                        <span className="hidden sm:inline">Test with </span>cURL
-                      </span>
-                    </>
-                  )}
-                </Button>
-              ) : null}
-
-              {/* Secondary Action - Export Node */}
+              {/* Primary Action - Export Node */}
               <Button
                 variant="secondary"
                 size="sm"
@@ -1041,9 +843,9 @@ export default function UnifiedStepCard({
                 )}
               </Button>
 
-              {/* Tertiary Action - Expand/Collapse */}
+              {/* Secondary Action - Expand/Collapse */}
               <Button
-                variant="destructive"
+                variant="outline"
                 size="sm"
                 onClick={handleToggleExpanded}
                 className="transition-all duration-200 gap-2 hover:bg-muted/50 min-w-[90px] flex-1 sm:flex-none"
@@ -1102,65 +904,8 @@ export default function UnifiedStepCard({
       {/* Card Content - Only Show When Expanded */}
       {isExpanded ? (
         <CardContent className="py-6">
-          {/* Step Information Section =================>>>>>>>>>>>> */}
-
-          <EditCardHelp step={step}  canEditSteps={canEditSteps} />
-
-          {/* Basic Information section removed - users don't need to see technical IDs and positions */}
-
-          {/* cURL Command Section - Enhanced Visibility */}
-          {isHTTPNode() && hasParameters && copied ? (
-            <div className="mt-6">
-              <Separator className="my-4" />
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500/10 rounded-lg">
-                    <Globe className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h5 className="font-semibold text-base">
-                      Generated cURL Command
-                    </h5>
-                    <p className="text-xs text-muted-foreground">
-                      Ready to test in your terminal
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-slate-950 dark:bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 bg-slate-900 dark:bg-slate-800 border-b border-slate-700">
-                    <div className="flex items-center gap-3">
-                      <div className="flex gap-1.5">
-                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      </div>
-                      <span className="text-xs text-slate-400 font-mono">
-                        Terminal
-                      </span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(generateCurlCommand());
-                      }}
-                      className="h-7 px-3 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-colors"
-                    >
-                      <Copy className="h-3 w-3 mr-1" />
-                      Copy
-                    </Button>
-                  </div>
-
-                  <ScrollArea className="h-48 w-full">
-                    <pre className="p-4 text-sm text-slate-100 font-mono leading-relaxed whitespace-pre overflow-x-auto">
-                      <code>{generateCurlCommand()}</code>
-                    </pre>
-                  </ScrollArea>
-                </div>
-              </div>
-            </div>
-          ) : null}
+          {/* Step Information Section */}
+          <EditCardHelp step={step} canEditSteps={canEditSteps} />
 
           {/* Disconnected Warning - Enhanced Alert */}
           {step.isDisconnected ? (
@@ -1176,7 +921,7 @@ export default function UnifiedStepCard({
                     </h6>
                     <p className="text-sm text-destructive/80">
                       This node is not connected to the main workflow execution
-                      path. It won't run unless you connect it properly.
+                      path. It won&apos;t run unless you connect it properly.
                     </p>
                   </div>
                 </div>
@@ -1777,8 +1522,6 @@ export default function UnifiedStepCard({
               </div>
             </div>
           ) : null}
-
-          {/* Additional Metadata section removed - users don't need to see technical node status info */}
         </CardContent>
       ) : null}
     </Card>

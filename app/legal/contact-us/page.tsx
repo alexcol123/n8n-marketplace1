@@ -148,7 +148,7 @@ export default function ContactUsPage() {
             <CardHeader>
               <CardTitle>How We Can Help</CardTitle>
               <CardDescription>
-                We're here to support your n8n automation journey
+                We&apos;re here to support your n8n automation journey
               </CardDescription>
             </CardHeader>
             <CardContent>

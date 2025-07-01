@@ -484,6 +484,7 @@ export const fetchWorkflows = async ({
       content: true,
       workflowImage: true,
       creationImage: true,
+      createdAt: true,
       authorId: true,
       author: true,
       category: true,
@@ -504,7 +505,7 @@ export const fetchSingleWorkflow = async (slug: string) => {
     let user = null;
     try {
       user = await getAuthUser();
-    } catch (error) {
+    } catch {
       // User is not logged in, continue without user
       console.log("User not logged in, continuing as public user");
     }

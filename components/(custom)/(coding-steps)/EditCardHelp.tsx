@@ -44,35 +44,59 @@ interface HelpLink {
   url: string;
 }
 
+// Type for unknown help link data from the database
+interface UnknownHelpLink {
+  title?: unknown;
+  url?: unknown;
+}
+
+interface EditCardHelpProps {
+  step: OrderedWorkflowStep;
+  onStepUpdated?: (updatedStep: Partial<OrderedWorkflowStep>) => void;
+  canEditSteps?: boolean;
+}
+
 const EditCardHelp = ({
   step,
   onStepUpdated,
   canEditSteps = false,
-}: {
-  step: OrderedWorkflowStep;
-  onStepUpdated?: (updatedStep: Partial<OrderedWorkflowStep>) => void;
-  canEditSteps: boolean;
-}) => {
+}: EditCardHelpProps) => {
   const router = useRouter();
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Form state
-  const [stepTitle, setStepTitle] = useState(step.stepTitle || "");
+  // Helper function to safely convert unknown help link to typed HelpLink
+  const convertToHelpLink = (link: unknown): HelpLink => {
+    if (typeof link === 'object' && link !== null) {
+      const linkObj = link as UnknownHelpLink;
+      return {
+        title: String(linkObj.title || ""),
+        url: String(linkObj.url || ""),
+      };
+    }
+    return { title: "", url: "" };
+  };
+
+  // Form state - ensure all values are strings
+  const [stepTitle, setStepTitle] = useState(String(step.stepTitle || ""));
   const [stepDescription, setStepDescription] = useState(
-    (step.stepDescription as string) || ""
+    String(step.stepDescription || "")
   );
-  const [stepImage, setStepImage] = useState(step.stepImage || "");
-  const [helpText, setHelpText] = useState((step.helpText as string) || "");
-  const [helpLinks, setHelpLinks] = useState<HelpLink[]>(
-    (step.helpLinks as HelpLink[]) || []
-  );
+  const [stepImage, setStepImage] = useState(String(step.stepImage || ""));
+  const [helpText, setHelpText] = useState(String(step.helpText || ""));
+  const [helpLinks, setHelpLinks] = useState<HelpLink[]>(() => {
+    // Ensure helpLinks is properly typed
+    if (Array.isArray(step.helpLinks)) {
+      return step.helpLinks.map(convertToHelpLink);
+    }
+    return [];
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   // Listen for image updates
   useEffect(() => {
     const handleImageUpdate = (event: CustomEvent) => {
       if (event.detail.stepId === step.id && event.detail.success) {
-        setStepImage(event.detail.imageUrl);
+        setStepImage(String(event.detail.imageUrl || ""));
         if (onStepUpdated) {
           onStepUpdated({ stepImage: event.detail.imageUrl });
         }
@@ -106,7 +130,7 @@ const EditCardHelp = ({
     value: string
   ) => {
     const updatedLinks = helpLinks.map((link, i) =>
-      i === index ? { ...link, [field]: value } : link
+      i === index ? { ...link, [field]: String(value) } : link
     );
     setHelpLinks(updatedLinks);
   };
@@ -119,7 +143,7 @@ const EditCardHelp = ({
       );
 
       const result = await updateWorkflowStepAction(step.id, {
-        stepTitle,
+        stepTitle: String(stepTitle || ""),
         stepDescription,
         helpText,
         helpLinks: validHelpLinks,
@@ -149,10 +173,15 @@ const EditCardHelp = ({
   };
 
   const resetForm = () => {
-    setStepTitle(step.stepTitle || "");
-    setStepDescription((step.stepDescription as string) || "");
-    setHelpText((step.helpText as string) || "");
-    setHelpLinks((step.helpLinks as HelpLink[]) || []);
+    setStepTitle(String(step.stepTitle || ""));
+    setStepDescription(String(step.stepDescription || ""));
+    setHelpText(String(step.helpText || ""));
+    setHelpLinks(() => {
+      if (Array.isArray(step.helpLinks)) {
+        return step.helpLinks.map(convertToHelpLink);
+      }
+      return [];
+    });
   };
 
   const handleCancel = () => {
@@ -161,12 +190,16 @@ const EditCardHelp = ({
   };
 
   const displayTitle = String(stepTitle || step.stepTitle || "Untitled Step");
-  const displayDescription =
-    stepDescription || (step.stepDescription as string) || "";
-  const displayHelpText = helpText || (step.helpText as string) || "";
-  const displayHelpLinks =
-    helpLinks.length > 0 ? helpLinks : (step.helpLinks as HelpLink[]) || [];
-  const currentImage = stepImage || step.stepImage;
+  const displayDescription = String(
+    stepDescription || step.stepDescription || ""
+  );
+  const displayHelpText = String(helpText || step.helpText || "");
+  const displayHelpLinks = helpLinks.length > 0 
+    ? helpLinks 
+    : Array.isArray(step.helpLinks) 
+      ? step.helpLinks.map(convertToHelpLink)
+      : [];
+  const currentImage = String(stepImage || step.stepImage || "");
 
   return (
     <Card className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-all duration-300">
@@ -196,12 +229,12 @@ const EditCardHelp = ({
 
         {/* Image Section */}
         <div className="space-y-3">
-          {typeof currentImage === "string" && currentImage && (
+          {currentImage && (
             <div className="relative">
               <div className="overflow-hidden  max-w-2xl mx-auto rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm">
                 <Image
                   src={currentImage}
-                  alt={String(displayTitle)}
+                  alt={displayTitle}
                   width={800}
                   height={400}
                   className="w-full h-auto object-cover"
@@ -237,10 +270,10 @@ const EditCardHelp = ({
               <LinkIcon className="h-4 w-4 text-slate-600 dark:text-slate-100" />
               <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 ">
                 Additional Resources (click to visit)
-              </h4> 
+              </h4>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {displayHelpLinks.map((link: any, index: number) => (
+              {displayHelpLinks.map((link: HelpLink, index: number) => (
                 <Button
                   key={index}
                   variant="outline"
@@ -283,7 +316,7 @@ const EditCardHelp = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ImageInputContainer
-                      image={currentImage as string}
+                      image={currentImage}
                       name="image"
                       text="Update Image"
                       stepId={step.id}
@@ -384,8 +417,8 @@ const EditCardHelp = ({
 
               {helpLinks.length === 0 ? (
                 <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
-                  No resources added yet. Click "Add Resource" to include
-                  helpful links.
+                  No resources added yet. Click &quot;Add Resource&quot; to
+                  include helpful links.
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -414,7 +447,7 @@ const EditCardHelp = ({
                             Title
                           </Label>
                           <Input
-                            value={link.title}
+                            value={String(link.title || "")}
                             onChange={(e) =>
                               updateHelpLink(index, "title", e.target.value)
                             }
@@ -427,7 +460,7 @@ const EditCardHelp = ({
                             URL
                           </Label>
                           <Input
-                            value={link.url}
+                            value={String(link.url || "")}
                             onChange={(e) =>
                               updateHelpLink(index, "url", e.target.value)
                             }

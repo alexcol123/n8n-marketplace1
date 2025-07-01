@@ -13,7 +13,7 @@ import {
   Zap,
   CheckCircle,
 } from "lucide-react";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@clerk/nextjs/server";
 
 type WorkflowWithAuthor = Workflow & {
   author: Profile;

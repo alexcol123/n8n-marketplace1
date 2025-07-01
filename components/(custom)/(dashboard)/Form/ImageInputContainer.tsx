@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { actionFunction } from "@/utils/types";
-import { LucideUser2, Camera, Upload, X } from "lucide-react";
+import { Upload } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import FormContainer from "./FormContainer";
@@ -13,7 +13,6 @@ import {
   DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,

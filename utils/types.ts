@@ -8,13 +8,14 @@ export type WorkflowCardTypes = {
   title: string;
   content: string;
   workflowImage: string;
-  creationImage?: string;
+  creationImage: string | null; // Changed from undefined to null
   authorId: string;
   author: User;
   category: string;
   slug: string;
-  videoUrl?: string;
+  videoUrl?: string | null;
   viewCount: number;
+  createdAt: Date;
 };
 
 export type User = {

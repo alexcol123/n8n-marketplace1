@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Circle,
   Loader2,
   Trophy,
   RotateCcw,
@@ -277,7 +276,7 @@ export default function MarkCompletedButton({
                 🎉 Workflow Mastered!
               </h3>
               <p className="text-green-700 dark:text-green-300 text-sm mb-1">
-                Amazing work! You've completed this automation tutorial
+                Amazing work! You&apos;ve completed this automation tutorial
               </p>
               {completedAt && (
                 <p className="text-xs text-green-600 dark:text-green-400">
@@ -317,7 +316,7 @@ export default function MarkCompletedButton({
             {/* Encouragement message */}
             <div className="text-center bg-green-100/50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200/50">
               <p className="text-xs text-green-700 dark:text-green-300 font-medium">
-                🚀 You're building serious automation skills! Keep the momentum
+                🚀 You&apos;re building serious automation skills! Keep the momentum
                 going with more tutorials
               </p>
             </div>

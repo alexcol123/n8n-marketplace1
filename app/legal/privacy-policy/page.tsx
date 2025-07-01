@@ -57,7 +57,7 @@ export default function PrivacyPolicyPage() {
               <h1 className="text-4xl font-bold">Privacy Policy</h1>
             </div>
             <p className="text-xl text-muted-foreground mb-4">
-              Your privacy matters to us. Here's how we protect and use your information.
+              Your privacy matters to us. Here&apos;s how we protect and use your information.
             </p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <Badge variant="outline" className="flex items-center gap-1">
@@ -85,7 +85,7 @@ export default function PrivacyPolicyPage() {
             <CardContent className="text-blue-800 dark:text-blue-200">
               <p>
                 We collect only the information necessary to provide our workflow automation platform. 
-                We never sell your data, and you control what's public or private. Your workflows help 
+                We never sell your data, and you control what&apos;s public or private. Your workflows help 
                 build a community of automation experts while keeping your personal information secure.
               </p>
             </CardContent>
@@ -295,7 +295,7 @@ export default function PrivacyPolicyPage() {
                   <li>• Your email address</li>
                   <li>• Your private workflow drafts</li>
                   <li>• Detailed analytics about your usage patterns</li>
-                  <li>• Personal completion history (only you can see which workflows you've completed)</li>
+                  <li>• Personal completion history (only you can see which workflows you&apos;ve completed)</li>
                 </ul>
               </div>
 
@@ -378,7 +378,7 @@ export default function PrivacyPolicyPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span><strong>Delete</strong> workflows you've created</span>
+                    <span><strong>Delete</strong> workflows you&apos;ve created</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
@@ -443,7 +443,7 @@ export default function PrivacyPolicyPage() {
               
               <p className="text-sm text-muted-foreground italic">
                 This privacy policy is designed to be transparent about our data practices while protecting 
-                both user privacy and community value. We're committed to responsible data stewardship and 
+                both user privacy and community value. We&apos;re committed to responsible data stewardship and 
                 continuous improvement of our privacy practices.
               </p>
             </CardContent>

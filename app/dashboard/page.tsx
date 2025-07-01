@@ -4,7 +4,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
+
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,22 +15,15 @@ import {
   FileCode,
   PieChart,
   BookOpen,
-  DollarSign,
-  Share2,
   Award,
-  Coffee,
   ChevronRight,
   Rocket,
   Sparkles,
   ArrowRight,
   Plus,
-  Info,
   Target,
   CheckCircle,
   Download,
-  TrendingUp,
-  Calendar,
-  Clock,
   Trophy,
   Flame,
   Star,
@@ -39,9 +32,6 @@ import {
   Users,
   Heart,
   Gift,
-  BarChart3,
-  ChevronUp,
-  PlayCircle,
   Compass,
 } from "lucide-react";
 
@@ -131,7 +121,7 @@ async function Dashboard() {
   );
   const totalActivity = totalWorkflows * 3 + completionStats.totalCompletions;
 
-  let nextMilestone = 10;
+  let nextMilestone: number | null = 10;
   if (totalActivity >= 10) nextMilestone = 20;
   if (totalActivity >= 20) nextMilestone = 50;
   if (totalActivity >= 50) nextMilestone = 100;
@@ -518,7 +508,7 @@ async function Dashboard() {
                   Achievement Master!
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  You've unlocked all achievements! Keep creating amazing
+                  You&apos;ve unlocked all achievements! Keep creating amazing
                   workflows.
                 </p>
                 <Button className="w-full" asChild>
@@ -716,8 +706,8 @@ async function Dashboard() {
             </h3>
             <p className="text-muted-foreground mb-6">
               Every workflow you create helps others automate their work and
-              frees up time for what matters most. You're part of a community
-              that's making the world more efficient, one automation at a time.
+              frees up time for what matters most. You&apos;re part of a community
+              that&apos;s making the world more efficient, one automation at a time.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button size="lg" asChild>

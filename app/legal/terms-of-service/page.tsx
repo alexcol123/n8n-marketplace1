@@ -1,7 +1,7 @@
 import {
   Card,
   CardContent,
-  CardDescription,
+
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -89,9 +89,9 @@ export default function TermsOfServicePage() {
             </CardHeader>
             <CardContent className="text-blue-800 dark:text-blue-200">
               <p>
-                By using our platform, you agree to create quality workflows, respect others' work, 
+                By using our platform, you agree to create quality workflows, respect others&apos; work, 
                 follow our community guidelines, and use the service responsibly. We provide the platform 
-                and tools, you create amazing automation content. Let's build something great together!
+                and tools, you create amazing automation content. Let&apos;s build something great together!
               </p>
             </CardContent>
           </Card>
@@ -106,8 +106,8 @@ export default function TermsOfServicePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p>
-                Welcome to {companyName}, an independent educational platform for n8n workflow automation ("Service"). 
-                By accessing or using our Service, you agree to be bound by these Terms of Service ("Terms").
+                Welcome to {companyName}, an independent educational platform for n8n workflow automation (&quot;Service&quot;). 
+                By accessing or using our Service, you agree to be bound by these Terms of Service (&quot;Terms&quot;).
               </p>
               
               <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800/30">
@@ -201,7 +201,7 @@ export default function TermsOfServicePage() {
                 <ul className="space-y-1 text-sm text-red-600 dark:text-red-400">
                   <li>• Upload malicious code, viruses, or harmful content</li>
                   <li>• Violate any applicable laws or regulations</li>
-                  <li>• Infringe on others' intellectual property rights</li>
+                  <li>• Infringe on others&apos; intellectual property rights</li>
                   <li>• Harass, abuse, or harm other users</li>
                   <li>• Spam or send unsolicited content</li>
                   <li>• Attempt to gain unauthorized access to our systems</li>
@@ -231,7 +231,7 @@ export default function TermsOfServicePage() {
                   <li>• You retain full ownership of all workflows and content you create</li>
                   <li>• By publishing workflows, you grant us a license to display and distribute them</li>
                   <li>• You warrant that you have the right to share all content you upload</li>
-                  <li>• You are responsible for ensuring your content doesn't infringe on others' rights</li>
+                  <li>• You are responsible for ensuring your content doesn&#39;t infringe on others&#39; rights</li>
                   <li>• You may delete your content at any time</li>
                 </ul>
               </div>
@@ -259,7 +259,7 @@ export default function TermsOfServicePage() {
                   Community Guidelines
                 </h3>
                 <ul className="space-y-2 ml-6 text-muted-foreground">
-                  <li>• Give credit when building upon others' workflows</li>
+                  <li>• Give credit when building upon others&apos; workflows</li>
                   <li>• Share knowledge freely and help newcomers</li>
                   <li>• Provide clear documentation for your workflows</li>
                   <li>• Report inappropriate content or behavior</li>
@@ -301,7 +301,7 @@ export default function TermsOfServicePage() {
                   <h3 className="font-semibold mb-3 text-purple-700 dark:text-purple-400">Learning Features</h3>
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     <li>• Complete workflows honestly</li>
-                    <li>• Don't share completion shortcuts</li>
+                    <li>• Don&apos;t share completion shortcuts</li>
                     <li>• Provide helpful feedback to creators</li>
                     <li>• Use learning features as intended</li>
                   </ul>
@@ -407,7 +407,7 @@ export default function TermsOfServicePage() {
               <div>
                 <h3 className="font-semibold mb-3">Service Disclaimer</h3>
                 <p className="text-muted-foreground text-sm">
-                  The service is provided "as is" without warranties of any kind. We do not guarantee that 
+                  The service is provided &quot;as is&quot; without warranties of any kind. We do not guarantee that 
                   workflows will be error-free, secure, or suitable for your specific needs. Users are 
                   responsible for testing and validating all workflows before implementation.
                 </p>

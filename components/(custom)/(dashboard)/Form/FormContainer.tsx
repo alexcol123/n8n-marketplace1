@@ -4,21 +4,31 @@ import { useActionState, useEffect } from "react";
 import { actionFunction } from "@/utils/types";
 import { toast } from "sonner";
 
-const initialState = {
+// Define the state type with index signature to match Record<string, unknown>
+interface FormState extends Record<string, unknown> {
+  message: string;
+  success?: boolean;
+  imageUrl?: string;
+  stepId?: string;
+}
+
+const initialState: FormState = {
   message: "",
 };
+
+interface FormContainerProps {
+  action: actionFunction;
+  children: React.ReactNode;
+  setIsUpdateFormVisible?: (visible: boolean) => void;
+}
 
 function FormContainer({
   action,
   children,
   setIsUpdateFormVisible
-}: {
-  action: actionFunction;
-  children: React.ReactNode;
-  setIsUpdateFormVisible?: (visible: boolean) => void;
-}) {
+}: FormContainerProps) {
   // Wrap the action to log form data
-  const wrappedAction = async (prevState: any, formData: FormData) => {
+  const wrappedAction = async (prevState: FormState, formData: FormData): Promise<FormState> => {
     // Console log all form inputs
     console.log("=== FORM SUBMISSION ===");
     console.log("FormData entries:");
@@ -54,7 +64,7 @@ function FormContainer({
         );
       }
     }
-  }, [state]);
+  }, [state, setIsUpdateFormVisible]); // Added setIsUpdateFormVisible to dependencies
 
   return <form action={formAction}>{children}</form>;
 }
