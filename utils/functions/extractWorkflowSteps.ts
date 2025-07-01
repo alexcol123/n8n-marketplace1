@@ -1,4 +1,5 @@
-import { getWorkflowStepsInOrder } from "./WorkflowStepsInOrder";
+import { getWorkflowStepsInOrder, WorkflowJson, OrderedWorkflowStep } from "./WorkflowStepsInOrder";
+import { Prisma } from "@prisma/client";
 import db from "@/utils/db";
 
 export async function extractAndSaveWorkflowSteps(
@@ -6,8 +7,19 @@ export async function extractAndSaveWorkflowSteps(
   workflowJson: unknown
 ) {
   try {
+    // Type guard and cast to ensure workflowJson is compatible
+    if (!workflowJson || typeof workflowJson !== "object") {
+      throw new Error("Invalid workflow JSON: must be a valid object");
+    }
+
+    // Cast to the expected type - the function handles validation internally
+    const typedWorkflowJson = workflowJson as 
+      | WorkflowJson 
+      | Partial<WorkflowJson> 
+      | Record<string, unknown>;
+
     // Use your existing function to get ordered steps with full node data
-    const orderedSteps = getWorkflowStepsInOrder(workflowJson);
+    const orderedSteps = getWorkflowStepsInOrder(typedWorkflowJson);
 
     // Delete existing steps (for updates)
     await db.workflowStep.deleteMany({
@@ -24,18 +36,22 @@ export async function extractAndSaveWorkflowSteps(
         // Basic step info
         stepTitle: step.name,
         stepDescription: generateStepDescription(step),
-        helpText: generateHelpText(step),
-        helpLinks: generateHelpLinks(step),
+        helpText: generateHelpText(step) || undefined, // Use undefined instead of null
+        helpLinks: generateHelpLinks(step) ? 
+          generateHelpLinks(step) as Prisma.InputJsonValue : 
+          undefined, // Properly cast for Prisma JSON field
         isCustomStep: false, // Auto-generated from workflow JSON
         
         // Rich n8n node data
         nodeId: step.id,
         nodeType: step.type,
-        position: step.position,
-        parameters: step.parameters || {},
-        credentials: (step as any).credentials || null,
-        typeVersion: (step as any).typeVersion || 1,
-        webhookId: (step as any).webhookId || null,
+        position: step.position as Prisma.InputJsonValue, // Cast position array to Prisma JSON
+        parameters: (step.parameters || {}) as Prisma.InputJsonValue, // Cast parameters to Prisma JSON
+        credentials: step.credentials ? 
+          step.credentials as Prisma.InputJsonValue : 
+          undefined, // Cast credentials to Prisma JSON
+        typeVersion: typeof step.typeVersion === 'number' ? step.typeVersion : 1, // Ensure it's a number
+        webhookId: typeof step.webhookId === 'string' ? step.webhookId : undefined, // Ensure it's a string or undefined
         
         // Node classification
         isTrigger: step.isTrigger,
@@ -61,7 +77,7 @@ export async function extractAndSaveWorkflowSteps(
 }
 
 // Helper to create readable step descriptions
-function generateStepDescription(step: any): string {
+function generateStepDescription(step: OrderedWorkflowStep): string {
   const nodeTypeDescriptions: Record<string, string> = {
     // Triggers
     "n8n-nodes-base.formTrigger":
@@ -228,7 +244,7 @@ function generateStepDescription(step: any): string {
 }
 
 // Helper to generate helpful tips for specific node types
-function generateHelpText(step: any): string | null {
+function generateHelpText(step: OrderedWorkflowStep): string | null {
   const helpTexts: Record<string, string> = {
     "@n8n/n8n-nodes-langchain.lmChatOpenAi": "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
     "@n8n/n8n-nodes-langchain.openAi": "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
@@ -246,8 +262,8 @@ function generateHelpText(step: any): string | null {
 }
 
 // Helper to generate helpful documentation links
-function generateHelpLinks(step: any): any {
-  const helpLinks: Record<string, any[]> = {
+function generateHelpLinks(step: OrderedWorkflowStep): Array<{ name: string; url: string }> | null {
+  const helpLinks: Record<string, Array<{ name: string; url: string }>> = {
     "@n8n/n8n-nodes-langchain.lmChatOpenAi": [
       { name: "OpenAI API Documentation", url: "https://platform.openai.com/docs" },
       { name: "Get OpenAI API Key", url: "https://platform.openai.com/api-keys" }
@@ -275,5 +291,5 @@ function generateHelpLinks(step: any): any {
   };
 
   const links = helpLinks[step.type];
-  return links ? links : null;
+  return links || null;
 }

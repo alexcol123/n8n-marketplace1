@@ -30,3 +30,26 @@ export type User = {
   updatedAt: Date;
   workflows?: WorkflowCardTypes[] | null;
 };
+
+// Type for user data from your profile query
+export type UserProfileData = {
+  clerkId: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  profileImage: string;
+};
+
+// Type for the combined result
+export type CompletionWithUserData = {
+  userId: string;
+  completionCount: number;
+  user: UserProfileData;
+};
+
+export type CompletionCountData = {
+  userId: string;
+  _count: {
+    userId: number;
+  };
+};

@@ -19,6 +19,7 @@ import slug from "slug";
 import { CategoryType, IssueStatus, Priority } from "@prisma/client";
 import { getDateTime } from "./functions/getDateTime";
 import { extractAndSaveWorkflowSteps } from "./functions/extractWorkflowSteps";
+import { CompletionCountData, CompletionWithUserData } from "./types";
 
 const getAuthUser = async () => {
   const user = await currentUser();
@@ -1432,18 +1433,20 @@ export const getRecentCompletionLeaderboards = async () => {
     });
 
     // Helper function to combine completion data with user info
-    const combineWithUserData = (completions: any[]) => {
-      return completions
-        .map((completion) => {
-          const user = users.find((u) => u.clerkId === completion.userId);
-          return {
-            userId: completion.userId,
-            completionCount: completion._count.userId,
-            user: user || null,
-          };
-        })
-        .filter((item) => item.user !== null); // Only include items with valid user data
-    };
+const combineWithUserData = (
+  completions: CompletionCountData[]
+): CompletionWithUserData[] => {
+  return completions
+    .map((completion) => {
+      const user = users.find((u) => u.clerkId === completion.userId);
+      return {
+        userId: completion.userId,
+        completionCount: completion._count.userId,
+        user: user || null,
+      };
+    })
+    .filter((item): item is CompletionWithUserData => item.user !== null); // Type guard to filter out null users
+};
 
     return {
       today: combineWithUserData(todayCompletions),
@@ -1875,8 +1878,6 @@ export const fetchAdminDashboardStats = async () => {
       now.getMonth(),
       now.getDate()
     );
-    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     // Fetch all main counts in parallel
     const [
@@ -2276,8 +2277,6 @@ export const updateWorkflowVideoAction = async (
 // ================================>
 
 export const adminFetchAllWorkflows = async () => {
-  const user = await getAuthUser();
-
   const isAnAdmin = await isAdminUser();
 
   if (!isAnAdmin) {
@@ -2354,7 +2353,7 @@ export const updateWorkflowStepAction = async (
       };
     }
 
-    // Prepare the update data
+    // Prepare the update data - Fix for JSON field handling
     const updateData = {
       stepTitle: validatedFields.stepTitle,
       stepDescription: validatedFields.stepDescription || null,
@@ -2362,7 +2361,7 @@ export const updateWorkflowStepAction = async (
       helpLinks:
         validatedFields.helpLinks && validatedFields.helpLinks.length > 0
           ? validatedFields.helpLinks
-          : null,
+          : undefined, // Use undefined instead of null for JSON fields
       updatedAt: new Date(),
     };
 
@@ -2479,8 +2478,6 @@ export const updateWorkflowStepImageAction = async (
   stepId?: string;
 }> => {
   try {
-    const user = await getAuthUser();
-
     // Get the stepId from form data
     const stepId = formData.get("stepId") as string;
     const image = formData.get("image") as File;
@@ -2571,12 +2568,10 @@ export const updateWorkflowStepImageAction = async (
 };
 
 export const updateWorkflowStepFormAction = async (
-  prevState: any,
+  prevState: unknown,
   formData: FormData
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    const user = await getAuthUser();
-
     const stepId = formData.get("stepId") as string;
     const stepTitle = formData.get("stepTitle") as string;
     const stepDescription = formData.get("stepDescription") as string;
