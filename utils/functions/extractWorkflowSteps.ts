@@ -1,4 +1,8 @@
-import { getWorkflowStepsInOrder, WorkflowJson, OrderedWorkflowStep } from "./WorkflowStepsInOrder";
+import {
+  getWorkflowStepsInOrder,
+  WorkflowJson,
+  OrderedWorkflowStep,
+} from "./WorkflowStepsInOrder";
 import { Prisma } from "@prisma/client";
 import db from "@/utils/db";
 
@@ -13,9 +17,9 @@ export async function extractAndSaveWorkflowSteps(
     }
 
     // Cast to the expected type - the function handles validation internally
-    const typedWorkflowJson = workflowJson as 
-      | WorkflowJson 
-      | Partial<WorkflowJson> 
+    const typedWorkflowJson = workflowJson as
+      | WorkflowJson
+      | Partial<WorkflowJson>
       | Record<string, unknown>;
 
     // Use your existing function to get ordered steps with full node data
@@ -32,27 +36,29 @@ export async function extractAndSaveWorkflowSteps(
       .map((step, index) => ({
         workflowId,
         stepNumber: index + 1, // Sequential numbering
-        
+
         // Basic step info
         stepTitle: step.name,
         stepDescription: generateStepDescription(step),
         helpText: generateHelpText(step) || undefined, // Use undefined instead of null
-        helpLinks: generateHelpLinks(step) ? 
-          generateHelpLinks(step) as Prisma.InputJsonValue : 
-          undefined, // Properly cast for Prisma JSON field
+        helpLinks: generateHelpLinks(step)
+          ? (generateHelpLinks(step) as Prisma.InputJsonValue)
+          : undefined, // Properly cast for Prisma JSON field
         isCustomStep: false, // Auto-generated from workflow JSON
-        
+
         // Rich n8n node data
         nodeId: step.id,
         nodeType: step.type,
         position: step.position as Prisma.InputJsonValue, // Cast position array to Prisma JSON
         parameters: (step.parameters || {}) as Prisma.InputJsonValue, // Cast parameters to Prisma JSON
-        credentials: step.credentials ? 
-          step.credentials as Prisma.InputJsonValue : 
-          undefined, // Cast credentials to Prisma JSON
-        typeVersion: typeof step.typeVersion === 'number' ? step.typeVersion : 1, // Ensure it's a number
-        webhookId: typeof step.webhookId === 'string' ? step.webhookId : undefined, // Ensure it's a string or undefined
-        
+        credentials: step.credentials
+          ? (step.credentials as Prisma.InputJsonValue)
+          : undefined, // Cast credentials to Prisma JSON
+        typeVersion:
+          typeof step.typeVersion === "number" ? step.typeVersion : 1, // Ensure it's a number
+        webhookId:
+          typeof step.webhookId === "string" ? step.webhookId : undefined, // Ensure it's a string or undefined
+
         // Node classification
         isTrigger: step.isTrigger,
         isMergeNode: step.isMergeNode,
@@ -63,7 +69,7 @@ export async function extractAndSaveWorkflowSteps(
     await db.workflowStep.createMany({
       data: stepData,
     });
-    
+
     return {
       success: true,
       stepsCreated: stepData.length,
@@ -246,47 +252,83 @@ function generateStepDescription(step: OrderedWorkflowStep): string {
 // Helper to generate helpful tips for specific node types
 function generateHelpText(step: OrderedWorkflowStep): string | null {
   const helpTexts: Record<string, string> = {
-    "@n8n/n8n-nodes-langchain.lmChatOpenAi": "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
-    "@n8n/n8n-nodes-langchain.openAi": "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
-    "n8n-nodes-base.openAi": "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
-    "n8n-nodes-base.googleDrive": "This step requires Google Drive authentication. Make sure to set up Google OAuth credentials.",
-    "n8n-nodes-base.gmail": "This step requires Gmail authentication. Make sure to set up Google OAuth credentials.",
-    "n8n-nodes-base.googleSheets": "This step requires Google Sheets authentication. Make sure to set up Google OAuth credentials.",
-    "n8n-nodes-base.slack": "This step requires a Slack app token. Make sure to configure your Slack credentials.",
-    "n8n-nodes-base.stripe": "This step requires Stripe API keys. Make sure to configure your Stripe credentials.",
-    "n8n-nodes-base.webhook": "This step creates a webhook endpoint. Make sure to configure the webhook URL properly.",
-    "n8n-nodes-base.httpRequest": "This step makes HTTP requests. Ensure the target API is accessible and properly configured.",
+    "@n8n/n8n-nodes-langchain.lmChatOpenAi":
+      "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
+    "@n8n/n8n-nodes-langchain.openAi":
+      "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
+    "n8n-nodes-base.openAi":
+      "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
+    "n8n-nodes-base.googleDrive":
+      "This step requires Google Drive authentication. Make sure to set up Google OAuth credentials.",
+    "n8n-nodes-base.gmail":
+      "This step requires Gmail authentication. Make sure to set up Google OAuth credentials.",
+    "n8n-nodes-base.googleSheets":
+      "This step requires Google Sheets authentication. Make sure to set up Google OAuth credentials.",
+    "n8n-nodes-base.slack":
+      "This step requires a Slack app token. Make sure to configure your Slack credentials.",
+    "n8n-nodes-base.stripe":
+      "This step requires Stripe API keys. Make sure to configure your Stripe credentials.",
+    "n8n-nodes-base.webhook":
+      "This step creates a webhook endpoint. Make sure to configure the webhook URL properly.",
+    "n8n-nodes-base.httpRequest":
+      "This step makes HTTP requests. Ensure the target API is accessible and properly configured.",
   };
 
   return helpTexts[step.type] || null;
 }
 
 // Helper to generate helpful documentation links
-function generateHelpLinks(step: OrderedWorkflowStep): Array<{ name: string; url: string }> | null {
+function generateHelpLinks(
+  step: OrderedWorkflowStep
+): Array<{ name: string; url: string }> | null {
   const helpLinks: Record<string, Array<{ name: string; url: string }>> = {
     "@n8n/n8n-nodes-langchain.lmChatOpenAi": [
-      { name: "OpenAI API Documentation", url: "https://platform.openai.com/docs" },
-      { name: "Get OpenAI API Key", url: "https://platform.openai.com/api-keys" }
+      {
+        name: "OpenAI API Documentation",
+        url: "https://platform.openai.com/docs",
+      },
+      {
+        name: "Get OpenAI API Key",
+        url: "https://platform.openai.com/api-keys",
+      },
     ],
     "@n8n/n8n-nodes-langchain.openAi": [
-      { name: "OpenAI API Documentation", url: "https://platform.openai.com/docs" },
-      { name: "Get OpenAI API Key", url: "https://platform.openai.com/api-keys" }
+      {
+        name: "OpenAI API Documentation",
+        url: "https://platform.openai.com/docs",
+      },
+      {
+        name: "Get OpenAI API Key",
+        url: "https://platform.openai.com/api-keys",
+      },
     ],
     "n8n-nodes-base.openAi": [
-      { name: "OpenAI API Documentation", url: "https://platform.openai.com/docs" },
-      { name: "Get OpenAI API Key", url: "https://platform.openai.com/api-keys" }
+      {
+        name: "OpenAI API Documentation",
+        url: "https://platform.openai.com/docs",
+      },
+      {
+        name: "Get OpenAI API Key",
+        url: "https://platform.openai.com/api-keys",
+      },
     ],
     "n8n-nodes-base.googleDrive": [
-      { name: "Google Drive API Documentation", url: "https://developers.google.com/drive/api" },
-      { name: "Google Cloud Console", url: "https://console.cloud.google.com/" }
+      {
+        name: "Google Drive API Documentation",
+        url: "https://developers.google.com/drive/api",
+      },
+      {
+        name: "Google Cloud Console",
+        url: "https://console.cloud.google.com/",
+      },
     ],
     "n8n-nodes-base.slack": [
       { name: "Slack API Documentation", url: "https://api.slack.com/" },
-      { name: "Create Slack App", url: "https://api.slack.com/apps" }
+      { name: "Create Slack App", url: "https://api.slack.com/apps" },
     ],
     "n8n-nodes-base.stripe": [
       { name: "Stripe API Documentation", url: "https://stripe.com/docs/api" },
-      { name: "Stripe Dashboard", url: "https://dashboard.stripe.com/" }
+      { name: "Stripe Dashboard", url: "https://dashboard.stripe.com/" },
     ],
   };
 
