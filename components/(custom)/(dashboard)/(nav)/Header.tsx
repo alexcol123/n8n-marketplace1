@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 
 
 
-import { ModeToggle } from "../../(landing)/DarkModeButton";
 import UserBtn from "./UserBtn";
 
 export function Header() {
@@ -31,7 +30,7 @@ export function Header() {
         <div className="flex gap-1.5">
           {/* Notifications */}
 
-          <ModeToggle />
+   
 
           {/* User profile */}
           <div className="flex items-center ">

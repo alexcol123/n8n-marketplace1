@@ -9,8 +9,9 @@ function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider
         attribute="class"
         defaultTheme="dark"
-        enableSystem
+        enableSystem={false}
         disableTransitionOnChange
+        forcedTheme="dark"
       >
         {children}
       </ThemeProvider>

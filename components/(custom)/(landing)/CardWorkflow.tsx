@@ -303,7 +303,7 @@ export default function CardWorkflow({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-primary hover:text-white hover:bg-primary h-auto px-3 py-1.5 rounded-full transition-all duration-300 group-hover:bg-primary/90 border-primary/20 group-hover:border-primary"
+                  className="text-primary  hover:text-white hover:bg-primary h-auto px-3 py-1.5 rounded-full transition-all duration-300  border-primary/20 "
                 >
                   View workflow{" "}
                   <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />

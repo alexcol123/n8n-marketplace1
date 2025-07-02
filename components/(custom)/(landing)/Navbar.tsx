@@ -2,7 +2,7 @@
 import { SignInButton, SignUpButton, SignedOut, SignedIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ModeToggle } from "./DarkModeButton";
+
 import NavSearch from "./NavSearch";
 import {
   LayoutDashboard,
@@ -95,7 +95,7 @@ const Navbar = () => {
       
             
             
-            <ModeToggle />
+       
 
             <SignedOut>
               <SignInButton>
@@ -137,7 +137,7 @@ const Navbar = () => {
               <Search className="h-5 w-5" />
             </Button>
 
-            <ModeToggle />
+      
 
             <Button
               variant="ghost"
