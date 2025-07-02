@@ -37,7 +37,7 @@ const ImageInputContainer = (props: ImageInputContainerProps) => {
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="border-orange-200 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-orange-700 dark:text-orange-300 hover:text-orange-800 dark:hover:text-orange-200"
+          className="my-8 border-orange-200 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-orange-700 dark:text-orange-300 hover:text-orange-800 dark:hover:text-orange-200"
           size="sm"
         >
           <Upload className="w-3 h-3 mr-2" />

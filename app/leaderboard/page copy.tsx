@@ -24,7 +24,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Community Leaderboards | n8n-store",
+  title: "Community Leaderboards | n8n-community",
   description:
     "Discover top learners and workflow creators in our community. See who's leading in automation mastery and contribution.",
   keywords: [

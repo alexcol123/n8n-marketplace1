@@ -20,7 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   // Base URL
-  const baseUrl = "https://n8n-store.com";
+  const baseUrl = "https://n8n-community.com";
 
   // Static routes
   const staticRoutes = [

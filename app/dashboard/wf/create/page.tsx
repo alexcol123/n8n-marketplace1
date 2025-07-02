@@ -281,7 +281,7 @@ const CreateWorkflow = () => {
                         </span>
                       </div>
                       <h3 className="text-sm font-semibold">
-                        Creation Example Image (Optional)
+                        Creation Example Image 
                       </h3>
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground mb-3 ml-8">

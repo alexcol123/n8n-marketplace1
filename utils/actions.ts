@@ -339,13 +339,6 @@ export const createWorkflowAction = async (
     const workflowImageFile = formData.get("image") as File;
     const creationImageFile = formData.get("creationImage") as File;
 
-    console.log("one workflowImageFile------------------------------------");
-    console.log(workflowImageFile);
-    console.log(
-      "one workflowCreationsImage------------------------------------"
-    );
-    console.log(creationImageFile);
-
     // Workflow image is required
     if (!workflowImageFile || workflowImageFile.size === 0) {
       return { message: "Workflow image file is required" };
@@ -736,6 +729,14 @@ export const deleteWorkflowAction = async (
       imagesToDelete.push(workflow.workflowImage);
     }
 
+    // Add workflow image if it exists and is from Supabase
+    if (
+      workflow.creationImage &&
+      workflow.creationImage.includes("supabase.co")
+    ) {
+      imagesToDelete.push(workflow.creationImage);
+    }
+
     // Add all step images from Supabase
     const stepImages = workflow.workflowSteps
       .map((step) => step.stepImage)
@@ -751,8 +752,6 @@ export const deleteWorkflowAction = async (
       where: { id: workflowId },
     });
 
-    // Delete all associated images from Supabase storage
-    // Do this after database deletion to ensure data consistency
     if (imagesToDelete.length > 0) {
       const deletePromises = imagesToDelete.map((imageUrl) =>
         deleteImage(imageUrl)
@@ -1433,20 +1432,20 @@ export const getRecentCompletionLeaderboards = async () => {
     });
 
     // Helper function to combine completion data with user info
-const combineWithUserData = (
-  completions: CompletionCountData[]
-): CompletionWithUserData[] => {
-  return completions
-    .map((completion) => {
-      const user = users.find((u) => u.clerkId === completion.userId);
-      return {
-        userId: completion.userId,
-        completionCount: completion._count.userId,
-        user: user || null,
-      };
-    })
-    .filter((item): item is CompletionWithUserData => item.user !== null); // Type guard to filter out null users
-};
+    const combineWithUserData = (
+      completions: CompletionCountData[]
+    ): CompletionWithUserData[] => {
+      return completions
+        .map((completion) => {
+          const user = users.find((u) => u.clerkId === completion.userId);
+          return {
+            userId: completion.userId,
+            completionCount: completion._count.userId,
+            user: user || null,
+          };
+        })
+        .filter((item): item is CompletionWithUserData => item.user !== null); // Type guard to filter out null users
+    };
 
     return {
       today: combineWithUserData(todayCompletions),

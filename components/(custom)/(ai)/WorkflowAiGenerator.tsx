@@ -233,7 +233,7 @@ export default function WorkflowAIGenerator() {
         toast.error("Could not generate steps. Please try again.");
       }
     } catch (err) {
-      console.error(err);
+      console.log(err);
       toast.error("Failed to generate steps.");
     } finally {
       setIsGenerating((prev) => ({ ...prev, steps: false }));
@@ -446,7 +446,7 @@ export default function WorkflowAIGenerator() {
                   new Event("input", { bubbles: true })
                 );
               } else {
-                console.error(`Could not find textarea for step ${index}`);
+                console.log(`Could not find textarea for step ${index}`);
               }
             });
           }, 800); // Longer timeout before updating steps

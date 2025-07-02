@@ -7,17 +7,27 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: {
-    default: "n8n-store | The Ultimate n8n Workflow Marketplace",
-    template: "%s | n8n-store"
+    default: "n8n-community | The Ultimate n8n Workflow Marketplace",
+    template: "%s | n8n-community",
   },
-  description: "n8n-store is your one-stop marketplace to discover, share, and download ready-to-use n8n automation workflows. Build your automation ecosystem faster with expert-crafted templates for marketing, sales, DevOps, and more. Save hours of development time with our community-powered workflow library.",
-  keywords: ["n8n workflows", "automation templates", "n8n marketplace", "n8n automation", "workflow library", "no-code automation", "automation store", "workflow templates"],
-  authors: [{ name: "n8n-store Team" }],
-  creator: "n8n-store",
-  publisher: "n8n-store",
+  description:
+    "n8n-community is your one-stop marketplace to discover, share, and download ready-to-use n8n automation workflows. Build your automation ecosystem faster with expert-crafted templates for marketing, sales, DevOps, and more. Save hours of development time with our community-powered workflow library.",
+  keywords: [
+    "n8n workflows",
+    "automation templates",
+    "n8n marketplace",
+    "n8n automation",
+    "workflow library",
+    "no-code automation",
+    "automation store",
+    "workflow templates",
+  ],
+  authors: [{ name: "n8n-community Team" }],
+  creator: "n8n-community",
+  publisher: "n8n-community",
   robots: "index, follow",
   alternates: {
-    canonical: "https://n8n-store.com",
+    canonical: "https://n8n-community.com",
   },
 };
 

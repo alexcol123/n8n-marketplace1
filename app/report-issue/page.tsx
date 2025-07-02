@@ -19,7 +19,13 @@ import {
   HelpCircle,
   ArrowLeft,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -28,9 +34,12 @@ const ReportIssuePage = () => {
   const [ticketId, setTicketId] = useState("");
 
   // Custom action wrapper that handles success state
-  const handleIssueSubmit = async (prevState: Record<string, unknown>, formData: FormData) => {
+  const handleIssueSubmit = async (
+    prevState: Record<string, unknown>,
+    formData: FormData
+  ) => {
     const result = await createIssue(prevState, formData);
-    
+
     if (result.success) {
       // Extract ticket ID from message if present
       const ticketMatch = result.message.match(/#([A-Z0-9]+)/);
@@ -42,7 +51,7 @@ const ReportIssuePage = () => {
     } else {
       toast.error(result.message);
     }
-    
+
     return result;
   };
 
@@ -53,7 +62,7 @@ const ReportIssuePage = () => {
         setIsSubmitted(false);
         setTicketId("");
       }, 10000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [isSubmitted]);
@@ -72,7 +81,8 @@ const ReportIssuePage = () => {
                   Issue Reported Successfully!
                 </h2>
                 <p className="text-green-700 dark:text-green-300 mb-4">
-                  Thank you for reporting this issue. We&apos;ll review it and get back to you as soon as possible.
+                  Thank you for reporting this issue. We&apos;ll review it and
+                  get back to you as soon as possible.
                 </p>
                 {ticketId && (
                   <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 mb-4">
@@ -89,7 +99,7 @@ const ReportIssuePage = () => {
                     Report Another Issue
                   </Button>
                   <Button
-                    onClick={() => window.location.href = "/"}
+                    onClick={() => (window.location.href = "/")}
                     className="gap-2"
                   >
                     Return to Home
@@ -111,7 +121,8 @@ const ReportIssuePage = () => {
           Report an Issue
         </h1>
         <p className="text-center text-muted-foreground text-sm sm:text-base mb-4 max-w-2xl mx-auto">
-          Experiencing a problem with our platform? Let us know and we&apos;ll help you resolve it quickly.
+          Experiencing a problem with our platform? Let us know and we&apos;ll
+          help you resolve it quickly.
         </p>
       </div>
 
@@ -126,7 +137,7 @@ const ReportIssuePage = () => {
             </p>
           </CardContent>
         </Card>
-        
+
         <Card className="text-center border-primary/20 hover:border-primary/40 transition-colors">
           <CardContent className="pt-6">
             <MessageSquare className="h-8 w-8 text-primary mx-auto mb-3" />
@@ -136,7 +147,7 @@ const ReportIssuePage = () => {
             </p>
           </CardContent>
         </Card>
-        
+
         <Card className="text-center border-primary/20 hover:border-primary/40 transition-colors">
           <CardContent className="pt-6">
             <CheckCircle2 className="h-8 w-8 text-primary mx-auto mb-3" />
@@ -156,10 +167,11 @@ const ReportIssuePage = () => {
             Issue Details
           </CardTitle>
           <CardDescription>
-            Please provide as much detail as possible to help us resolve your issue quickly.
+            Please provide as much detail as possible to help us resolve your
+            issue quickly.
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="p-6">
           <FormContainer action={handleIssueSubmit}>
             <div className="space-y-6">
@@ -178,7 +190,8 @@ const ReportIssuePage = () => {
                 <div className="pl-0 sm:pl-14">
                   <div className="bg-muted/20 p-4 sm:p-6 rounded-lg border">
                     <p className="text-xs sm:text-sm text-muted-foreground mb-6">
-                      Tell us how to reach you. We&apos;ll use this information to follow up on your issue.
+                      Tell us how to reach you. We&apos;ll use this information
+                      to follow up on your issue.
                     </p>
 
                     <div className="grid gap-4 sm:gap-6">
@@ -232,7 +245,8 @@ const ReportIssuePage = () => {
                 <div className="pl-0 sm:pl-14">
                   <div className="bg-muted/20 p-4 sm:p-6 rounded-lg border">
                     <p className="text-xs sm:text-sm text-muted-foreground mb-6">
-                      Describe what happened and where it occurred. The more details you provide, the faster we can help.
+                      Describe what happened and where it occurred. The more
+                      details you provide, the faster we can help.
                     </p>
 
                     <div className="grid gap-4 sm:gap-6">
@@ -240,7 +254,7 @@ const ReportIssuePage = () => {
                         type="url"
                         name="workflowUrl"
                         label="Workflow or Page URL (Optional)"
-                        placeholder="https://n8n-store.com/workflow/..."
+                        placeholder="https://n8n-community.com/workflow/..."
                         required={false}
                         helperText="Link to the specific workflow or page where you experienced the issue"
                       />
@@ -268,13 +282,16 @@ const ReportIssuePage = () => {
                   <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
                     3
                   </div>
-                  <h2 className="text-lg sm:text-xl font-semibold">Submit Your Report</h2>
+                  <h2 className="text-lg sm:text-xl font-semibold">
+                    Submit Your Report
+                  </h2>
                 </div>
 
                 <div className="pl-0 sm:pl-14">
                   <div className="bg-primary/5 p-4 sm:p-6 rounded-lg border border-primary/20">
                     <p className="text-xs sm:text-sm mb-6">
-                      Review your information and submit your issue report. We&apos;ll get back to you as soon as possible.
+                      Review your information and submit your issue report.
+                      We&apos;ll get back to you as soon as possible.
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-4 items-start">
@@ -282,7 +299,7 @@ const ReportIssuePage = () => {
                         className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 gap-2"
                         text="Submit Issue Report"
                       />
-                      
+
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Send className="h-3 w-3" />
                         <span>We typically respond within 24 hours</span>
@@ -307,7 +324,7 @@ const ReportIssuePage = () => {
             <div className="flex flex-col sm:flex-row justify-center gap-4 text-sm">
               <div className="flex items-center justify-center gap-2">
                 <Mail className="h-4 w-4 text-primary" />
-                <span>support@n8n-store.com</span>
+                <span>support@n8n-community.com</span>
               </div>
               <div className="flex items-center justify-center gap-2">
                 <Phone className="h-4 w-4 text-primary" />

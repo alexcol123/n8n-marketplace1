@@ -44,7 +44,7 @@ const ProfilePage = async () => {
         </AlertDescription>
       </Alert>
 
-      <div className="border p-8 rounded-md bg-card shadow-sm">
+      <div className="border p-8 rounded-md bg-card shadow-sm my-4">
         <ImageInputContainer
           image={profile.profileImage}
           name={profile.username}

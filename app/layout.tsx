@@ -16,48 +16,59 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "n8n-store | The Ultimate n8n Workflow Marketplace",
-    template: "%s | n8n-store"
+    default: "n8n-community | The Ultimate n8n Workflow Marketplace",
+    template: "%s | n8n-community",
   },
-  description: "n8n-store is your one-stop marketplace to discover, share, and download ready-to-use n8n automation workflows. Build your automation ecosystem faster with expert-crafted templates for marketing, sales, DevOps, and more. Save hours of development time with our community-powered workflow library.",
-  keywords: ["n8n workflows", "automation templates", "n8n marketplace", "n8n automation", "workflow library", "no-code automation", "automation store", "workflow templates"],
-  authors: [{ name: "n8n-store Team" }],
-  creator: "n8n-store",
-  publisher: "n8n-store",
+  description:
+    "n8n-community is your one-stop marketplace to discover, share, and download ready-to-use n8n automation workflows. Build your automation ecosystem faster with expert-crafted templates for marketing, sales, DevOps, and more. Save hours of development time with our community-powered workflow library.",
+  keywords: [
+    "n8n workflows",
+    "automation templates",
+    "n8n marketplace",
+    "n8n automation",
+    "workflow library",
+    "no-code automation",
+    "automation store",
+    "workflow templates",
+  ],
+  authors: [{ name: "n8n-community Team" }],
+  creator: "n8n-community",
+  publisher: "n8n-community",
   robots: "index, follow",
   alternates: {
-    canonical: "https://n8n-store.com",
+    canonical: "https://n8n-community.com",
   },
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://n8n-store.com",
-    title: "n8n-store | The Ultimate n8n Workflow Marketplace",
-    description: "Discover, share and download pre-built n8n automation workflows. n8n-store helps you automate faster with community-created templates for marketing, sales, DevOps and more.",
-    siteName: "n8n-store",
+    url: "https://n8n-community.com",
+    title: "n8n-community | The Ultimate n8n Workflow Marketplace",
+    description:
+      "Discover, share and download pre-built n8n automation workflows. n8n-community helps you automate faster with community-created templates for marketing, sales, DevOps and more.",
+    siteName: "n8n-community",
     images: [
       {
-        url: "https://n8n-store.com/og-image.jpg",
+        url: "https://n8n-community.com/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "n8n-store - The Ultimate n8n Workflow Marketplace"
-      }
-    ]
+        alt: "n8n-community - The Ultimate n8n Workflow Marketplace",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "n8n-store | The Ultimate n8n Workflow Marketplace",
-    description: "Build your automation ecosystem faster with n8n-store. Browse, download and share workflow templates created by the n8n community.",
-    images: ["https://n8n-store.com/twitter-image.jpg"],
-    creator: "@n8nstore"
+    title: "n8n-community | The Ultimate n8n Workflow Marketplace",
+    description:
+      "Build your automation ecosystem faster with n8n-community. Browse, download and share workflow templates created by the n8n community.",
+    images: ["https://n8n-community.com/twitter-image.jpg"],
+    creator: "@n8nstore",
   },
   icons: {
     icon: "/favicon.ico",
-    apple: "/apple-icon.png"
+    apple: "/apple-icon.png",
   },
-  manifest: "/site.webmanifest"
+  manifest: "/site.webmanifest",
 };
-
 
 export default function RootLayout({
   children,

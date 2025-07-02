@@ -1,17 +1,17 @@
 // app/robots.ts
-import { MetadataRoute } from 'next';
+import { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
-      userAgent: '*',
-      allow: '/',
+      userAgent: "*",
+      allow: "/",
       disallow: [
-        '/dashboard/',  // Prevent indexing of user dashboard
-        '/api/',        // Block API routes
-        '/admin/',      // Block admin areas
+        "/dashboard/", // Prevent indexing of user dashboard
+        "/api/", // Block API routes
+        "/admin/", // Block admin areas
       ],
     },
-    sitemap: 'https://n8n-store.com/sitemap.xml',
+    sitemap: "https://n8n-community.com/sitemap.xml",
   };
 }

@@ -14,7 +14,6 @@ import {
   Trophy,
   Award,
   ArrowLeft,
-
   TrendingUp,
   Flame,
   Download,
@@ -30,7 +29,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Community Leaderboards | n8n-store",
+  title: "Community Leaderboards | n8n-community",
   description:
     "Compete with automation masters worldwide! Climb the rankings as a learner or creator and earn your place among the elite.",
   keywords: [

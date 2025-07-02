@@ -7,9 +7,16 @@ import { Metadata } from "next";
 import StudentsLeaderboard from "@/components/(custom)/(leaderboard)/StudentLeaderboard";
 
 export const metadata: Metadata = {
-  title: "Learning Champions Leaderboard | n8n-store",
-  description: "Discover our top learners and their incredible progress through n8n automation tutorials and courses. See who's leading in learning achievements.",
-  keywords: ["n8n learning", "top students", "tutorial completion", "learning leaderboard", "automation education"],
+  title: "Learning Champions Leaderboard | n8n-community",
+  description:
+    "Discover our top learners and their incredible progress through n8n automation tutorials and courses. See who's leading in learning achievements.",
+  keywords: [
+    "n8n learning",
+    "top students",
+    "tutorial completion",
+    "learning leaderboard",
+    "automation education",
+  ],
 };
 
 export default function StudentsLeaderboardPage() {
@@ -41,7 +48,7 @@ export default function StudentsLeaderboardPage() {
       </div>
 
       {/* Main Content */}
-      <StudentsLeaderboard/>
+      <StudentsLeaderboard />
     </div>
   );
 }

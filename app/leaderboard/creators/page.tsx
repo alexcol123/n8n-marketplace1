@@ -1,5 +1,3 @@
-
-
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, GraduationCap } from "lucide-react";
 import Link from "next/link";
@@ -7,9 +5,9 @@ import { Metadata } from "next";
 import CreatorsLeaderboard from "@/components/(custom)/(leaderboard)/CreatorLeaderboard";
 
 export const metadata: Metadata = {
-  title: "Top Creators Leaderboard | n8n-store",
+  title: "Top Creators Leaderboard | n8n-community",
   description:
-    "Discover the most active workflow creators on n8n-store. See who's sharing the most valuable automation templates with the community.",
+    "Discover the most active workflow creators on n8n-community. See who's sharing the most valuable automation templates with the community.",
   keywords: [
     "n8n creators",
     "top contributors",
