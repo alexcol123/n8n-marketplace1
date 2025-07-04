@@ -1,8 +1,9 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 
 import { OrderedWorkflowStep } from "@/utils/functions/WorkflowStepsInOrder";
 import {
-  Globe,
   Plus,
   BookOpen,
   Edit,
@@ -12,6 +13,8 @@ import {
   Lightbulb,
   Link as LinkIcon,
   Trash2,
+  Copy,
+  Sparkles,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -33,7 +36,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -44,7 +46,6 @@ interface HelpLink {
   url: string;
 }
 
-// Type for unknown help link data from the database
 interface UnknownHelpLink {
   title?: unknown;
   url?: unknown;
@@ -64,9 +65,8 @@ const EditCardHelp = ({
   const router = useRouter();
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Helper function to safely convert unknown help link to typed HelpLink
   const convertToHelpLink = (link: unknown): HelpLink => {
-    if (typeof link === 'object' && link !== null) {
+    if (typeof link === "object" && link !== null) {
       const linkObj = link as UnknownHelpLink;
       return {
         title: String(linkObj.title || ""),
@@ -76,7 +76,6 @@ const EditCardHelp = ({
     return { title: "", url: "" };
   };
 
-  // Form state - ensure all values are strings
   const [stepTitle, setStepTitle] = useState(String(step.stepTitle || ""));
   const [stepDescription, setStepDescription] = useState(
     String(step.stepDescription || "")
@@ -84,7 +83,6 @@ const EditCardHelp = ({
   const [stepImage, setStepImage] = useState(String(step.stepImage || ""));
   const [helpText, setHelpText] = useState(String(step.helpText || ""));
   const [helpLinks, setHelpLinks] = useState<HelpLink[]>(() => {
-    // Ensure helpLinks is properly typed
     if (Array.isArray(step.helpLinks)) {
       return step.helpLinks.map(convertToHelpLink);
     }
@@ -92,7 +90,6 @@ const EditCardHelp = ({
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  // Listen for image updates
   useEffect(() => {
     const handleImageUpdate = (event: CustomEvent) => {
       if (event.detail.stepId === step.id && event.detail.success) {
@@ -194,70 +191,126 @@ const EditCardHelp = ({
     stepDescription || step.stepDescription || ""
   );
   const displayHelpText = String(helpText || step.helpText || "");
-  const displayHelpLinks = helpLinks.length > 0 
-    ? helpLinks 
-    : Array.isArray(step.helpLinks) 
+  const displayHelpLinks =
+    helpLinks.length > 0
+      ? helpLinks
+      : Array.isArray(step.helpLinks)
       ? step.helpLinks.map(convertToHelpLink)
       : [];
   const currentImage = String(stepImage || step.stepImage || "");
 
+  if (
+    !displayTitle &&
+    !displayDescription &&
+    !displayHelpText &&
+    !currentImage &&
+    displayHelpLinks.length === 0
+  ) {
+    return null;
+  }
+
   return (
-    <Card className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-all duration-300">
-      {/* Header */}
-      <CardHeader className="relative pb-3">
-        <div className="flex items-center gap-3">
-          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
-            <BookOpen className="h-4 w-4 text-white" />
+    <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/20 dark:via-indigo-950/10 dark:to-purple-950/20 border border-blue-200/60 dark:border-blue-800/60 rounded-xl shadow-sm">
+      {/* Decorative elements */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-400/10 to-transparent rounded-full blur-xl" />
+      <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-purple-400/10 to-transparent rounded-full blur-lg" />
+
+      <div className="relative p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+              <BookOpen className="w-6 h-6 text-white" />
+            </div>
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+              <Sparkles className="w-2.5 h-2.5 text-white" />
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-white leading-tight">
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-blue-900 dark:text-blue-100 mb-1">
               {displayTitle}
             </h3>
+            <p className="text-sm text-blue-700/70 dark:text-blue-300/70 font-medium">
+              Step Guide & Resources
+            </p>
           </div>
         </div>
-      </CardHeader>
 
-      <CardContent className="space-y-6">
-        {/* Main Description */}
+        {/* Description */}
         {displayDescription && (
-          <div className="prose prose-sm max-w-none border p-3 rounded-lg bg-muted">
-            <p className="text-slate-900 dark:text-slate-100 leading-relaxed">
-              {displayDescription}
-            </p>
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-lg" />
+            <div className="relative bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm border border-blue-200/40 dark:border-blue-800/40 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                    {displayDescription}
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(displayDescription)
+                  }
+                  className="opacity-0 group-hover:opacity-100 p-1.5 text-blue-500 hover:text-blue-600 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 rounded-md transition-all duration-200"
+                  title="Copy description"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Image Section */}
-        <div className="space-y-3">
-          {currentImage && (
-            <div className="relative">
-              <div className="overflow-hidden  max-w-2xl mx-auto rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm">
-                <Image
-                  src={currentImage}
-                  alt={displayTitle}
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-cover"
-                />
+        {/* Image */}
+        {currentImage && (
+          <div className="relative group">
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm border border-blue-200/40 dark:border-blue-800/40 rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0" />
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Preview
+                </span>
+              </div>
+              <div className="flex justify-center">
+                <div className="relative overflow-hidden rounded-lg border border-slate-200/60 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/50 max-w-lg w-full">
+                  <Image
+                    src={currentImage}
+                    alt={displayTitle}
+                    width={600}
+                    height={300}
+                    className="w-full h-auto object-cover"
+                  />
+                </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Help Text */}
+        {/* Pro Tips */}
         {displayHelpText && (
-          <div className="p-4 bg-primary/20 border border-amber-200 dark:border-slate-600 rounded-xl">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shadow-sm">
-                <Lightbulb className="h-4 w-4 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-amber-900 dark:text-slate-200 mb-2">
-                  Pro Tips
-                </h4>
-                <p className="text-sm text-amber-800 dark:text-slate-300 leading-relaxed">
-                  {displayHelpText}
-                </p>
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5 rounded-lg" />
+            <div className="relative bg-gradient-to-br from-amber-50/80 to-orange-50/80 dark:from-amber-950/20 dark:to-orange-950/20 backdrop-blur-sm border border-amber-200/60 dark:border-amber-800/40 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shadow-sm">
+                  <Lightbulb className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-bold text-amber-900 dark:text-amber-100 mb-2">
+                    💡 Pro Tips
+                  </h4>
+                  <p className="text-amber-800/90 dark:text-amber-200/90 text-sm leading-relaxed">
+                    {displayHelpText}
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigator.clipboard.writeText(displayHelpText)}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-100/50 dark:hover:bg-amber-900/30 rounded-md transition-all duration-200"
+                  title="Copy pro tips"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -266,79 +319,94 @@ const EditCardHelp = ({
         {/* Help Links */}
         {displayHelpLinks && displayHelpLinks.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center  justify-center mt-12 gap-2">
-              <LinkIcon className="h-4 w-4 text-slate-600 dark:text-slate-100" />
-              <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 ">
-                Additional Resources (click to visit)
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0" />
+              <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                📚 Learning Resources
               </h4>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+            <div className="grid grid-cols-2 gap-3">
               {displayHelpLinks.map((link: HelpLink, index: number) => (
-                <Button
+                <div
                   key={index}
-                  variant="outline"
-                  size="sm"
-                  asChild
-                  className="justify-start h-auto p-3 border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-800 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 group/link"
+                  className="group relative bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-lg p-3 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/20 hover:border-indigo-300/60 dark:hover:border-indigo-700/60 transition-all duration-200"
                 >
-                  <Link
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="no-underline hover:no-underline"
-                  >
-                    <div className="flex items-center gap-3 w-full">
-                      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-slate-700 rounded-lg flex items-center justify-center group-hover/link:bg-blue-100 dark:group-hover/link:bg-blue-900 transition-colors">
-                        <Globe className="h-4 w-4 text-slate-600 dark:text-slate-400 group-hover/link:text-blue-600 dark:group-hover/link:text-blue-400" />
-                      </div>
-                      <div className="flex-1 min-w-0 text-left">
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                          {link.title}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-200 truncate">
-                          {link.url}
-                        </p>
-                      </div>
-                      <ExternalLink className="h-4 w-4 text-slate-400 group-hover/link:text-blue-500 transition-colors" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-md flex items-center justify-center">
+                      <LinkIcon className="w-3 h-3 text-white" />
                     </div>
-                  </Link>
-                </Button>
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-200 hover:underline transition-colors duration-200 truncate block"
+                      >
+                        {link.title}
+                      </Link>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                        {(() => {
+                          try {
+                            return new URL(link.url).hostname;
+                          } catch {
+                            return link.url || "Invalid URL";
+                          }
+                        })()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(link.url);
+                          toast.success("URL copied!");
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-100/50 dark:hover:bg-indigo-900/30 rounded transition-all duration-200"
+                        title="Copy URL"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
+                      <Link
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-100/50 dark:hover:bg-indigo-900/30 rounded transition-all duration-200"
+                        title="Open link"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
         )}
 
+        {/* Edit Controls */}
         {canEditSteps && (
-          <div>
-            {/* Edit Mode Toggle */}
-            {!isEditMode && (
-              <div className="pt-4 border-t border-slate-200 dark:border-slate-600">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ImageInputContainer
-                      image={currentImage}
-                      name="image"
-                      text="Update Image"
-                      stepId={step.id}
-                      action={updateWorkflowStepImageAction}
-                    />
-                  </div>
-                  <Button
-                    variant="default"
-                    onClick={() => setIsEditMode(true)}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-sm"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Details
-                  </Button>
-                </div>
-              </div>
-            )}
+          <div className="pt-4 border-t border-blue-200/40 dark:border-blue-800/40">
+            <div className="flex items-center justify-between gap-4">
+              <ImageInputContainer
+                image={currentImage}
+                name="image"
+                text="Update Image"
+                stepId={step.id}
+                action={updateWorkflowStepImageAction}
+              />
+              <Button
+                onClick={() => setIsEditMode(true)}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Tutorial
+              </Button>
+            </div>
           </div>
         )}
-      </CardContent>
+      </div>
 
-      {/* Edit Mode Dialog */}
+      {/* Edit Dialog - keeping original */}
       <Dialog open={isEditMode} onOpenChange={setIsEditMode}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -353,7 +421,6 @@ const EditCardHelp = ({
           </DialogHeader>
 
           <div className="space-y-6 py-4">
-            {/* Title */}
             <div className="space-y-2">
               <Label htmlFor="title" className="text-sm font-medium">
                 Step Title
@@ -367,7 +434,6 @@ const EditCardHelp = ({
               />
             </div>
 
-            {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description" className="text-sm font-medium">
                 Step Description
@@ -382,7 +448,6 @@ const EditCardHelp = ({
               />
             </div>
 
-            {/* Help Text */}
             <div className="space-y-2">
               <Label htmlFor="helpText" className="text-sm font-medium">
                 Pro Tips & Additional Info
@@ -397,7 +462,6 @@ const EditCardHelp = ({
               />
             </div>
 
-            {/* Help Links */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">
@@ -507,7 +571,7 @@ const EditCardHelp = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 };
 
