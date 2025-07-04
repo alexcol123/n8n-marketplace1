@@ -9,7 +9,7 @@ const Footer = () => {
   const appName = process.env.NEXT_PUBLIC_APP_NAME;
 
   return (
-    <footer className="border-t border-border bg-card">
+    <footer className="border-t border-border bg-muted">
       <div className="container mx-auto px-4 py-10">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           {/* Left side - Copyright and links */}

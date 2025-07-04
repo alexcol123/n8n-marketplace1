@@ -43,19 +43,10 @@ export default async function Home({
 
       {/* Featured Workflows Section - Simplified for mobile */}
       {popularWorkflows.length > 0 && (
-        <section className="py-8 sm:py-16 bg-muted/20">
+        <section className="py-8 sm:py-16 bg-muted/40 ">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-8 sm:mb-12">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 sm:mb-4">
-                🚀 Start Your Journey Here
-              </h2>
-              <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-                Handpicked workflows to get you started or challenge your skills
-              </p>
-            </div>
-
+            {/* Popular Workflows */}
             <div className="space-y-8 sm:space-y-12">
-              {/* Popular Workflows */}
               <div>
                 <div className="flex items-center gap-3 mb-4 sm:mb-6">
                   <div className="flex items-center gap-2">

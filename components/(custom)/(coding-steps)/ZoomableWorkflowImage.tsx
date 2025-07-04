@@ -24,7 +24,7 @@ const ZoomableWorkflowImage: React.FC<ZoomableWorkflowImageProps> = ({
   imageAlt = "Workflow Diagram",
   className,
 }) => {
-  const [scale, setScale] = useState(1.0);
+  const [scale, setScale] = useState(0.75);
   const [translateX, setTranslateX] = useState(0);
   const [translateY, setTranslateY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);

@@ -57,6 +57,8 @@ model Workflow {
   downloads     WorkflowDownload[]
   completions   WorkflowCompletion[]
   workflowSteps WorkflowStep[] // NEW: Simple steps
+
+
 }
 
 model WorkflowStep {
