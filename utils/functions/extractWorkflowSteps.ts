@@ -6,6 +6,133 @@ import {
 import { Prisma } from "@prisma/client";
 import db from "@/utils/db";
 
+async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
+  console.log("🔄 Updating node usage statistics...");
+
+  const statsToUpdate = [];
+
+  for (const step of orderedSteps) {
+    // Skip return steps and sticky notes - they're not real nodes
+    if (step.isReturnStep || step.type.includes("StickyNote")) continue;
+
+    const nodeType = step.type;
+    let hostIdentifier = null;
+    let authType = null;
+
+    // Extract info based on node type
+    if (nodeType === "n8n-nodes-base.httpRequest") {
+      // Extract host from URL parameter - handle n8n template expressions
+      const url = step.parameters?.url;
+      if (url && typeof url === "string") {
+        try {
+          // Clean up n8n template expressions and extract base URL
+          let cleanUrl = url;
+
+          // Remove leading equals sign if present
+          if (cleanUrl.startsWith("=")) {
+            cleanUrl = cleanUrl.substring(1);
+          }
+
+          // Extract the base URL before any template expressions
+          const urlMatch = cleanUrl.match(/https?:\/\/([^\/\{\s]+)/);
+          if (urlMatch) {
+            hostIdentifier = urlMatch[1]; // Extract just the hostname
+            console.log(
+              `✅ Extracted host: ${hostIdentifier} from URL: ${url}`
+            );
+          } else {
+            console.log(`⚠️ Could not extract host from URL: ${url}`);
+          }
+        } catch (error) {
+          console.log(`⚠️ Could not parse URL: ${url}`, error);
+        }
+      }
+
+      // Extract auth type from credentials or authentication
+      if (step.credentials && Object.keys(step.credentials).length > 0) {
+        // Get the credential type name
+        const credentialTypes = Object.keys(step.credentials);
+        authType = credentialTypes[0]; // e.g., "httpCustomAuth", "httpBasicAuth"
+      } else if (step.parameters?.authentication) {
+        authType = step.parameters.authentication; // e.g., "genericCredential"
+      } else if (step.parameters?.options?.authentication) {
+        authType = step.parameters.options.authentication;
+      } else {
+        authType = "none"; // No authentication
+      }
+    } else if (nodeType.includes("openAi") || nodeType.includes("OpenAi")) {
+      // OpenAI nodes
+      hostIdentifier = "api.openai.com";
+      authType = "apiKey";
+    } else if (nodeType.includes("slack")) {
+      hostIdentifier = "slack.com";
+      authType = "oauth";
+    } else if (nodeType.includes("google")) {
+      hostIdentifier = "googleapis.com";
+      authType = "oauth";
+    } else if (nodeType.includes("stripe")) {
+      hostIdentifier = "api.stripe.com";
+      authType = "apiKey";
+    }
+    // Add more service-specific logic as needed
+
+    // Only track nodes that have meaningful host identifiers
+    if (hostIdentifier) {
+      statsToUpdate.push({
+        nodeType,
+        hostIdentifier,
+        authType: authType || "unknown",
+      });
+    }
+  }
+
+  console.log(`📈 Found ${statsToUpdate.length} nodes to track`);
+
+  if (statsToUpdate.length === 0) {
+    console.log("⚠️ No trackable nodes found");
+    return [];
+  }
+
+  // Batch update all the usage stats
+  const upsertPromises = statsToUpdate.map(
+    ({ nodeType, hostIdentifier, authType }) => {
+      console.log(`💾 Tracking: ${hostIdentifier} (${authType})`);
+      return db.nodeUsageStat.upsert({
+        where: {
+          nodeType_hostIdentifier_authType: {
+            nodeType,
+            hostIdentifier,
+            authType,
+          },
+        },
+        update: {
+          usageCount: {
+            increment: 1,
+          },
+          lastUsedAt: new Date(),
+        },
+        create: {
+          nodeType,
+          hostIdentifier,
+          authType,
+          usageCount: 1,
+          lastUsedAt: new Date(),
+        },
+      });
+    }
+  );
+
+  try {
+    const results = await Promise.all(upsertPromises);
+    console.log(`✅ Updated ${results.length} node usage stats`);
+    return results;
+  } catch (error) {
+    console.error("❌ Database error:", error);
+    // Don't throw - let workflow creation continue even if usage tracking fails
+    return [];
+  }
+}
+
 export async function extractAndSaveWorkflowSteps(
   workflowId: string,
   workflowJson: unknown
@@ -25,6 +152,9 @@ export async function extractAndSaveWorkflowSteps(
     // Use your existing function to get ordered steps with full node data
     const orderedSteps = getWorkflowStepsInOrder(typedWorkflowJson);
 
+    // 🆕 ADD THIS LINE: Update usage statistics
+    await updateNodeUsageStats(orderedSteps);
+
     // Delete existing steps (for updates)
     await db.workflowStep.deleteMany({
       where: { workflowId },
@@ -40,10 +170,8 @@ export async function extractAndSaveWorkflowSteps(
         // Basic step info
         stepTitle: step.name,
         stepDescription: generateStepDescription(step),
-        helpText: generateHelpText(step) || undefined, // Use undefined instead of null
-        helpLinks: generateHelpLinks(step)
-          ? (generateHelpLinks(step) as Prisma.InputJsonValue)
-          : undefined, // Properly cast for Prisma JSON field
+        helpText: undefined,
+        helpLinks: undefined,
         isCustomStep: false, // Auto-generated from workflow JSON
 
         // Rich n8n node data
@@ -51,9 +179,7 @@ export async function extractAndSaveWorkflowSteps(
         nodeType: step.type,
         position: step.position as Prisma.InputJsonValue, // Cast position array to Prisma JSON
         parameters: (step.parameters || {}) as Prisma.InputJsonValue, // Cast parameters to Prisma JSON
-        credentials: step.credentials
-          ? (step.credentials as Prisma.InputJsonValue)
-          : undefined, // Cast credentials to Prisma JSON
+        credentials: undefined, // Cast credentials to Prisma JSON
         typeVersion:
           typeof step.typeVersion === "number" ? step.typeVersion : 1, // Ensure it's a number
         webhookId:
@@ -247,91 +373,4 @@ function generateStepDescription(step: OrderedWorkflowStep): string {
   };
 
   return nodeTypeDescriptions[step.type] || `Executes ${step.name} operation`;
-}
-
-// Helper to generate helpful tips for specific node types
-function generateHelpText(step: OrderedWorkflowStep): string | null {
-  const helpTexts: Record<string, string> = {
-    "@n8n/n8n-nodes-langchain.lmChatOpenAi":
-      "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
-    "@n8n/n8n-nodes-langchain.openAi":
-      "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
-    "n8n-nodes-base.openAi":
-      "This step requires an OpenAI API key. Make sure to configure your OpenAI credentials.",
-    "n8n-nodes-base.googleDrive":
-      "This step requires Google Drive authentication. Make sure to set up Google OAuth credentials.",
-    "n8n-nodes-base.gmail":
-      "This step requires Gmail authentication. Make sure to set up Google OAuth credentials.",
-    "n8n-nodes-base.googleSheets":
-      "This step requires Google Sheets authentication. Make sure to set up Google OAuth credentials.",
-    "n8n-nodes-base.slack":
-      "This step requires a Slack app token. Make sure to configure your Slack credentials.",
-    "n8n-nodes-base.stripe":
-      "This step requires Stripe API keys. Make sure to configure your Stripe credentials.",
-    "n8n-nodes-base.webhook":
-      "This step creates a webhook endpoint. Make sure to configure the webhook URL properly.",
-    "n8n-nodes-base.httpRequest":
-      "This step makes HTTP requests. Ensure the target API is accessible and properly configured.",
-  };
-
-  return helpTexts[step.type] || null;
-}
-
-// Helper to generate helpful documentation links
-function generateHelpLinks(
-  step: OrderedWorkflowStep
-): Array<{ name: string; url: string }> | null {
-  const helpLinks: Record<string, Array<{ name: string; url: string }>> = {
-    "@n8n/n8n-nodes-langchain.lmChatOpenAi": [
-      {
-        name: "OpenAI API Documentation",
-        url: "https://platform.openai.com/docs",
-      },
-      {
-        name: "Get OpenAI API Key",
-        url: "https://platform.openai.com/api-keys",
-      },
-    ],
-    "@n8n/n8n-nodes-langchain.openAi": [
-      {
-        name: "OpenAI API Documentation",
-        url: "https://platform.openai.com/docs",
-      },
-      {
-        name: "Get OpenAI API Key",
-        url: "https://platform.openai.com/api-keys",
-      },
-    ],
-    "n8n-nodes-base.openAi": [
-      {
-        name: "OpenAI API Documentation",
-        url: "https://platform.openai.com/docs",
-      },
-      {
-        name: "Get OpenAI API Key",
-        url: "https://platform.openai.com/api-keys",
-      },
-    ],
-    "n8n-nodes-base.googleDrive": [
-      {
-        name: "Google Drive API Documentation",
-        url: "https://developers.google.com/drive/api",
-      },
-      {
-        name: "Google Cloud Console",
-        url: "https://console.cloud.google.com/",
-      },
-    ],
-    "n8n-nodes-base.slack": [
-      { name: "Slack API Documentation", url: "https://api.slack.com/" },
-      { name: "Create Slack App", url: "https://api.slack.com/apps" },
-    ],
-    "n8n-nodes-base.stripe": [
-      { name: "Stripe API Documentation", url: "https://stripe.com/docs/api" },
-      { name: "Stripe Dashboard", url: "https://dashboard.stripe.com/" },
-    ],
-  };
-
-  const links = helpLinks[step.type];
-  return links || null;
 }

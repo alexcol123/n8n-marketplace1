@@ -62,6 +62,11 @@ export default function NodeDetailsSection({
   const [showRawData, setShowRawData] = useState(false);
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
 
+
+
+
+
+
   const handleCopy = async (text: string, key: string) => {
     try {
       await navigator.clipboard.writeText(text);

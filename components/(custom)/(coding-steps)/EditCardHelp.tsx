@@ -65,6 +65,12 @@ const EditCardHelp = ({
   const router = useRouter();
   const [isEditMode, setIsEditMode] = useState(false);
 
+// Working on triying to   see if we can save the http request
+if(step?.type === 'n8n-nodes-base.httpRequest'){
+  console.log(step.parameters?.url);
+}
+
+
   const convertToHelpLink = (link: unknown): HelpLink => {
     if (typeof link === "object" && link !== null) {
       const linkObj = link as UnknownHelpLink;

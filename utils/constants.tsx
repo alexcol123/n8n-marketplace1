@@ -30,6 +30,7 @@ import {
   Trophy,
   AlertCircle,
   AlarmClockCheckIcon,
+  BookOpen,
 } from "lucide-react";
 
 
@@ -54,6 +55,11 @@ export const navigation: NavItem[] = [
     name: "Create Workflow",
     href: "/dashboard/wf/create",
     icon: PlusCircle,
+  },
+  {
+    name: "API Setup Guides", // 🆕 NEW: API Guides
+    href: "/dashboard/node-guides",
+    icon: BookOpen,
   },
 ];
 

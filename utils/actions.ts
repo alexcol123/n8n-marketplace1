@@ -2647,3 +2647,223 @@ export const updateWorkflowStepFormAction = async (
     };
   }
 };
+
+
+
+
+//  nodeUsageStats 
+
+// Add these actions to your utils/actions.ts
+
+// Get all node usage stats ordered by most used
+export const fetchNodeUsageStats = async () => {
+  try {
+    const stats = await db.nodeUsageStat.findMany({
+      orderBy: [
+        { usageCount: 'desc' },
+        { lastUsedAt: 'desc' }
+      ],
+      include: {
+        nodeSetupGuide: true
+      }
+    });
+    return stats;
+  } catch (error) {
+    return renderError(error);
+  }
+};
+
+// Get usage stats that don't have setup guides yet
+export const fetchStatsWithoutGuides = async () => {
+  try {
+    const stats = await db.nodeUsageStat.findMany({
+      where: {
+        nodeSetupGuide: null
+      },
+      orderBy: [
+        { usageCount: 'desc' },
+        { lastUsedAt: 'desc' }
+      ]
+    });
+    return stats;
+  } catch (error) {
+    return renderError(error);
+  }
+};
+
+// Create a new setup guide
+export const createNodeSetupGuideAction = async (
+  prevState: Record<string, unknown>,
+  formData: FormData
+): Promise<{ message: string; success: boolean }> => {
+  try {
+    const user = await getAuthUser();
+    
+    // Get form data
+    const rawData = Object.fromEntries(formData);
+    
+    // Validate required fields
+    const nodeType = rawData.nodeType as string;
+    const hostIdentifier = rawData.hostIdentifier as string;
+    const authType = rawData.authType as string;
+    const guideTitle = rawData.guideTitle as string;
+    
+    if (!nodeType || !hostIdentifier || !authType || !guideTitle) {
+      return {
+        message: "Node type, host, auth type, and guide title are required",
+        success: false
+      };
+    }
+
+    // Parse optional JSON fields
+    let helpLinks = null;
+    if (rawData.helpLinks && typeof rawData.helpLinks === 'string') {
+      try {
+        helpLinks = JSON.parse(rawData.helpLinks as string);
+      } catch (error) {
+        return {
+          message: "Invalid JSON format for help links",
+          success: false
+        };
+      }
+    }
+
+    // Create the setup guide
+    const guide = await db.nodeSetupGuide.create({
+      data: {
+        nodeType,
+        hostIdentifier,
+        authType,
+        guideType: (rawData.guideType as any) || 'CREDENTIALS',
+        guideTitle,
+        guideVideoUrl: rawData.guideVideoUrl as string || null,
+        helpText: rawData.helpText as string || null,
+        helpLinks,
+        credentialNameHint: rawData.credentialNameHint as string || null,
+      }
+    });
+
+    // Link existing usage stats to this guide
+    await db.nodeUsageStat.updateMany({
+      where: {
+        nodeType,
+        hostIdentifier,
+        authType,
+        nodeSetupGuideId: null
+      },
+      data: {
+        nodeSetupGuideId: guide.id
+      }
+    });
+
+    revalidatePath('/dashboard/node-guides');
+    
+    return {
+      message: "Setup guide created successfully!",
+      success: true
+    };
+  } catch (error) {
+    console.error("Error creating setup guide:", error);
+    return {
+      message: error instanceof Error ? error.message : "Failed to create setup guide",
+      success: false
+    };
+  }
+};
+
+// Update an existing setup guide
+export const updateNodeSetupGuideAction = async (
+  guideId: string,
+  formData: FormData
+): Promise<{ message: string; success: boolean }> => {
+  try {
+    const user = await getAuthUser();
+    
+    const rawData = Object.fromEntries(formData);
+    
+    let helpLinks = null;
+    if (rawData.helpLinks && typeof rawData.helpLinks === 'string') {
+      try {
+        helpLinks = JSON.parse(rawData.helpLinks as string);
+      } catch (error) {
+        return {
+          message: "Invalid JSON format for help links",
+          success: false
+        };
+      }
+    }
+
+    await db.nodeSetupGuide.update({
+      where: { id: guideId },
+      data: {
+        guideTitle: rawData.guideTitle as string,
+        guideVideoUrl: rawData.guideVideoUrl as string || null,
+        helpText: rawData.helpText as string || null,
+        helpLinks,
+        credentialNameHint: rawData.credentialNameHint as string || null,
+        guideType: (rawData.guideType as any) || 'CREDENTIALS',
+      }
+    });
+
+    revalidatePath('/dashboard/node-guides');
+    
+    return {
+      message: "Setup guide updated successfully!",
+      success: true
+    };
+  } catch (error) {
+    console.error("Error updating setup guide:", error);
+    return {
+      message: error instanceof Error ? error.message : "Failed to update setup guide",
+      success: false
+    };
+  }
+};
+
+// Delete a setup guide
+export const deleteNodeSetupGuideAction = async (
+  guideId: string
+): Promise<{ message: string; success: boolean }> => {
+  try {
+    const user = await getAuthUser();
+    
+    // Unlink usage stats first
+    await db.nodeUsageStat.updateMany({
+      where: { nodeSetupGuideId: guideId },
+      data: { nodeSetupGuideId: null }
+    });
+    
+    // Delete the guide
+    await db.nodeSetupGuide.delete({
+      where: { id: guideId }
+    });
+
+    revalidatePath('/dashboard/node-guides');
+    
+    return {
+      message: "Setup guide deleted successfully!",
+      success: true
+    };
+  } catch (error) {
+    console.error("Error deleting setup guide:", error);
+    return {
+      message: error instanceof Error ? error.message : "Failed to delete setup guide",
+      success: false
+    };
+  }
+};
+
+// Get a single setup guide for editing
+export const fetchSingleNodeSetupGuide = async (guideId: string) => {
+  try {
+    const guide = await db.nodeSetupGuide.findUnique({
+      where: { id: guideId },
+      include: {
+        usageStats: true
+      }
+    });
+    return guide;
+  } catch (error) {
+    return renderError(error);
+  }
+};

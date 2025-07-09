@@ -80,6 +80,8 @@ export default function WorkflowStepsViewer({
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
   const [localWorkflowSteps] = useState<WorkflowStep[]>(workflowSteps);
 
+
+
   // Step navigation state
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
 

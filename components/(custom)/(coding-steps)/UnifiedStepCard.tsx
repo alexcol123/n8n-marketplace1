@@ -62,6 +62,7 @@ export default function UnifiedStepCard({
   onExpand,
 }: UnifiedStepCardProps) {
 
+
   const [nodeCopied, setNodeCopied] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -565,24 +566,10 @@ export default function UnifiedStepCard({
                     {step.name}
                   </h3>
                   <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-2">
-                    {(() => {
-                      const category = getNodeCategory(step.type);
-                      const descriptions = {
-                        ai: "Processes text using AI/LLM models for chat, completion, or analysis",
-                        http: "Makes HTTP requests to APIs and external services",
-                        code: "Executes custom JavaScript or Python code logic",
-                        database:
-                          "Connects to and queries databases for data operations",
-                        email: "Sends, receives, or processes email messages",
-                        file: "Handles file operations, uploads, downloads, and processing",
-                        social:
-                          "Integrates with social platforms and messaging services",
-                        default: step.isTrigger
-                          ? "Starts the workflow when specific conditions are met"
-                          : "Performs specialized workflow operations",
-                      };
-                      return descriptions[category] || descriptions.default;
-                    })()}
+      
+                       {typeof step.stepDescription === "string"
+                         ? (step.stepDescription as string)
+                         : ""}
                   </p>
 
                   {/* Enhanced badges section - moved right under subtitle */}

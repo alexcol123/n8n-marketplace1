@@ -57,8 +57,6 @@ model Workflow {
   downloads     WorkflowDownload[]
   completions   WorkflowCompletion[]
   workflowSteps WorkflowStep[] // NEW: Simple steps
-
-
 }
 
 model WorkflowStep {
@@ -94,6 +92,64 @@ model WorkflowStep {
 
   @@unique([workflowId, stepNumber])
   @@index([workflowId, stepNumber])
+}
+
+
+//NodeSetupGuide says: "Here's how to do it" i will add manually 
+model NodeSetupGuide {
+  id String @id @default(uuid())
+
+  // --- How to find this guide ---
+  nodeType       String // e.g., "n8n-nodes-base.httpRequest"
+  hostIdentifier String? // e.g., "api.hedra.com"
+  authType       String? // e.g., "httpCustomAuth"
+  guideType      GuideType @default(CREDENTIALS)
+
+  // --- The actual help content ---
+  guideTitle         String // "How to Connect to Hedra"
+  guideVideoUrl      String?
+  helpText           String?
+  helpLinks          Json?
+  credentialNameHint String? // "Hedra API"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation
+  usageStats NodeUsageStat[]
+
+  // A robust unique constraint to prevent duplicate guides for the same purpose
+  @@unique([nodeType, hostIdentifier, authType, guideType])
+}
+
+enum GuideType {
+  CREDENTIALS
+  PARAMETERS
+  WEBHOOK_SETUP
+  OAUTH_FLOW
+  TROUBLESHOOTING
+}
+//NodeUsageStat says: "You've done this before" will tell me if i done it befor or if  i need to do it
+model NodeUsageStat {
+  id String @id @default(uuid())
+
+  // Core identification for your upsert
+  nodeType       String // "n8n-nodes-base.httpRequest"
+  hostIdentifier String // "api.elevenlabs.io"
+  authType       String // "bearer"
+
+  // Usage tracking
+  usageCount Int      @default(1)
+  lastUsedAt DateTime @default(now())
+
+  // Optional link to setup guide
+  nodeSetupGuideId String?
+  nodeSetupGuide   NodeSetupGuide? @relation(fields: [nodeSetupGuideId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([nodeType, hostIdentifier, authType])
 }
 
 model WorkflowDownload {
