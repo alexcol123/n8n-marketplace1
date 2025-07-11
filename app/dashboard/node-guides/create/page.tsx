@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, BookOpen, Save } from "lucide-react";
+import { ArrowLeft, BookOpen, Save, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -27,21 +27,42 @@ export default function CreateNodeGuidePage() {
     guideTitle: '',
     guideVideoUrl: '',
     helpText: '',
-    helpLinks: '',
     credentialNameHint: ''
   });
 
-  // Auto-generate guide title when host changes
+  // Separate state for help links (easier to manage)
+  const [helpLinks, setHelpLinks] = useState([{ name: '', url: '' }]);
+
+  // Auto-generate guide title based on guide type and host
   useEffect(() => {
-    if (formData.hostIdentifier && !formData.guideTitle) {
+    if (formData.hostIdentifier && (!formData.guideTitle || formData.guideTitle.startsWith('How to'))) {
       const serviceName = formData.hostIdentifier.replace('api.', '').split('.')[0];
       const capitalizedName = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
+      
+      let titlePrefix = '';
+      switch (formData.guideType) {
+        case 'CREDENTIALS':
+          titlePrefix = 'How to Connect to';
+          break;
+        case 'TROUBLESHOOTING':
+          titlePrefix = 'Troubleshooting';
+          break;
+        case 'PARAMETERS':
+          titlePrefix = 'Understanding';
+          break;
+        case 'WEBHOOK_SETUP':
+          titlePrefix = 'Setting up Webhooks for';
+          break;
+        default:
+          titlePrefix = 'How to Connect to';
+      }
+      
       setFormData(prev => ({
         ...prev,
-        guideTitle: `How to Connect to ${capitalizedName}`
+        guideTitle: `${titlePrefix} ${capitalizedName}`
       }));
     }
-  }, [formData.hostIdentifier]);
+  }, [formData.hostIdentifier, formData.guideType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,15 +70,22 @@ export default function CreateNodeGuidePage() {
 
     try {
       const formDataObj = new FormData();
+      
+      // Add basic form data
       Object.entries(formData).forEach(([key, value]) => {
         formDataObj.append(key, value);
       });
+
+      // Convert help links to JSON
+      const validHelpLinks = helpLinks.filter(link => link.name.trim() && link.url.trim());
+      if (validHelpLinks.length > 0) {
+        formDataObj.append('helpLinks', JSON.stringify(validHelpLinks));
+      }
 
       const result = await createNodeSetupGuideAction({}, formDataObj);
       
       if (result.success) {
         toast.success(result.message);
-        // Redirect to guides dashboard
         window.location.href = '/dashboard/node-guides';
       } else {
         toast.error(result.message);
@@ -71,6 +99,20 @@ export default function CreateNodeGuidePage() {
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const addHelpLink = () => {
+    setHelpLinks(prev => [...prev, { name: '', url: '' }]);
+  };
+
+  const removeHelpLink = (index: number) => {
+    setHelpLinks(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateHelpLink = (index: number, field: 'name' | 'url', value: string) => {
+    setHelpLinks(prev => prev.map((link, i) => 
+      i === index ? { ...link, [field]: value } : link
+    ));
   };
 
   return (
@@ -112,6 +154,7 @@ export default function CreateNodeGuidePage() {
                       onChange={(e) => handleChange('nodeType', e.target.value)}
                       placeholder="e.g., n8n-nodes-base.httpRequest"
                       required
+                      className="font-mono text-sm"
                     />
                   </div>
                   <div>
@@ -128,13 +171,18 @@ export default function CreateNodeGuidePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="authType">Authentication Type</Label>
-                    <Input
-                      id="authType"
-                      value={formData.authType}
-                      onChange={(e) => handleChange('authType', e.target.value)}
-                      placeholder="e.g., httpCustomAuth, apiKey, oauth"
-                      required
-                    />
+                    <Select value={formData.authType} onValueChange={(value) => handleChange('authType', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select auth type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="apiKey">API Key</SelectItem>
+                        <SelectItem value="httpHeaderAuth">HTTP Header Auth</SelectItem>
+                        <SelectItem value="oauth">OAuth</SelectItem>
+                        <SelectItem value="httpBasicAuth">Basic Auth</SelectItem>
+                        <SelectItem value="httpCustomAuth">Custom Auth</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label htmlFor="guideType">Guide Type</Label>
@@ -143,11 +191,10 @@ export default function CreateNodeGuidePage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="CREDENTIALS">Credentials Setup</SelectItem>
-                        <SelectItem value="PARAMETERS">Parameters Guide</SelectItem>
-                        <SelectItem value="WEBHOOK_SETUP">Webhook Setup</SelectItem>
-                        <SelectItem value="OAUTH_FLOW">OAuth Flow</SelectItem>
-                        <SelectItem value="TROUBLESHOOTING">Troubleshooting</SelectItem>
+                        <SelectItem value="CREDENTIALS">🔐 Credentials Setup</SelectItem>
+                        <SelectItem value="PARAMETERS">⚙️ Parameters Guide</SelectItem>
+                        <SelectItem value="WEBHOOK_SETUP">🔗 Webhook Setup</SelectItem>
+                        <SelectItem value="TROUBLESHOOTING">🔧 Troubleshooting</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -180,6 +227,9 @@ export default function CreateNodeGuidePage() {
                     onChange={(e) => handleChange('credentialNameHint', e.target.value)}
                     placeholder="e.g., ElevenLabs API Key"
                   />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Suggested name for the credential in n8n
+                  </p>
                 </div>
 
                 <div>
@@ -200,21 +250,56 @@ export default function CreateNodeGuidePage() {
                     value={formData.helpText}
                     onChange={(e) => handleChange('helpText', e.target.value)}
                     placeholder="Step-by-step instructions for setting up this integration..."
-                    rows={6}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="helpLinks">Help Links (JSON Format)</Label>
-                  <Textarea
-                    id="helpLinks"
-                    value={formData.helpLinks}
-                    onChange={(e) => handleChange('helpLinks', e.target.value)}
-                    placeholder='[{"name": "ElevenLabs API Documentation", "url": "https://docs.elevenlabs.io"}]'
-                    rows={4}
+                    rows={8}
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    Format: Array of objects with "name" and "url" properties
+                    Write clear, step-by-step instructions. Use numbered lists for best readability.
+                  </p>
+                </div>
+
+                {/* Improved Help Links Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <Label>Help Links</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={addHelpLink}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Link
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {helpLinks.map((link, index) => (
+                      <div key={index} className="flex gap-2 items-end">
+                        <div className="flex-1">
+                          <Input
+                            placeholder="Link name (e.g., Official Documentation)"
+                            value={link.name}
+                            onChange={(e) => updateHelpLink(index, 'name', e.target.value)}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <Input
+                            placeholder="https://..."
+                            type="url"
+                            value={link.url}
+                            onChange={(e) => updateHelpLink(index, 'url', e.target.value)}
+                          />
+                        </div>
+                        {helpLinks.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeHelpLink(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Add helpful documentation links, API references, or tutorial resources.
                   </p>
                 </div>
               </CardContent>

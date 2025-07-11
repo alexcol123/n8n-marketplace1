@@ -9,7 +9,7 @@ import ImageInput from "@/components/(custom)/(dashboard)/Form/ImageInput";
 import TextAreaInput from "@/components/(custom)/(dashboard)/Form/TextAreaInput";
 import CategoriesInput from "@/components/(custom)/(dashboard)/Form/CategoriesInput";
 import WorkflowJsonInput from "@/components/(custom)/(dashboard)/Form/WorkflowJsonInput";
-import StepArrayInput from "@/components/(custom)/(dashboard)/Form/StepsArrayInput";
+// REMOVED: StepArrayInput import - no longer needed
 import { toast } from "sonner";
 
 import { useState } from "react";
@@ -17,12 +17,12 @@ import {
   FileCode,
   Upload,
   BrainCircuit,
-  ListChecks,
+  // REMOVED: ListChecks - no longer needed for manual steps
   PenLine,
   CheckCircle2,
   Lock,
   AlertCircle,
-  Youtube, // Added for the YouTube icon
+  Youtube,
 } from "lucide-react";
 import WorkflowAIGenerator from "@/components/(custom)/(ai)/WorkflowAiGenerator";
 import { validateWorkflowJsonElement } from "@/components/(custom)/(dashboard)/Form/ValidateWorkflowJsonElement";
@@ -212,7 +212,6 @@ const CreateWorkflow = () => {
             <Separator className="my-4 sm:my-8" />
 
             {/* Step 2: Upload Workflow Images - Only shown when JSON is uploaded */}
-            {/* Step 2: Upload Workflow Images - Only shown when JSON is uploaded */}
             <div
               className={`relative transition-all duration-300 ${
                 jsonUploaded ? "opacity-100" : "opacity-50 pointer-events-none"
@@ -341,7 +340,7 @@ const CreateWorkflow = () => {
                   <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-6">
                     Use AI to help you create content for your workflow. The AI
                     will analyze your workflow JSON and generate titles,
-                    descriptions, and implementation steps.
+                    descriptions, and implementation steps automatically.
                   </p>
 
                   {/* WorkflowAIGenerator component */}
@@ -392,8 +391,8 @@ const CreateWorkflow = () => {
                   }`}
                 >
                   <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-6">
-                    If you prefer to create your own content or edit the
-                    AI-generated content, you can do so here:
+                    Create or edit your workflow content. Steps will be automatically 
+                    generated from your JSON workflow when you publish.
                   </p>
 
                   <div className="grid gap-4 sm:gap-6">
@@ -419,17 +418,7 @@ const CreateWorkflow = () => {
 
                     <CategoriesInput />
 
-                    <div className="bg-muted/10 p-3 sm:p-5 rounded-lg border border-muted">
-                      <h3 className="text-sm sm:text-base font-medium mb-2 sm:mb-4 flex items-center gap-2">
-                        <ListChecks className="h-4 w-4 text-primary" />
-                        Implementation Steps
-                      </h3>
-
-                      <StepArrayInput
-                        maxSteps={7}
-                        placeholder="Describe this step of the workflow in detail..."
-                      />
-                    </div>
+                    {/* REMOVED: Manual steps input section - steps are now auto-generated from JSON */}
                   </div>
                 </div>
               </div>
@@ -528,6 +517,7 @@ const CreateWorkflow = () => {
                   <p className="text-xs sm:text-sm mb-3 sm:mb-6">
                     Review your workflow details before publishing. Once
                     published, your workflow will be available to the community.
+                    Implementation steps will be automatically generated from your JSON.
                   </p>
 
                   <SubmitButton

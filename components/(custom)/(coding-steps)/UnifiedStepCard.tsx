@@ -50,6 +50,7 @@ interface UnifiedStepCardProps {
   isExpanded?: boolean;
   canEditSteps?: boolean;
   onExpand?: (stepId: string) => void;
+  setupGuide?: any;
 }
 
 export default function UnifiedStepCard({
@@ -60,13 +61,14 @@ export default function UnifiedStepCard({
   isMarkedAsViewed = false,
   isExpanded = false,
   onExpand,
+  setupGuide,
 }: UnifiedStepCardProps) {
-
-
   const [nodeCopied, setNodeCopied] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   const nodeImage = getDefaultNodeImage(step.type);
+
+
 
   // Handle expansion toggle
   const handleToggleExpanded = () => {
@@ -566,10 +568,9 @@ export default function UnifiedStepCard({
                     {step.name}
                   </h3>
                   <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-2">
-      
-                       {typeof step.stepDescription === "string"
-                         ? (step.stepDescription as string)
-                         : ""}
+                    {typeof step.stepDescription === "string"
+                      ? (step.stepDescription as string)
+                      : ""}
                   </p>
 
                   {/* Enhanced badges section - moved right under subtitle */}
@@ -788,12 +789,12 @@ export default function UnifiedStepCard({
                 {isExpanded ? (
                   <>
                     <ChevronUp className="w-4 h-4 mr-2" />
-                Hide Developer Guide
+                    Hide Developer Guide
                   </>
                 ) : (
                   <>
                     <ChevronDown className="w-4 h-4 mr-2" />
-                     View Developer Guide
+                    View Developer Guide
                   </>
                 )}
               </Button>
@@ -808,20 +809,84 @@ export default function UnifiedStepCard({
 
             <div className="border-4 border-primary/60 p-3 rounded-2xl    bg-neutral-950  overflow-hidden">
               {/* Edit card help */}
+
+              <div>
+                {/* 🆕 Setup Guide Section - Dark Theme */}
+                {setupGuide && (
+                  <div className="mb-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                          📖 Setup Guide Available
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="text-emerald-400 border-emerald-500/30"
+                        >
+                          Used {setupGuide.usageCount} times
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-emerald-400">
+                        Last used{" "}
+                        {new Date(setupGuide.lastUsedAt).toLocaleDateString()}
+                      </div>
+                    </div>
+
+                    <h4 className="font-semibold text-emerald-300 mb-2">
+                      {setupGuide.guide.guideTitle}
+                    </h4>
+
+                    <div className="flex gap-2">
+                      {setupGuide.guide.guideVideoUrl && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                          onClick={() =>
+                            window.open(
+                              setupGuide.guide.guideVideoUrl,
+                              "_blank"
+                            )
+                          }
+                        >
+                          🎥 View Tutorial
+                        </Button>
+                      )}
+
+                      {setupGuide.guide.helpLinks && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                          onClick={() =>
+                            window.open(
+                              setupGuide.guide.helpLinks.url,
+                              "_blank"
+                            )
+                          }
+                        >
+                          🔗 {setupGuide.guide.helpLinks.name}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Separator className="my-5" />
+              
               <EditCardHelp step={step} canEditSteps={canEditSteps} />
 
               <Separator className="my-5" />
 
-          
-                <NodeDetailsSection
-                  step={step}
-                  isAINode={isAINode}
-                  isCodeNode={isCodeNode}
-                  getCodeContent={getCodeContent}
-                  getAIPrompts={getAIPrompts}
-                  formatAIPrompt={formatAIPrompt}
-                />
-            
+              <NodeDetailsSection
+                step={step}
+                isAINode={isAINode}
+                isCodeNode={isCodeNode}
+                getCodeContent={getCodeContent}
+                getAIPrompts={getAIPrompts}
+                formatAIPrompt={formatAIPrompt}
+              />
             </div>
           </CardContent>
         )}

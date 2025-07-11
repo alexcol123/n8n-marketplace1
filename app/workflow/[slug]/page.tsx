@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 
-import { fetchSingleWorkflow } from "@/utils/actions";
+import { fetchSingleWorkflow, fetchWorkflowGuides } from "@/utils/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,6 @@ import {
   CheckCircle,
   FileText,
   Info,
-  ArrowRight,
   Download,
   Star,
 } from "lucide-react";
@@ -38,7 +37,6 @@ import formatDateFunc from "@/utils/functions/formmatDate";
 import getNodeCountFunc from "@/utils/functions/getNodeCountFunc";
 import readingTimeFunc from "@/utils/functions/readingTimeFunc";
 
-
 type WorkflowWithAuthor = Workflow & {
   author: Profile;
   workflowSteps: WorkflowStep[];
@@ -58,6 +56,9 @@ const SingleWorkflowPage = async ({
 
   const workflow = result as WorkflowWithAuthor;
   if (!workflow) return <EmptyList />;
+
+  console.log("workflow.workflowSteps:", workflow.workflowSteps);
+  console.log("workflowSteps length:", workflow.workflowSteps?.length);
 
   const orderedSteps = workflow.workflowSteps
     ? [...workflow.workflowSteps]
@@ -79,13 +80,18 @@ const SingleWorkflowPage = async ({
     return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`;
   };
 
-
-
   const readingTime = readingTimeFunc(
     workflow?.content,
-    Array.isArray(workflow?.steps) ? (workflow.steps as (string | object)[]) : undefined
+    // REMOVED: Array.isArray(workflow?.steps) ? workflow.steps : []
+    // Now using workflowSteps array instead of old steps field
+    workflow?.workflowSteps?.map(
+      (step) => step.stepDescription || step.stepTitle || ""
+    ) || []
   );
 
+  // 2. Fetch guides for this workflow (new)
+  const guideLookup = await fetchWorkflowGuides(workflow.workflowSteps);
+  console.log("guideLookup", guideLookup);
   return (
     <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -273,57 +279,6 @@ const SingleWorkflowPage = async ({
         )}
 
         {/* Automation steps */}
-{/* Automation steps */}
-        <div className="hidden sm:block">
-          {workflow?.steps &&
-            Array.isArray(workflow.steps) &&
-            workflow.steps.length > 0 && (
-              <section className="mb-16">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-primary mb-3">
-                    How It Works
-                  </h2>
-                  <p className="text-muted-foreground max-w-2xl mx-auto">
-                    Follow this sequence to understand what this automation will
-                    do for you
-                  </p>
-                </div>
-
-                <Card className="max-w-3xl mx-auto border-primary/20 shadow-xl bg-gradient-to-br from-background to-muted/10">
-                  <CardContent className="p-0">
-                    {(workflow.steps as (string | object)[]).map((step, index) => {
-                      // Type-safe access to array length
-                      const stepsArray = workflow.steps as (string | object)[];
-                      const stepsLength = stepsArray.length;
-                      
-                      return (
-                        <div
-                          key={index}
-                          className="border-b border-primary/10 last:border-0 p-6 hover:bg-primary/5 transition-colors group"
-                        >
-                          <div className="flex gap-4 items-start">
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-bold flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                              {index + 1}
-                            </div>
-                            <div className="flex-1 pt-1">
-                              <p className="text-foreground/90 leading-relaxed">
-                                {typeof step === "object"
-                                  ? JSON.stringify(step, null, 2)
-                                  : step}
-                              </p>
-                            </div>
-                            {index < stepsLength - 1 && (
-                              <ArrowRight className="h-4 w-4 text-muted-foreground mt-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
-              </section>
-            )}
-        </div>
 
         {/* Download section */}
         {workflow.workFlowJson && (
@@ -370,6 +325,7 @@ const SingleWorkflowPage = async ({
               workflowId={workflow.id}
               showStats={true}
               canEditSteps={false}
+              guideLookup={guideLookup}
             />
           </section>
         )}

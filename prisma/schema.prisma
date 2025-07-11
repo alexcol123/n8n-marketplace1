@@ -48,7 +48,6 @@ model Workflow {
   category          CategoryType
   viewCount         Int          @default(0)
   workFlowJson      Json         @default("{}")
-  steps             Json?
   verifiedAndTested Boolean      @default(false)
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
@@ -94,64 +93,6 @@ model WorkflowStep {
   @@index([workflowId, stepNumber])
 }
 
-
-//NodeSetupGuide says: "Here's how to do it" i will add manually 
-model NodeSetupGuide {
-  id String @id @default(uuid())
-
-  // --- How to find this guide ---
-  nodeType       String // e.g., "n8n-nodes-base.httpRequest"
-  hostIdentifier String? // e.g., "api.hedra.com"
-  authType       String? // e.g., "httpCustomAuth"
-  guideType      GuideType @default(CREDENTIALS)
-
-  // --- The actual help content ---
-  guideTitle         String // "How to Connect to Hedra"
-  guideVideoUrl      String?
-  helpText           String?
-  helpLinks          Json?
-  credentialNameHint String? // "Hedra API"
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relation
-  usageStats NodeUsageStat[]
-
-  // A robust unique constraint to prevent duplicate guides for the same purpose
-  @@unique([nodeType, hostIdentifier, authType, guideType])
-}
-
-enum GuideType {
-  CREDENTIALS
-  PARAMETERS
-  WEBHOOK_SETUP
-  OAUTH_FLOW
-  TROUBLESHOOTING
-}
-//NodeUsageStat says: "You've done this before" will tell me if i done it befor or if  i need to do it
-model NodeUsageStat {
-  id String @id @default(uuid())
-
-  // Core identification for your upsert
-  nodeType       String // "n8n-nodes-base.httpRequest"
-  hostIdentifier String // "api.elevenlabs.io"
-  authType       String // "bearer"
-
-  // Usage tracking
-  usageCount Int      @default(1)
-  lastUsedAt DateTime @default(now())
-
-  // Optional link to setup guide
-  nodeSetupGuideId String?
-  nodeSetupGuide   NodeSetupGuide? @relation(fields: [nodeSetupGuideId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([nodeType, hostIdentifier, authType])
-}
-
 model WorkflowDownload {
   id           String   @id @default(uuid())
   workflowId   String
@@ -191,6 +132,91 @@ model Issue {
   @@index([status])
   @@index([priority]) // ← Add this index
   @@index([createdAt])
+}
+
+model NodeUsageStats {
+  id String @id @default(uuid())
+
+  // --- Service identification (simplified) ---
+  // These fields identify which service/API this usage stat tracks
+  serviceName    String // Clean service name: "hedra", "google-drive", "openai"
+  hostIdentifier String? // API hostname for HTTP requests: "api.hedra.com", null for direct nodes
+  nodeType       String // Original n8n node type for reference: "n8n-nodes-base.httpRequest"
+
+  // --- Usage tracking ---
+  // Track how popular each service is across all workflows
+  usageCount Int      @default(1) // How many times this service appears in workflows
+  lastUsedAt DateTime @default(now()) // When this service was last seen in a workflow upload
+
+  // --- Documentation linking ---
+  // Connect usage stats to their setup guides
+  nodeDocumentationId String? // Foreign key to NodeDocumentation
+  nodeDocumentation   NodeDocumentation? @relation(fields: [nodeDocumentationId], references: [id])
+
+  // --- Guide management ---
+  // Track which services need documentation created
+  needsGuide Boolean @default(true) // true = needs guide, false = has guide (flipped when guide created)
+
+  // --- Standard fields ---
+  createdAt DateTime @default(now()) // When this service was first discovered
+  updatedAt DateTime @updatedAt // When usage count was last incremented
+
+  // --- Constraints ---
+  // One usage stat record per unique service (serviceName + hostIdentifier combination)
+  @@unique([serviceName, hostIdentifier])
+}
+
+model NodeDocumentation {
+  id String @id @default(uuid())
+
+  // --- Service identification (matches NodeUsageStats) ---
+  // IMPORTANT: These fields must exactly match NodeUsageStats for proper linking
+  serviceName    String // Must match NodeUsageStats.serviceName: "hedra", "google-drive"
+  hostIdentifier String? // Must match NodeUsageStats.hostIdentifier: "api.hedra.com" or null
+
+  // --- Content creation (manual) ---
+  // The actual helpful content you create for students
+  title             String // Guide title: "Hedra API Setup Guide"
+  description       String? // What this service does: "AI video generation platform"
+  setupInstructions String? // Step-by-step setup text (markdown supported)
+  helpLinks         Json? // Useful links: [{"title": "Get API Key", "url": "https://..."}]
+  videoLinks        Json? // Tutorial videos: {"credentials": "youtube-url", "troubleshooting": "youtube-url"}
+  troubleshooting   Json? // Common issues: [{"title": "401 Error", "solution": "Check your API key"}]
+
+  // --- Standard fields ---
+  createdAt DateTime @default(now()) // When guide was created
+  updatedAt DateTime @updatedAt // When guide content was last modified
+
+  // --- Relations ---
+  // Back-reference to all usage stats using this guide
+  usageStats NodeUsageStats[] // All NodeUsageStats records that link to this guide
+
+  // --- Constraints ---
+  // One guide per unique service (must match NodeUsageStats constraint)
+  @@unique([serviceName, hostIdentifier])
+}
+
+model WorkflowTeachingGuide {
+  id String @id @default(uuid())
+
+  // --- Workflow linking ---
+  // Connect teaching guides to specific workflows
+  workflowId String // Foreign key to Workflow.id
+
+  // --- LLM-generated content ---
+  // Educational content automatically created by AI for each workflow
+  title              String // Auto-generated: "AI Cartoon Video Creation Tutorial"
+  overview           String? // What students learn: "This workflow teaches AI video generation..."
+  stepByStepGuide    Json? // Detailed explanations: [{"step": 1, "explanation": "..."}]
+  learningObjectives String[] // Key goals: ["Learn API authentication", "Understand video processing"]
+
+  // --- Standard fields ---
+  createdAt DateTime @default(now()) // When teaching guide was generated
+  updatedAt DateTime @updatedAt // When content was last regenerated
+
+  // --- Constraints ---
+  // One teaching guide per workflow
+  @@unique([workflowId])
 }
 
 enum IssueStatus {

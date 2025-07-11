@@ -7,7 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import UnifiedStepCard from "./UnifiedStepCard";
-import { ConnectionInfo, type WorkflowJson } from "@/utils/functions/WorkflowStepsInOrder";
+import {
+  ConnectionInfo,
+  type WorkflowJson,
+} from "@/utils/functions/WorkflowStepsInOrder";
 import {
   Eye,
   EyeOff,
@@ -23,6 +26,7 @@ import { cn } from "@/lib/utils";
 import MarkCompletedButton from "./MarkCompletedButton";
 import { WorkflowStep } from "@prisma/client";
 import { JsonValue } from "@prisma/client/runtime/library";
+import { VALID_LOADERS } from "next/dist/shared/lib/image-config";
 
 // ✅ FIXED: Update local interface to match the imported one (including index signature)
 interface OrderedWorkflowStep {
@@ -58,6 +62,7 @@ interface WorkflowStepsViewerProps {
   showStats?: boolean;
   workflowSteps: WorkflowStep[];
   canEditSteps?: boolean;
+  guideLookup?: Record<string, any>; // 🆕 New prop
 }
 
 // ✅ NEW: Helper function to create default ConnectionInfo
@@ -66,7 +71,7 @@ const createDefaultConnectionInfo = (): ConnectionInfo => ({
   connectsFrom: [],
   nextSteps: [],
   previousSteps: [],
-  connectionInstructions: "No connection information available."
+  connectionInstructions: "No connection information available.",
 });
 
 export default function WorkflowStepsViewer({
@@ -74,13 +79,14 @@ export default function WorkflowStepsViewer({
   className,
   canEditSteps = false,
   workflowSteps,
+  guideLookup,
 }: WorkflowStepsViewerProps) {
   const [showDisconnected, setShowDisconnected] = useState(false);
   const [viewedSteps, setViewedSteps] = useState<Set<string>>(new Set());
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
   const [localWorkflowSteps] = useState<WorkflowStep[]>(workflowSteps);
 
-
+  // Pass relevant guide to each step card
 
   // Step navigation state
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
@@ -216,6 +222,72 @@ export default function WorkflowStepsViewer({
             100
         )
       : 0;
+
+  console.log("guideLookup", guideLookup);
+
+  // Helper function to extract guide identifiers from a step
+  // Helper function to extract guide identifiers from a step
+
+  const extractGuideIdentifiers = (step: OrderedWorkflowStep) => {
+    // Skip return steps and non-HTTP nodes - EXACTLY like fetchWorkflowGuides
+    if (step.isReturnStep || step.type.includes("StickyNote")) {
+      return null;
+    }
+
+    const nodeType = step.type;
+    let hostIdentifier = null;
+    let authType = null;
+
+    // Same logic as your fetchWorkflowGuides action
+    if (nodeType === "n8n-nodes-base.httpRequest") {
+      // Extract host from URL parameter
+      const url = step.parameters?.url;
+      if (url && typeof url === "string") {
+        try {
+          let cleanUrl = url;
+          if (cleanUrl.startsWith("=")) {
+            cleanUrl = cleanUrl.substring(1);
+          }
+          const urlMatch = cleanUrl.match(/https?:\/\/([^\/\{\s]+)/);
+          if (urlMatch) {
+            hostIdentifier = urlMatch[1];
+          }
+        } catch (error) {
+          return null;
+        }
+      }
+
+      // 🔧 SIMPLIFIED: Always use httpHeaderAuth for HTTP requests
+      if (hostIdentifier) {
+        authType = "httpHeaderAuth";
+      }
+    } else if (nodeType.includes("openAi") || nodeType.includes("OpenAi")) {
+      hostIdentifier = "api.openai.com";
+      authType = "apiKey";
+    } else if (nodeType.includes("slack")) {
+      hostIdentifier = "slack.com";
+      authType = "oauth";
+    } else if (nodeType.includes("google")) {
+      hostIdentifier = "googleapis.com";
+      authType = "oauth";
+    } else if (nodeType.includes("stripe")) {
+      hostIdentifier = "api.stripe.com";
+      authType = "httpHeaderAuth"; // Updated to match the standard
+    }
+    // Add more service-specific logic as needed...
+
+    if (hostIdentifier) {
+      return `${nodeType}|${hostIdentifier}|${authType}`;
+    }
+    return null;
+  };
+
+  const guideKey = extractGuideIdentifiers(currentStep);
+  const guideData = guideKey ? guideLookup?.[guideKey] : null;
+  console.log("guide key ");
+  console.log(guideKey);
+  console.log("guide data ");
+  console.log(guideData);
 
   if (!orderedSteps || orderedSteps.length === 0) {
     return (
@@ -412,6 +484,7 @@ export default function WorkflowStepsViewer({
                     isExpanded={expandedStepId === currentStep.id}
                     onExpand={handleStepExpand}
                     canEditSteps={canEditSteps}
+                    setupGuide={guideData} // 🆕 Pass the guide data
                   />
                 </div>
               </div>

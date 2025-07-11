@@ -1,4 +1,4 @@
-import { fetchSingleWorkflow } from "@/utils/actions";
+import { fetchSingleWorkflow, fetchWorkflowGuides } from "@/utils/actions";
 import { notFound } from "next/navigation";
 import EmptyList from "@/components/(custom)/EmptyList";
 import WorkflowStepsViewer from "@/components/(custom)/(coding-steps)/WorkflowStepsViewer";
@@ -32,6 +32,8 @@ const EditWorkflowSteps = async ({
     return notFound();
   }
 
+  console.log("result", result);
+
   const workflow = result as WorkflowWithAuthor;
   if (!workflow) return <EmptyList />;
 
@@ -44,6 +46,10 @@ const EditWorkflowSteps = async ({
   const isAdmin = user?.id === process.env.ADMIN_USER_ID;
 
   const canEditSteps = isCreator || isAdmin;
+
+  // 2. Fetch guides for this workflow (new)
+  // 2. Fetch guides for this workflow (new)
+  const guideLookup = await fetchWorkflowGuides(workflow.workflowSteps);
 
   return (
     <div className="min-h-screen bg-background">
@@ -224,6 +230,7 @@ const EditWorkflowSteps = async ({
                 workflowId={workflow.id}
                 showStats={true}
                 canEditSteps={canEditSteps}
+            guideLookup={guideLookup}
               />
             </div>
           </div>

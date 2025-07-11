@@ -14,16 +14,14 @@ export default function WorkflowAIGenerator() {
   const [isGenerating, setIsGenerating] = useState({
     title: false,
     description: false,
-    steps: false,
     category: false,
     all: false,
   });
 
-  // Refs for form elements
+  // Refs for form elements (removed steps-related refs)
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const jsonTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const stepsContainerRef = useRef<HTMLDivElement>(null);
   const categorySelectRef = useRef<HTMLSelectElement>(null);
 
   // Set up refs when component mounts
@@ -36,7 +34,6 @@ export default function WorkflowAIGenerator() {
     const jsonTextarea = document.querySelector(
       'textarea[name="workFlowJson"]'
     );
-    const stepsContainer = document.querySelector("[data-steps-container]");
     const categorySelect = document.querySelector(
       `select[name="${CATEGORY_FIELD_NAME}"]`
     );
@@ -48,8 +45,6 @@ export default function WorkflowAIGenerator() {
         descriptionTextarea as HTMLTextAreaElement;
     if (jsonTextarea)
       jsonTextareaRef.current = jsonTextarea as HTMLTextAreaElement;
-    if (stepsContainer)
-      stepsContainerRef.current = stepsContainer as HTMLDivElement;
     if (categorySelect)
       categorySelectRef.current = categorySelect as HTMLSelectElement;
   }, []);
@@ -151,95 +146,6 @@ export default function WorkflowAIGenerator() {
     }
   };
 
-  // Function to generate workflow steps
-  const generateSteps = async () => {
-    const workflowJson = validateJson();
-    if (!workflowJson) return;
-
-    setIsGenerating((prev) => ({ ...prev, steps: true }));
-
-    try {
-      const response = await fetch("/api/workflow-analysis/steps", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workflowJson }),
-      });
-
-      if (!response.ok) throw new Error(`Error: ${response.status}`);
-
-      const data = await response.json();
-
-      if (data.success && data.steps && Array.isArray(data.steps)) {
-        // Find the Add Steps button and click it if steps section isn't expanded
-        const addStepsButton = document.querySelector(
-          "[data-add-steps-button]"
-        );
-        if (addStepsButton) {
-          // Check if steps section is already expanded
-          const stepsContainer = document.querySelector(
-            "[data-steps-container]"
-          );
-          const isExpanded = stepsContainer?.querySelector(
-            "textarea[data-step-index]"
-          );
-
-          if (!isExpanded) {
-            // Click the button to expand the section
-            (addStepsButton as HTMLButtonElement).click();
-
-            // Wait for the DOM to update
-            await new Promise((resolve) => setTimeout(resolve, 300));
-          }
-        }
-
-        // After expansion (or if already expanded), look for the "Add Step" button
-        // and click it multiple times to create enough textareas for our steps
-        const addStepButton = document.querySelector("[data-add-step-button]");
-        if (addStepButton) {
-          // Get current count of step textareas
-          const existingSteps = document.querySelectorAll(
-            "textarea[data-step-index]"
-          );
-          const neededClicks = Math.max(
-            0,
-            data.steps.length - existingSteps.length
-          );
-
-          // Click the add button as many times as needed
-          for (let i = 0; i < neededClicks; i++) {
-            (addStepButton as HTMLButtonElement).click();
-            // Small delay between clicks to allow DOM updates
-            await new Promise((resolve) => setTimeout(resolve, 100));
-          }
-        }
-
-        // Now find all step textareas and update them with staggered timeouts
-        data.steps.forEach((step: string, index: number) => {
-          setTimeout(() => {
-            const stepTextarea = document.querySelector(
-              `textarea[data-step-index="${index}"]`
-            ) as HTMLTextAreaElement;
-            if (stepTextarea) {
-              stepTextarea.value = step;
-              stepTextarea.dispatchEvent(new Event("input", { bubbles: true }));
-            } else {
-              console.log(`Could not find textarea for step ${index}`);
-            }
-          }, 100 * index); // Stagger updates to avoid race conditions
-        });
-
-        toast.success("Steps generated successfully!");
-      } else {
-        toast.error("Could not generate steps. Please try again.");
-      }
-    } catch (err) {
-      console.log(err);
-      toast.error("Failed to generate steps.");
-    } finally {
-      setIsGenerating((prev) => ({ ...prev, steps: false }));
-    }
-  };
-
   // Function to detect and set the category
   const generateCategory = async () => {
     const workflowJson = validateJson();
@@ -315,7 +221,7 @@ export default function WorkflowAIGenerator() {
     }
   };
 
-  // Function to generate all content at once
+  // Function to generate all content at once (removed steps generation)
   const generateAll = async () => {
     const workflowJson = validateJson();
     if (!workflowJson) return;
@@ -387,71 +293,6 @@ export default function WorkflowAIGenerator() {
           );
         }
 
-        // Update steps if available
-        if (data.steps && Array.isArray(data.steps) && data.steps.length > 0) {
-          // Find and click the add steps button if steps section isn't expanded
-          const addStepsButton = document.querySelector(
-            "[data-add-steps-button]"
-          );
-          if (addStepsButton) {
-            // Check if steps section is already expanded
-            const stepsContainer = document.querySelector(
-              "[data-steps-container]"
-            );
-            const isExpanded = stepsContainer?.querySelector(
-              "textarea[data-step-index]"
-            );
-
-            if (!isExpanded) {
-              // Click the button to expand the section
-              (addStepsButton as HTMLButtonElement).click();
-
-              // Wait for the DOM to update
-              await new Promise((resolve) => setTimeout(resolve, 500));
-            }
-          }
-
-          // After ensuring expansion, add enough steps by clicking the "Add Step" button
-          const addStepButton = document.querySelector(
-            "[data-add-step-button]"
-          );
-          if (addStepButton) {
-            // Get current count of step textareas
-            const existingSteps = document.querySelectorAll(
-              "textarea[data-step-index]"
-            );
-            const neededClicks = Math.max(
-              0,
-              data.steps.length - existingSteps.length
-            );
-
-            // Click the add button as many times as needed with delay between clicks
-            for (let i = 0; i < neededClicks; i++) {
-              (addStepButton as HTMLButtonElement).click();
-              // A bit longer delay to ensure DOM updates
-              await new Promise((resolve) => setTimeout(resolve, 150));
-            }
-          }
-
-          // Once all textareas should be present, update them with the steps data
-          // Use a longer timeout to ensure all DOM elements are available
-          setTimeout(() => {
-            data.steps.forEach((step: string, index: number) => {
-              const stepTextarea = document.querySelector(
-                `textarea[data-step-index="${index}"]`
-              ) as HTMLTextAreaElement;
-              if (stepTextarea) {
-                stepTextarea.value = step;
-                stepTextarea.dispatchEvent(
-                  new Event("input", { bubbles: true })
-                );
-              } else {
-                console.log(`Could not find textarea for step ${index}`);
-              }
-            });
-          }, 800); // Longer timeout before updating steps
-        }
-
         toast.success("Workflow content generated successfully!");
       } else {
         toast.error("Failed to generate content. Please try again.");
@@ -515,28 +356,6 @@ export default function WorkflowAIGenerator() {
           )}
         </Button>
 
-        {/* Button to generate steps */}
-        <Button
-          type="button"
-          onClick={generateSteps}
-          disabled={isGenerating.steps || isGenerating.all}
-          variant="outline"
-          size="sm"
-          className="gap-2"
-        >
-          {isGenerating.steps ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4" />
-              Generate Steps
-            </>
-          )}
-        </Button>
-
         {/* Button to detect category */}
         <Button
           type="button"
@@ -566,7 +385,6 @@ export default function WorkflowAIGenerator() {
           disabled={
             isGenerating.title ||
             isGenerating.description ||
-            isGenerating.steps ||
             isGenerating.category ||
             isGenerating.all
           }
@@ -588,8 +406,7 @@ export default function WorkflowAIGenerator() {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground mt-1">
-        Automatically generate content from your workflow JSON. Requires valid
-        JSON structure.
+        Automatically generate content from your workflow JSON. Steps will be generated automatically when the workflow is published.
       </p>
     </div>
   );

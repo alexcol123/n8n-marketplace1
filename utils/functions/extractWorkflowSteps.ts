@@ -1,3 +1,4 @@
+// utils/functions/extractWorkflowSteps.ts
 import {
   getWorkflowStepsInOrder,
   WorkflowJson,
@@ -5,6 +6,31 @@ import {
 } from "./WorkflowStepsInOrder";
 import { Prisma } from "@prisma/client";
 import db from "@/utils/db";
+
+// Helper function to standardize auth methods for teaching
+function getPreferredAuthMethod(hostIdentifier: string): string {
+  const authMethodMap: Record<string, string> = {
+    // OpenAI - teach API key method only
+    "api.openai.com": "apiKey",
+
+    // ElevenLabs - teach header auth method
+    "api.elevenlabs.io": "httpHeaderAuth",
+
+    // Google services - teach OAuth only
+    "googleapis.com": "oauth",
+
+    // Common APIs
+    "api.stripe.com": "httpHeaderAuth",
+    "slack.com": "oauth",
+    "api.hedra.com": "httpHeaderAuth",
+    "api.apify.com": "httpHeaderAuth",
+    "generativelanguage.googleapis.com": "httpHeaderAuth",
+
+    // Add more services as needed
+  };
+
+  return authMethodMap[hostIdentifier] || "httpHeaderAuth"; // Default fallback
+}
 
 async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
   console.log("🔄 Updating node usage statistics...");
@@ -19,24 +45,20 @@ async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
     let hostIdentifier = null;
     let authType = null;
 
-    // Extract info based on node type
+    // Extract info based on node type with STANDARDIZED auth methods
     if (nodeType === "n8n-nodes-base.httpRequest") {
-      // Extract host from URL parameter - handle n8n template expressions
+      // Extract host from URL parameter
       const url = step.parameters?.url;
       if (url && typeof url === "string") {
         try {
-          // Clean up n8n template expressions and extract base URL
           let cleanUrl = url;
-
-          // Remove leading equals sign if present
           if (cleanUrl.startsWith("=")) {
             cleanUrl = cleanUrl.substring(1);
           }
 
-          // Extract the base URL before any template expressions
           const urlMatch = cleanUrl.match(/https?:\/\/([^\/\{\s]+)/);
           if (urlMatch) {
-            hostIdentifier = urlMatch[1]; // Extract just the hostname
+            hostIdentifier = urlMatch[1];
             console.log(
               `✅ Extracted host: ${hostIdentifier} from URL: ${url}`
             );
@@ -48,41 +70,34 @@ async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
         }
       }
 
-      // Extract auth type from credentials or authentication
-      if (step.credentials && Object.keys(step.credentials).length > 0) {
-        // Get the credential type name
-        const credentialTypes = Object.keys(step.credentials);
-        authType = credentialTypes[0]; // e.g., "httpCustomAuth", "httpBasicAuth"
-      } else if (step.parameters?.authentication) {
-        authType = step.parameters.authentication; // e.g., "genericCredential"
-      } else if (step.parameters?.options?.authentication) {
-        authType = step.parameters.options.authentication;
-      } else {
-        authType = "none"; // No authentication
+      // STANDARDIZE AUTH METHODS - always use the preferred teaching method
+      if (hostIdentifier) {
+        authType = getPreferredAuthMethod(hostIdentifier);
       }
     } else if (nodeType.includes("openAi") || nodeType.includes("OpenAi")) {
-      // OpenAI nodes
+      // OpenAI nodes - ALWAYS use apiKey for teaching
       hostIdentifier = "api.openai.com";
       authType = "apiKey";
+    } else if (nodeType.includes("google")) {
+      // Google services - ALWAYS use oauth for teaching
+      hostIdentifier = "googleapis.com";
+      authType = "oauth";
     } else if (nodeType.includes("slack")) {
       hostIdentifier = "slack.com";
       authType = "oauth";
-    } else if (nodeType.includes("google")) {
-      hostIdentifier = "googleapis.com";
-      authType = "oauth";
     } else if (nodeType.includes("stripe")) {
       hostIdentifier = "api.stripe.com";
-      authType = "apiKey";
+      authType = "httpHeaderAuth";
     }
-    // Add more service-specific logic as needed
 
     // Only track nodes that have meaningful host identifiers
-    if (hostIdentifier) {
+    if (hostIdentifier && authType) {
       statsToUpdate.push({
         nodeType,
         hostIdentifier,
-        authType: authType || "unknown",
+        authType,
       });
+      console.log(`🎯 Will track: ${hostIdentifier} (${authType})`);
     }
   }
 
@@ -138,6 +153,8 @@ export async function extractAndSaveWorkflowSteps(
   workflowJson: unknown
 ) {
   try {
+    console.log("🚀 Starting workflow step extraction...");
+
     // Type guard and cast to ensure workflowJson is compatible
     if (!workflowJson || typeof workflowJson !== "object") {
       throw new Error("Invalid workflow JSON: must be a valid object");
@@ -151,8 +168,9 @@ export async function extractAndSaveWorkflowSteps(
 
     // Use your existing function to get ordered steps with full node data
     const orderedSteps = getWorkflowStepsInOrder(typedWorkflowJson);
+    console.log(`📋 Found ${orderedSteps.length} total steps`);
 
-    // 🆕 ADD THIS LINE: Update usage statistics
+    // 🆕 UPDATE USAGE STATISTICS FIRST
     await updateNodeUsageStats(orderedSteps);
 
     // Delete existing steps (for updates)
@@ -177,13 +195,13 @@ export async function extractAndSaveWorkflowSteps(
         // Rich n8n node data
         nodeId: step.id,
         nodeType: step.type,
-        position: step.position as Prisma.InputJsonValue, // Cast position array to Prisma JSON
-        parameters: (step.parameters || {}) as Prisma.InputJsonValue, // Cast parameters to Prisma JSON
-        credentials: undefined, // Cast credentials to Prisma JSON
+        position: step.position as Prisma.InputJsonValue,
+        parameters: (step.parameters || {}) as Prisma.InputJsonValue,
+        credentials: undefined,
         typeVersion:
-          typeof step.typeVersion === "number" ? step.typeVersion : 1, // Ensure it's a number
+          typeof step.typeVersion === "number" ? step.typeVersion : 1,
         webhookId:
-          typeof step.webhookId === "string" ? step.webhookId : undefined, // Ensure it's a string or undefined
+          typeof step.webhookId === "string" ? step.webhookId : undefined,
 
         // Node classification
         isTrigger: step.isTrigger,
@@ -196,17 +214,22 @@ export async function extractAndSaveWorkflowSteps(
       data: stepData,
     });
 
+    console.log(
+      `✅ Successfully processed workflow with ${stepData.length} steps`
+    );
+
     return {
       success: true,
       stepsCreated: stepData.length,
-      stepData, // Return the complete step data
+      stepData,
       message: `Successfully extracted ${stepData.length} steps with full node data`,
     };
   } catch (error) {
-    console.error("Failed to extract workflow steps:", error);
+    console.error("❌ Failed to extract workflow steps:", error);
     throw error;
   }
 }
+
 
 // Helper to create readable step descriptions
 function generateStepDescription(step: OrderedWorkflowStep): string {

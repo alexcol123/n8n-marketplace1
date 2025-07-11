@@ -85,6 +85,7 @@ export const CategoryTypeEnum = z.nativeEnum(CategoryType, {
 });
 
 // Updated schema
+// Updated schema (REMOVED steps field)
 export const workflowSchema = z.object({
   title: z
     .string({ required_error: "Title is required" })
@@ -98,7 +99,7 @@ export const workflowSchema = z.object({
     message: "Content must be at least 100 characters.",
   }),
   category: CategoryTypeEnum,
-  steps: z.string().optional().default("[]"),
+  // REMOVED: steps: z.string().optional().default("[]"),
 
   videoUrl: z
     .string()
