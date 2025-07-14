@@ -91,6 +91,7 @@ export default function CreateNodeGuidePage() {
         toast.error(result.message);
       }
     } catch (error) {
+      console.log(error)
       toast.error('Failed to create setup guide');
     } finally {
       setIsSubmitting(false);

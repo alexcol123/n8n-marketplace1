@@ -27,6 +27,7 @@ import {
 import WorkflowAIGenerator from "@/components/(custom)/(ai)/WorkflowAiGenerator";
 import { validateWorkflowJsonElement } from "@/components/(custom)/(dashboard)/Form/ValidateWorkflowJsonElement";
 
+
 const CreateWorkflow = () => {
   // State to track if the JSON has been uploaded
   const [jsonUploaded, setJsonUploaded] = useState(false);
@@ -64,6 +65,8 @@ const CreateWorkflow = () => {
       setIsValidating(false);
     }
   };
+
+
 
   return (
     // Use a container to limit width and add horizontal padding
@@ -280,7 +283,7 @@ const CreateWorkflow = () => {
                         </span>
                       </div>
                       <h3 className="text-sm font-semibold">
-                        Creation Example Image 
+                        Creation Example Image
                       </h3>
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground mb-3 ml-8">
@@ -391,8 +394,9 @@ const CreateWorkflow = () => {
                   }`}
                 >
                   <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-6">
-                    Create or edit your workflow content. Steps will be automatically 
-                    generated from your JSON workflow when you publish.
+                    Create or edit your workflow content. Steps will be
+                    automatically generated from your JSON workflow when you
+                    publish.
                   </p>
 
                   <div className="grid gap-4 sm:gap-6">
@@ -517,7 +521,8 @@ const CreateWorkflow = () => {
                   <p className="text-xs sm:text-sm mb-3 sm:mb-6">
                     Review your workflow details before publishing. Once
                     published, your workflow will be available to the community.
-                    Implementation steps will be automatically generated from your JSON.
+                    Implementation steps will be automatically generated from
+                    your JSON.
                   </p>
 
                   <SubmitButton

@@ -6,144 +6,134 @@ import {
 } from "./WorkflowStepsInOrder";
 import { Prisma } from "@prisma/client";
 import db from "@/utils/db";
-
-// Helper function to standardize auth methods for teaching
-function getPreferredAuthMethod(hostIdentifier: string): string {
-  const authMethodMap: Record<string, string> = {
-    // OpenAI - teach API key method only
-    "api.openai.com": "apiKey",
-
-    // ElevenLabs - teach header auth method
-    "api.elevenlabs.io": "httpHeaderAuth",
-
-    // Google services - teach OAuth only
-    "googleapis.com": "oauth",
-
-    // Common APIs
-    "api.stripe.com": "httpHeaderAuth",
-    "slack.com": "oauth",
-    "api.hedra.com": "httpHeaderAuth",
-    "api.apify.com": "httpHeaderAuth",
-    "generativelanguage.googleapis.com": "httpHeaderAuth",
-
-    // Add more services as needed
-  };
-
-  return authMethodMap[hostIdentifier] || "httpHeaderAuth"; // Default fallback
-}
+import { identifyService } from "./identifyService";
 
 async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
   console.log("🔄 Updating node usage statistics...");
+  console.log(`📊 Total steps received: ${orderedSteps.length}`);
 
-  const statsToUpdate = [];
+  // Debug: Log all step types first
+  console.log(
+    "🔍 All step types:",
+    orderedSteps.map((s) => ({
+      name: s.name,
+      type: s.type,
+      isReturnStep: s.isReturnStep,
+    }))
+  );
+
+  // Group services to avoid duplicates within the same workflow
+  const serviceMap = new Map<
+    string,
+    {
+      serviceName: string;
+      hostIdentifier: string | null;
+      nodeType: string;
+      count: number;
+    }
+  >();
 
   for (const step of orderedSteps) {
+    console.log(`🔍 Processing step: ${step.name} (${step.type})`);
+
     // Skip return steps and sticky notes - they're not real nodes
-    if (step.isReturnStep || step.type.includes("StickyNote")) continue;
-
-    const nodeType = step.type;
-    let hostIdentifier = null;
-    let authType = null;
-
-    // Extract info based on node type with STANDARDIZED auth methods
-    if (nodeType === "n8n-nodes-base.httpRequest") {
-      // Extract host from URL parameter
-      const url = step.parameters?.url;
-      if (url && typeof url === "string") {
-        try {
-          let cleanUrl = url;
-          if (cleanUrl.startsWith("=")) {
-            cleanUrl = cleanUrl.substring(1);
-          }
-
-          const urlMatch = cleanUrl.match(/https?:\/\/([^\/\{\s]+)/);
-          if (urlMatch) {
-            hostIdentifier = urlMatch[1];
-            console.log(
-              `✅ Extracted host: ${hostIdentifier} from URL: ${url}`
-            );
-          } else {
-            console.log(`⚠️ Could not extract host from URL: ${url}`);
-          }
-        } catch (error) {
-          console.log(`⚠️ Could not parse URL: ${url}`, error);
-        }
-      }
-
-      // STANDARDIZE AUTH METHODS - always use the preferred teaching method
-      if (hostIdentifier) {
-        authType = getPreferredAuthMethod(hostIdentifier);
-      }
-    } else if (nodeType.includes("openAi") || nodeType.includes("OpenAi")) {
-      // OpenAI nodes - ALWAYS use apiKey for teaching
-      hostIdentifier = "api.openai.com";
-      authType = "apiKey";
-    } else if (nodeType.includes("google")) {
-      // Google services - ALWAYS use oauth for teaching
-      hostIdentifier = "googleapis.com";
-      authType = "oauth";
-    } else if (nodeType.includes("slack")) {
-      hostIdentifier = "slack.com";
-      authType = "oauth";
-    } else if (nodeType.includes("stripe")) {
-      hostIdentifier = "api.stripe.com";
-      authType = "httpHeaderAuth";
+    if (step.isReturnStep || step.type.includes("StickyNote")) {
+      console.log(
+        `⏭️ SKIPPED: ${step.name} - isReturnStep: ${step.isReturnStep}, type: ${step.type}`
+      );
+      continue;
     }
 
-    // Only track nodes that have meaningful host identifiers
-    if (hostIdentifier && authType) {
-      statsToUpdate.push({
-        nodeType,
-        hostIdentifier,
-        authType,
+    console.log(`✅ PROCESSING: ${step.name} (${step.type})`);
+
+    // Use your new identifyService function
+    const serviceInfo = identifyService(step);
+    console.log(`🎯 Service info:`, serviceInfo);
+
+    // Create unique key for this service
+    const serviceKey = `${serviceInfo.serviceName}|${
+      serviceInfo.hostIdentifier || "null"
+    }`;
+
+    if (serviceMap.has(serviceKey)) {
+      // Increment count if service already exists in this workflow
+      serviceMap.get(serviceKey)!.count++;
+      console.log(`📈 Incremented count for: ${serviceInfo.serviceName}`);
+    } else {
+      // Add new service
+      serviceMap.set(serviceKey, {
+        serviceName: serviceInfo.serviceName,
+        hostIdentifier: serviceInfo.hostIdentifier || null, // Explicit null
+        nodeType: serviceInfo.nodeType,
+        count: 1,
       });
-      console.log(`🎯 Will track: ${hostIdentifier} (${authType})`);
+      console.log(`✨ Added new service: ${serviceInfo.serviceName}`);
     }
+
+    console.log(
+      `🎯 Identified service: ${serviceInfo.serviceName} (${
+        serviceInfo.hostIdentifier || "direct node"
+      })`
+    );
   }
 
-  console.log(`📈 Found ${statsToUpdate.length} nodes to track`);
+  console.log(`📈 Found ${serviceMap.size} unique services to track`);
+  console.log("🗺️ Service map:", Array.from(serviceMap.entries()));
 
-  if (statsToUpdate.length === 0) {
-    console.log("⚠️ No trackable nodes found");
+  if (serviceMap.size === 0) {
+    console.log("⚠️ No trackable services found");
     return [];
   }
 
   // Batch update all the usage stats
-  const upsertPromises = statsToUpdate.map(
-    ({ nodeType, hostIdentifier, authType }) => {
-      console.log(`💾 Tracking: ${hostIdentifier} (${authType})`);
-      return db.nodeUsageStat.upsert({
+  // Replace the entire upsert section with this:
+  const upsertPromises = Array.from(serviceMap.values()).map(
+    async ({ serviceName, hostIdentifier, nodeType, count }) => {
+      console.log(
+        `💾 Tracking: ${serviceName} (used ${count} times in this workflow)`
+      );
+
+      // Handle NULL hostIdentifier with findFirst + create/update
+      const existingRecord = await db.nodeUsageStats.findFirst({
         where: {
-          nodeType_hostIdentifier_authType: {
-            nodeType,
-            hostIdentifier,
-            authType,
-          },
-        },
-        update: {
-          usageCount: {
-            increment: 1,
-          },
-          lastUsedAt: new Date(),
-        },
-        create: {
-          nodeType,
+          serviceName,
           hostIdentifier,
-          authType,
-          usageCount: 1,
-          lastUsedAt: new Date(),
         },
       });
+
+      if (existingRecord) {
+        // Update existing record
+        return db.nodeUsageStats.update({
+          where: { id: existingRecord.id },
+          data: {
+            usageCount: { increment: count },
+            lastUsedAt: new Date(),
+            nodeType,
+          },
+        });
+      } else {
+        // Create new record
+        return db.nodeUsageStats.create({
+          data: {
+            serviceName,
+            hostIdentifier,
+            nodeType,
+            usageCount: count,
+            lastUsedAt: new Date(),
+            needsGuide: true,
+          },
+        });
+      }
     }
   );
 
   try {
     const results = await Promise.all(upsertPromises);
-    console.log(`✅ Updated ${results.length} node usage stats`);
+    console.log(`✅ Updated ${results.length} service usage stats`);
     return results;
   } catch (error) {
     console.error("❌ Database error:", error);
-    // Don't throw - let workflow creation continue even if usage tracking fails
+    console.error("Error details:", error);
     return [];
   }
 }
@@ -229,7 +219,6 @@ export async function extractAndSaveWorkflowSteps(
     throw error;
   }
 }
-
 
 // Helper to create readable step descriptions
 function generateStepDescription(step: OrderedWorkflowStep): string {

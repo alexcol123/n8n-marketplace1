@@ -163,7 +163,10 @@ model NodeUsageStats {
 
   // --- Constraints ---
   // One usage stat record per unique service (serviceName + hostIdentifier combination)
+// Use a different approach for unique constraint with nullable field
   @@unique([serviceName, hostIdentifier])
+  @@index([serviceName])
+  @@index([needsGuide])
 }
 
 model NodeDocumentation {
