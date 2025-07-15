@@ -181,9 +181,18 @@ model NodeDocumentation {
   // The actual helpful content you create for students
   title             String // Guide title: "Hedra API Setup Guide"
   description       String? // What this service does: "AI video generation platform"
+  
+  // --- Credentials section ---
+  credentialGuide   String? // Complete step-by-step credential setup instructions
+  credentialVideo   String? // Single video URL for credential setup walkthrough
+  credentialsLinks  Json? // Links specific to getting credentials: [{"title": "Get API Key", "url": "https://..."}]
+  
+  // --- General setup (after credentials) ---
   setupInstructions String? // Step-by-step setup text (markdown supported)
-  helpLinks         Json? // Useful links: [{"title": "Get API Key", "url": "https://..."}]
-  videoLinks        Json? // Tutorial videos: {"credentials": "youtube-url", "troubleshooting": "youtube-url"}
+  
+  // --- General resources ---
+  helpLinks         Json? // General helpful links: [{"title": "Documentation", "url": "https://..."}]
+  videoLinks        Json? // Other tutorial videos: [{"title": "Advanced Usage", "url": "youtube-url"}]
   troubleshooting   Json? // Common issues: [{"title": "401 Error", "solution": "Check your API key"}]
 
   // --- Standard fields ---

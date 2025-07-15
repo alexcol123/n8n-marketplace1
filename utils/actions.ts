@@ -20,6 +20,8 @@ import { CategoryType, IssueStatus, Priority } from "@prisma/client";
 import { getDateTime } from "./functions/getDateTime";
 import { extractAndSaveWorkflowSteps } from "./functions/extractWorkflowSteps";
 import { CompletionCountData, CompletionWithUserData } from "./types";
+import nodeTypeToServiceName from "./functions/nodeTypeToServiceName";
+import { identifyService } from "./functions/identifyService";
 
 const getAuthUser = async () => {
   const user = await currentUser();
@@ -2637,69 +2639,176 @@ export const updateWorkflowStepFormAction = async (
 
 //  nodeUsageStats
 
-// Add these actions to your utils/actions.ts
+// Add this action to your utils/actions.ts
+
+// Fetch setup guides for a specific workflow's steps
+export const fetchWorkflowGuides = async (workflowSteps: any[]) => {
+  try {
+    // Extract unique service combinations from workflow steps
+    console.log("=== Starting fetchWorkflowGuides ===");
+    const serviceMap = new Map<string, any>();
+
+    for (const step of workflowSteps) {
+      // Skip return steps and non-HTTP nodes
+      if (step.isReturnStep || step.nodeType.includes("StickyNote")) {
+        continue;
+      }
+
+      const service = identifyService(step);
+      console.log("Identified service:", service);
+
+      // Only track services that we can identify
+      if (service.serviceName) {
+        // Create a unique key that handles null properly
+        const key = `${service.serviceName}::${
+          service.hostIdentifier || "NO_HOST"
+        }`;
+
+        if (!serviceMap.has(key)) {
+          serviceMap.set(key, {
+            serviceName: service.serviceName,
+            hostIdentifier: service.hostIdentifier,
+          });
+        }
+      }
+    }
+
+    console.log("Unique services found:", Array.from(serviceMap.values()));
+
+    // Fetch all guides for the identified services in a single query
+    const serviceConditions = Array.from(serviceMap.values()).map(
+      (service) => ({
+        serviceName: service.serviceName,
+        hostIdentifier: service.hostIdentifier,
+      })
+    );
+
+    console.log("Fetching guides for services:", serviceConditions);
+
+    // Fetch all matching guides in one query
+    const guides = await db.nodeDocumentation.findMany({
+      where: {
+        OR: serviceConditions,
+      },
+    });
+
+    console.log(`Found ${guides.length} guides`);
+
+    // Build the guides map
+    const guidesMap: Record<string, any> = {};
+
+    for (const guide of guides) {
+      const guideKey = guide.hostIdentifier
+        ? `${guide.serviceName}-${guide.hostIdentifier}`
+        : guide.serviceName;
+
+      guidesMap[guideKey] = {
+        serviceName: guide.serviceName,
+        hostIdentifier: guide.hostIdentifier,
+        title: guide.title,
+        description: guide.description,
+        credentialGuide: guide.credentialGuide,
+        credentialVideo: guide.credentialVideo,
+        credentialsLinks: guide.credentialsLinks,
+        setupInstructions: guide.setupInstructions,
+        helpLinks: guide.helpLinks,
+        videoLinks: guide.videoLinks,
+        troubleshooting: guide.troubleshooting,
+      };
+    }
+
+    console.log("=== Final guides map ===");
+    console.log("Guides found:", Object.keys(guidesMap));
+
+    return guidesMap;
+  } catch (error) {
+    console.error("Error fetching workflow guides:", error);
+    return {};
+  }
+};
+//  node-guides ==============>>>
+// utils/actions.ts - Updated actions for Node Guides
+// utils/actions.ts - Updated actions for Node Guides
+// Updated actions to handle new credential fields
+
+// Get all node usage stats ordered by most used
+
+// Get usage stats that need guides (using needsGuide boolean)
+
+// utils/actions.ts - Complete updated actions with credential fields
 
 // Get all node usage stats ordered by most used
 export const fetchNodeUsageStats = async () => {
   try {
-    const stats = await db.nodeUsageStat.findMany({
+    const stats = await db.nodeUsageStats.findMany({
       orderBy: [{ usageCount: "desc" }, { lastUsedAt: "desc" }],
       include: {
-        nodeSetupGuide: true,
+        nodeDocumentation: true,
       },
     });
-    return stats;
-  } catch (error) {
-    return renderError(error);
-  }
-};
 
-// Get usage stats that don't have setup guides yet
-export const fetchStatsWithoutGuides = async () => {
-  try {
-    const stats = await db.nodeUsageStat.findMany({
-      where: {
-        nodeSetupGuide: null,
-      },
-      orderBy: [{ usageCount: "desc" }, { lastUsedAt: "desc" }],
-    });
-    return stats;
+    // Transform the data to match what your component expects
+    const transformedStats = stats.map((stat) => ({
+      id: stat.id,
+      serviceName: stat.serviceName,
+      nodeType: stat.nodeType,
+      hostIdentifier: stat.hostIdentifier,
+      usageCount: stat.usageCount,
+      lastUsedAt: stat.lastUsedAt,
+      needsGuide: stat.needsGuide,
+      nodeSetupGuide: stat.nodeDocumentation
+        ? {
+            id: stat.nodeDocumentation.id,
+            title: stat.nodeDocumentation.title,
+            description: stat.nodeDocumentation.description,
+            // Credential fields
+            credentialGuide: stat.nodeDocumentation.credentialGuide,
+            credentialVideo: stat.nodeDocumentation.credentialVideo,
+            credentialsLinks: stat.nodeDocumentation.credentialsLinks,
+            // General fields
+            setupInstructions: stat.nodeDocumentation.setupInstructions,
+            helpLinks: stat.nodeDocumentation.helpLinks,
+            videoLinks: stat.nodeDocumentation.videoLinks,
+            troubleshooting: stat.nodeDocumentation.troubleshooting,
+          }
+        : null,
+    }));
+
+    return transformedStats;
   } catch (error) {
-    return renderError(error);
+    console.error("Error fetching node usage stats:", error);
+    return [];
   }
 };
 
 // Create a new setup guide
-
-
-
-
-
-// Update an existing setup guide
 export const createNodeSetupGuideAction = async (
   prevState: Record<string, unknown>,
   formData: FormData
 ): Promise<{ message: string; success: boolean }> => {
   try {
     const user = await getAuthUser();
+    if (!user) {
+      return {
+        message: "Authentication required",
+        success: false,
+      };
+    }
 
     // Get form data
     const rawData = Object.fromEntries(formData);
 
     // Validate required fields
-    const nodeType = rawData.nodeType as string;
+    const serviceName = rawData.serviceName as string;
     const hostIdentifier = rawData.hostIdentifier as string;
-    const guideTitle = rawData.guideTitle as string;
+    const title = rawData.title as string;
 
-    if (!nodeType || !hostIdentifier || !guideTitle) {
+    if (!serviceName || !title) {
       return {
-        message: "Node type, host, and guide title are required",
+        message: "Service name and title are required",
         success: false,
       };
     }
-
-    // 🔧 SIMPLIFIED: Always use httpHeaderAuth for consistency
-    const authType = "httpHeaderAuth";
 
     // Parse optional JSON fields
     let helpLinks = null;
@@ -2714,53 +2823,78 @@ export const createNodeSetupGuideAction = async (
       }
     }
 
-    // Create the setup guide with standard auth type
-    const guide = await db.nodeSetupGuide.create({
+    let videoLinks = null;
+    if (rawData.videoLinks && typeof rawData.videoLinks === "string") {
+      try {
+        videoLinks = JSON.parse(rawData.videoLinks as string);
+      } catch (error) {
+        return {
+          message: "Invalid JSON format for video links",
+          success: false,
+        };
+      }
+    }
+
+    let troubleshooting = null;
+    if (
+      rawData.troubleshooting &&
+      typeof rawData.troubleshooting === "string"
+    ) {
+      try {
+        troubleshooting = JSON.parse(rawData.troubleshooting as string);
+      } catch (error) {
+        return {
+          message: "Invalid JSON format for troubleshooting",
+          success: false,
+        };
+      }
+    }
+
+    // Parse credentialsLinks JSON field
+    let credentialsLinks = null;
+    if (
+      rawData.credentialsLinks &&
+      typeof rawData.credentialsLinks === "string"
+    ) {
+      try {
+        credentialsLinks = JSON.parse(rawData.credentialsLinks as string);
+      } catch (error) {
+        return {
+          message: "Invalid JSON format for credentials links",
+          success: false,
+        };
+      }
+    }
+
+    // Create the documentation guide
+    const documentation = await db.nodeDocumentation.create({
       data: {
-        nodeType,
-        hostIdentifier,
-        authType, // Always httpHeaderAuth
-        guideType: (rawData.guideType as any) || "CREDENTIALS",
-        guideTitle,
-        guideVideoUrl: (rawData.guideVideoUrl as string) || null,
-        helpText: (rawData.helpText as string) || null,
+        serviceName,
+        hostIdentifier: hostIdentifier || null,
+        title,
+        description: (rawData.description as string) || null,
+        // Credential fields
+        credentialGuide: (rawData.credentialGuide as string) || null,
+        credentialVideo: (rawData.credentialVideo as string) || null,
+        credentialsLinks,
+        // General fields
+        setupInstructions: (rawData.setupInstructions as string) || null,
         helpLinks,
-        credentialNameHint: (rawData.credentialNameHint as string) || null,
+        videoLinks,
+        troubleshooting,
       },
     });
 
     // Link existing usage stats to this guide
-    await db.nodeUsageStat.updateMany({
+    await db.nodeUsageStats.updateMany({
       where: {
-        nodeType,
-        hostIdentifier,
-        authType,
-        nodeSetupGuideId: null,
+        serviceName,
+        hostIdentifier: hostIdentifier || null,
+        nodeDocumentationId: null,
       },
       data: {
-        nodeSetupGuideId: guide.id,
-      },
-    });
-
-    // Also create a NodeUsageStats record if one doesn't exist
-    await db.nodeUsageStat.upsert({
-      where: {
-        nodeType_hostIdentifier_authType: {
-          nodeType,
-          hostIdentifier,
-          authType,
-        },
-      },
-      update: {
-        nodeSetupGuideId: guide.id,
-      },
-      create: {
-        nodeType,
-        hostIdentifier,
-        authType,
-        usageCount: 1,
-        lastUsedAt: new Date(),
-        nodeSetupGuideId: guide.id,
+        nodeDocumentationId: documentation.id,
+        needsGuide: false,
       },
     });
 
@@ -2780,157 +2914,203 @@ export const createNodeSetupGuideAction = async (
   }
 };
 
-// Delete a setup guide
-
-
-// Add this action to your utils/actions.ts
-
-// Fetch setup guides for a specific workflow's steps
-export const fetchWorkflowGuides = async (workflowSteps: any[]) => {
- // console.log('🔍 fetchWorkflowGuides called with:', workflowSteps.length, 'steps');
-  
+// Update an existing setup guide
+export const updateNodeSetupGuideAction = async (
+  guideId: string,
+  prevState: Record<string, unknown>,
+  formData: FormData
+): Promise<{ message: string; success: boolean }> => {
   try {
-    // Extract unique node combinations from workflow steps
-    const nodeCombinations = new Set();
-    
-    for (const step of workflowSteps) {
-  //    console.log('🔍 Processing step:', step.nodeType, step.stepTitle);
-      
-      // Skip return steps and non-HTTP nodes
-      if (step.isReturnStep || step.nodeType.includes("StickyNote")) {
-     //   console.log('⏭️ Skipping step (return or sticky)');
-        continue;
-      }
-      
-      const nodeType = step.nodeType;
-      let hostIdentifier = null;
-      let authType = null;
-      
-      // Extract info based on node type (same logic as updateNodeUsageStats)
-      if (nodeType === 'n8n-nodes-base.httpRequest') {
-     //   console.log('🔍 Found HTTP request node');
-        // Extract host from URL parameter
-        const url = step.parameters?.url;
-     //   console.log('🔍 URL found:', url);
-        
-        if (url && typeof url === 'string') {
-          try {
-            let cleanUrl = url;
-            
-            // Remove leading equals sign if present
-            if (cleanUrl.startsWith('=')) {
-              cleanUrl = cleanUrl.substring(1);
-            }
-            
-            // Extract the base URL before any template expressions
-            const urlMatch = cleanUrl.match(/https?:\/\/([^\/\{\s]+)/);
-            if (urlMatch) {
-              hostIdentifier = urlMatch[1];
-          //    console.log('✅ Extracted host:', hostIdentifier);
-            }
-          } catch (error) {
-            console.log('❌ URL parsing error:', error);
-            // Skip if URL can't be parsed
-            continue;
-          }
-        }
-        
-        // Use standard auth type for all HTTP requests
-        if (hostIdentifier) {
-          authType = "httpHeaderAuth"; // Same for everything
-         // console.log('✅ Using standard auth type: httpHeaderAuth for host:', hostIdentifier);
-        }
-      } 
-      else if (nodeType.includes('openAi') || nodeType.includes('OpenAi')) {
-        // OpenAI nodes - ALWAYS use apiKey for teaching
-        hostIdentifier = "api.openai.com";
-        authType = "apiKey";
-       // console.log('✅ OpenAI node detected');
-      }
-      else if (nodeType.includes('google')) {
-        // Google services - ALWAYS use oauth for teaching
-        hostIdentifier = "googleapis.com";
-        authType = "oauth";
-       // console.log('✅ Google node detected');
-      }
-      else if (nodeType.includes('slack')) {
-        hostIdentifier = "slack.com";
-        authType = "oauth";
-       // console.log('✅ Slack node detected');
-      }
-      else if (nodeType.includes('stripe')) {
-        hostIdentifier = "api.stripe.com";
-        authType = "httpHeaderAuth";
-       // console.log('✅ Stripe node detected');
-      }
-      
-      // Only track nodes that have meaningful host identifiers
-      if (hostIdentifier) {
-       // console.log('✅ Found combination:', nodeType, hostIdentifier, authType);
-        const combinationKey = `${nodeType}|${hostIdentifier}|${authType}`;
-        nodeCombinations.add(combinationKey);
-      } else {
-       // console.log('❌ No host identifier found for:', nodeType);
-      }
+    const user = await getAuthUser();
+    if (!user) {
+      return {
+        message: "Authentication required",
+        success: false,
+      };
     }
-    
-   // console.log('🔍 Final combinations:', Array.from(nodeCombinations));
-    
-    // Convert Set to array of objects for database query
-    const combinations = Array.from(nodeCombinations).map(combo => {
-      const [nodeType, hostIdentifier, authType] = (combo as string).split('|');
-      return { nodeType, hostIdentifier, authType };
-    });
-    
-   // console.log('🔍 Looking for combinations in DB:', combinations);
-    
-    // If no combinations found, return empty lookup
-    if (combinations.length === 0) {
-     // console.log('⚠️ No combinations found, returning empty lookup');
-      return {};
+
+    // Get form data
+    const rawData = Object.fromEntries(formData);
+
+    // Validate required fields
+    const title = rawData.title as string;
+
+    if (!title) {
+      return {
+        message: "Title is required",
+        success: false,
+      };
     }
-    
-    // Query database for matching NodeUsageStats with guides
-    const usageStatsWithGuides = await db.nodeUsageStat.findMany({
-      where: {
-        OR: combinations.map(combo => ({
-          nodeType: combo.nodeType,
-          hostIdentifier: combo.hostIdentifier,
-          authType: combo.authType,
-          nodeSetupGuide: {
-            isNot: null // Only get stats that have guides
-          }
-        }))
-      },
-      include: {
-        nodeSetupGuide: true
-      }
-    });
-    
-    console.log('🔍 Found usageStatsWithGuides:', usageStatsWithGuides);
-    
-    // Create lookup map for easy access
-    const guideLookup: Record<string, any> = {};
-    
-    usageStatsWithGuides.forEach(stat => {
-      if (stat.nodeSetupGuide) {
-        // Use | separator to match the combination keys
-        const lookupKey = `${stat.nodeType}|${stat.hostIdentifier}|${stat.authType}`;
-        console.log('✅ Adding to lookup:', lookupKey);
-        guideLookup[lookupKey] = {
-          guide: stat.nodeSetupGuide,
-          usageCount: stat.usageCount,
-          lastUsedAt: stat.lastUsedAt
+
+    // Parse optional JSON fields
+    let helpLinks = null;
+    if (rawData.helpLinks && typeof rawData.helpLinks === "string") {
+      try {
+        helpLinks = JSON.parse(rawData.helpLinks as string);
+      } catch (error) {
+        return {
+          message: "Invalid JSON format for help links",
+          success: false,
         };
       }
+    }
+
+    let videoLinks = null;
+    if (rawData.videoLinks && typeof rawData.videoLinks === "string") {
+      try {
+        videoLinks = JSON.parse(rawData.videoLinks as string);
+      } catch (error) {
+        return {
+          message: "Invalid JSON format for video links",
+          success: false,
+        };
+      }
+    }
+
+    let troubleshooting = null;
+    if (
+      rawData.troubleshooting &&
+      typeof rawData.troubleshooting === "string"
+    ) {
+      try {
+        troubleshooting = JSON.parse(rawData.troubleshooting as string);
+      } catch (error) {
+        return {
+          message: "Invalid JSON format for troubleshooting",
+          success: false,
+        };
+      }
+    }
+
+    // Parse credentialsLinks JSON field
+    let credentialsLinks = null;
+    if (
+      rawData.credentialsLinks &&
+      typeof rawData.credentialsLinks === "string"
+    ) {
+      try {
+        credentialsLinks = JSON.parse(rawData.credentialsLinks as string);
+      } catch (error) {
+        return {
+          message: "Invalid JSON format for credentials links",
+          success: false,
+        };
+      }
+    }
+
+    // Update the documentation guide
+    await db.nodeDocumentation.update({
+      where: { id: guideId },
+      data: {
+        title,
+        description: (rawData.description as string) || null,
+        // Credential fields
+        credentialGuide: (rawData.credentialGuide as string) || null,
+        credentialVideo: (rawData.credentialVideo as string) || null,
+        credentialsLinks,
+        // General fields
+        setupInstructions: (rawData.setupInstructions as string) || null,
+        helpLinks,
+        videoLinks,
+        troubleshooting,
+      },
     });
-    
-    console.log('🔍 Final guideLookup:', guideLookup);
-    
-    return guideLookup;
-    
+
+    revalidatePath("/dashboard/node-guides");
+
+    return {
+      message: "Setup guide updated successfully!",
+      success: true,
+    };
   } catch (error) {
-    console.error("Error fetching workflow guides:", error);
-    return {};
+    console.error("Error updating setup guide:", error);
+    return {
+      message:
+        error instanceof Error ? error.message : "Failed to update setup guide",
+      success: false,
+    };
+  }
+};
+
+// Delete a setup guide
+export const deleteNodeSetupGuideAction = async (
+  guideId: string
+): Promise<{ message: string; success: boolean }> => {
+  try {
+    const user = await getAuthUser();
+    if (!user) {
+      return {
+        message: "Authentication required",
+        success: false,
+      };
+    }
+
+    // Update associated usage stats to indicate they need guides again
+    await db.nodeUsageStats.updateMany({
+      where: {
+        nodeDocumentationId: guideId,
+      },
+      data: {
+        nodeDocumentationId: null,
+        needsGuide: true,
+      },
+    });
+
+    // Delete the guide (will throw if not found)
+    await db.nodeDocumentation.delete({
+      where: { id: guideId },
+    });
+
+    revalidatePath("/dashboard/node-guides");
+
+    return {
+      message: "Setup guide deleted successfully!",
+      success: true,
+    };
+  } catch (error) {
+    console.error("Error deleting setup guide:", error);
+    return {
+      message:
+        error instanceof Error ? error.message : "Failed to delete setup guide",
+      success: false,
+    };
+  }
+};
+
+// Get a specific setup guide
+export const getNodeSetupGuide = async (guideId: string) => {
+  try {
+    const documentation = await db.nodeDocumentation.findUnique({
+      where: { id: guideId },
+      include: {
+        usageStats: true,
+      },
+    });
+
+    if (!documentation) {
+      return null;
+    }
+
+    // Transform to match expected format
+    return {
+      id: documentation.id,
+      serviceName: documentation.serviceName,
+      hostIdentifier: documentation.hostIdentifier,
+      title: documentation.title,
+      description: documentation.description,
+      // Credential fields
+      credentialGuide: documentation.credentialGuide,
+      credentialVideo: documentation.credentialVideo,
+      credentialsLinks: documentation.credentialsLinks,
+      // General fields
+      setupInstructions: documentation.setupInstructions,
+      helpLinks: documentation.helpLinks,
+      videoLinks: documentation.videoLinks,
+      troubleshooting: documentation.troubleshooting,
+      usageStats: documentation.usageStats,
+    };
+  } catch (error) {
+    console.error("Error fetching setup guide:", error);
+    return null;
   }
 };

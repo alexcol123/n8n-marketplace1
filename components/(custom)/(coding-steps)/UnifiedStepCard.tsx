@@ -50,7 +50,7 @@ interface UnifiedStepCardProps {
   isExpanded?: boolean;
   canEditSteps?: boolean;
   onExpand?: (stepId: string) => void;
-  setupGuide?: any;
+  guideData?: any;
 }
 
 export default function UnifiedStepCard({
@@ -61,14 +61,12 @@ export default function UnifiedStepCard({
   isMarkedAsViewed = false,
   isExpanded = false,
   onExpand,
-  setupGuide,
+  guideData,
 }: UnifiedStepCardProps) {
   const [nodeCopied, setNodeCopied] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   const nodeImage = getDefaultNodeImage(step.type);
-
-
 
   // Handle expansion toggle
   const handleToggleExpanded = () => {
@@ -812,7 +810,7 @@ export default function UnifiedStepCard({
 
               <div>
                 {/* 🆕 Setup Guide Section - Dark Theme */}
-                {setupGuide && (
+                {guideData && (
                   <div className="mb-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -823,58 +821,175 @@ export default function UnifiedStepCard({
                           variant="outline"
                           className="text-emerald-400 border-emerald-500/30"
                         >
-                          Used {setupGuide.usageCount} times
+                          Used {guideData.usageCount} times
                         </Badge>
                       </div>
                       <div className="text-sm text-emerald-400">
                         Last used{" "}
-                        {new Date(setupGuide.lastUsedAt).toLocaleDateString()}
+                        {new Date(guideData.lastUsedAt).toLocaleDateString()}
                       </div>
                     </div>
 
+                    {/* Guide Title */}
                     <h4 className="font-semibold text-emerald-300 mb-2">
-                      {setupGuide.guide.guideTitle}
+                      {guideData.guide.title}
                     </h4>
 
-                    <div className="flex gap-2">
-                      {setupGuide.guide.guideVideoUrl && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                          onClick={() =>
-                            window.open(
-                              setupGuide.guide.guideVideoUrl,
-                              "_blank"
-                            )
-                          }
-                        >
-                          🎥 View Tutorial
-                        </Button>
+                    {/* Guide Description */}
+                    {guideData.guide.description && (
+                      <p className="text-emerald-200 text-sm mb-3 leading-relaxed">
+                        {guideData.guide.description}
+                      </p>
+                    )}
+
+                    {/* Setup Instructions */}
+                    {guideData.guide.setupInstructions && (
+                      <div className="mb-3">
+                        <h5 className="text-emerald-300 font-medium mb-2">
+                          Setup Instructions:
+                        </h5>
+                        <div className="text-emerald-200 text-sm bg-emerald-500/5 p-3 rounded border border-emerald-500/10">
+                          {guideData.guide.setupInstructions}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Credentials Links */}
+                    {guideData.guide.credentialsLinks &&
+                      guideData.guide.credentialsLinks.length > 0 && (
+                        <div className="mb-3">
+                          <h5 className="text-emerald-300 font-medium mb-2">
+                            Get Credentials:
+                          </h5>
+                          <div className="flex flex-wrap gap-2">
+                            {guideData.guide.credentialsLinks.map(
+                              (link, index) => (
+                                <Button
+                                  key={index}
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                                  onClick={() =>
+                                    window.open(link.url, "_blank")
+                                  }
+                                >
+                                  🔑 {link.title}
+                                </Button>
+                              )
+                            )}
+                          </div>
+                        </div>
                       )}
 
-                      {setupGuide.guide.helpLinks && (
+                    {/* Help Links */}
+                    {guideData.guide.helpLinks &&
+                      guideData.guide.helpLinks.length > 0 && (
+                        <div className="mb-3">
+                          <h5 className="text-emerald-300 font-medium mb-2">
+                            Help & Documentation:
+                          </h5>
+                          <div className="flex flex-wrap gap-2">
+                            {guideData.guide.helpLinks.map((link, index) => (
+                              <Button
+                                key={index}
+                                size="sm"
+                                variant="outline"
+                                className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                                onClick={() => window.open(link.url, "_blank")}
+                              >
+                                📚 {link.title}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Video Links */}
+                    {guideData.guide.videoLinks &&
+                      guideData.guide.videoLinks.length > 0 && (
+                        <div className="mb-3">
+                          <h5 className="text-emerald-300 font-medium mb-2">
+                            Video Tutorials:
+                          </h5>
+                          <div className="flex flex-wrap gap-2">
+                            {guideData.guide.videoLinks.map((video, index) => (
+                              <Button
+                                key={index}
+                                size="sm"
+                                variant="outline"
+                                className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                                onClick={() => window.open(video.url, "_blank")}
+                              >
+                                🎥 {video.title}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Credential Guide */}
+                    {guideData.guide.credentialGuide && (
+                      <div className="mb-3">
+                        <h5 className="text-emerald-300 font-medium mb-2">
+                          Credential Setup Guide:
+                        </h5>
+                        <div className="text-emerald-200 text-sm bg-emerald-500/5 p-3 rounded border border-emerald-500/10">
+                          {guideData.guide.credentialGuide}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Credential Video */}
+                    {guideData.guide.credentialVideo && (
+                      <div className="mb-3">
                         <Button
                           size="sm"
                           variant="outline"
                           className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
                           onClick={() =>
                             window.open(
-                              setupGuide.guide.helpLinks.url,
+                              guideData.guide.credentialVideo,
                               "_blank"
                             )
                           }
                         >
-                          🔗 {setupGuide.guide.helpLinks.name}
+                          🎬 Credential Setup Video
                         </Button>
+                      </div>
+                    )}
+
+                    {/* Troubleshooting */}
+                    {guideData.guide.troubleshooting &&
+                      guideData.guide.troubleshooting.length > 0 && (
+                        <div className="mb-3">
+                          <h5 className="text-emerald-300 font-medium mb-2">
+                            Troubleshooting:
+                          </h5>
+                          <div className="space-y-2">
+                            {guideData.guide.troubleshooting.map(
+                              (issue, index) => (
+                                <div
+                                  key={index}
+                                  className="bg-emerald-500/5 p-3 rounded border border-emerald-500/10"
+                                >
+                                  <h6 className="text-emerald-300 font-medium text-sm mb-1">
+                                    {issue.title}
+                                  </h6>
+                                  <p className="text-emerald-200 text-sm">
+                                    {issue.solution}
+                                  </p>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
                       )}
-                    </div>
                   </div>
                 )}
               </div>
 
               <Separator className="my-5" />
-              
+
               <EditCardHelp step={step} canEditSteps={canEditSteps} />
 
               <Separator className="my-5" />

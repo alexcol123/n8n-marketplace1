@@ -26,7 +26,6 @@ import { cn } from "@/lib/utils";
 import MarkCompletedButton from "./MarkCompletedButton";
 import { WorkflowStep } from "@prisma/client";
 import { JsonValue } from "@prisma/client/runtime/library";
-import { VALID_LOADERS } from "next/dist/shared/lib/image-config";
 
 // ✅ FIXED: Update local interface to match the imported one (including index signature)
 interface OrderedWorkflowStep {
@@ -223,64 +222,91 @@ export default function WorkflowStepsViewer({
         )
       : 0;
 
-  console.log("guideLookup", guideLookup);
-
   // Helper function to extract guide identifiers from a step
   // Helper function to extract guide identifiers from a step
 
-  const extractGuideIdentifiers = (step: OrderedWorkflowStep) => {
-    // Skip return steps and non-HTTP nodes - EXACTLY like fetchWorkflowGuides
-    if (step.isReturnStep || step.type.includes("StickyNote")) {
-      return null;
-    }
-
-    const nodeType = step.type;
-    let hostIdentifier = null;
-    let authType = null;
-
-    // Same logic as your fetchWorkflowGuides action
-    if (nodeType === "n8n-nodes-base.httpRequest") {
-      // Extract host from URL parameter
-      const url = step.parameters?.url;
-      if (url && typeof url === "string") {
-        try {
-          let cleanUrl = url;
-          if (cleanUrl.startsWith("=")) {
-            cleanUrl = cleanUrl.substring(1);
-          }
-          const urlMatch = cleanUrl.match(/https?:\/\/([^\/\{\s]+)/);
-          if (urlMatch) {
-            hostIdentifier = urlMatch[1];
-          }
-        } catch (error) {
-          return null;
-        }
-      }
-
-      // 🔧 SIMPLIFIED: Always use httpHeaderAuth for HTTP requests
-      if (hostIdentifier) {
-        authType = "httpHeaderAuth";
-      }
-    } else if (nodeType.includes("openAi") || nodeType.includes("OpenAi")) {
-      hostIdentifier = "api.openai.com";
-      authType = "apiKey";
-    } else if (nodeType.includes("slack")) {
-      hostIdentifier = "slack.com";
-      authType = "oauth";
-    } else if (nodeType.includes("google")) {
-      hostIdentifier = "googleapis.com";
-      authType = "oauth";
-    } else if (nodeType.includes("stripe")) {
-      hostIdentifier = "api.stripe.com";
-      authType = "httpHeaderAuth"; // Updated to match the standard
-    }
-    // Add more service-specific logic as needed...
-
-    if (hostIdentifier) {
-      return `${nodeType}|${hostIdentifier}|${authType}`;
-    }
+const extractGuideIdentifiers = (step: OrderedWorkflowStep) => {
+  // Skip return steps and non-HTTP nodes - EXACTLY like fetchWorkflowGuides
+  if (step.isReturnStep || step.type.includes("StickyNote")) {
     return null;
-  };
+  }
+
+  const nodeType = step.type;
+  let hostIdentifier = null;
+  let serviceName = null;
+
+  // Extract info based on node type (same logic as fetchWorkflowGuides)
+  if (nodeType === 'n8n-nodes-base.httpRequest') {
+    // Extract host from URL parameter
+    const url = step.parameters?.url;
+    
+    if (url && typeof url === 'string') {
+      try {
+        let cleanUrl = url;
+        
+        // Remove leading equals sign if present
+        if (cleanUrl.startsWith('=')) {
+          cleanUrl = cleanUrl.substring(1);
+        }
+        
+        // Extract the base URL before any template expressions
+        const urlMatch = cleanUrl.match(/https?:\/\/([^\/\{\s]+)/);
+        if (urlMatch) {
+          hostIdentifier = urlMatch[1];
+          
+          // Extract service name from hostIdentifier
+          serviceName = extractServiceFromHost(hostIdentifier);
+        }
+      } catch (error) {
+        return null;
+      }
+    }
+  } else if (nodeType.includes('openAi') || nodeType.includes('OpenAi')) {
+    serviceName = 'openai';
+    hostIdentifier = 'api.openai.com';
+  } else if (nodeType.includes('slack')) {
+    serviceName = 'slack';
+    hostIdentifier = 'slack.com';
+  } else if (nodeType.includes('google')) {
+    serviceName = 'google-apis';
+    hostIdentifier = 'googleapis.com';
+  } else if (nodeType.includes('stripe')) {
+    serviceName = 'stripe';
+    hostIdentifier = 'api.stripe.com';
+  } else if (nodeType.includes('hedra')) {
+    serviceName = 'hedra';
+    hostIdentifier = 'api.hedra.com';
+  } else if (nodeType.includes('elevenlabs')) {
+    serviceName = 'elevenlabs';
+    hostIdentifier = 'api.elevenlabs.io';
+  }
+  // Add more service-specific logic as needed...
+
+  // Return the key format that matches your guideLookup data structure: "serviceName|hostIdentifier"
+  if (serviceName && hostIdentifier) {
+    return `${serviceName}|${hostIdentifier}`;
+  }
+  return null;
+};
+
+// Helper function to extract service name from hostname (same as in identifyService.ts)
+function extractServiceFromHost(hostname: string): string {
+  // Remove common prefixes
+  const serviceName = hostname
+    .replace(/^(api\.|www\.|m\.)/, '') // Remove api., www., m. prefixes
+    .replace(/\.com$|\.io$|\.net$|\.org$/, ''); // Remove common TLDs
+  
+  // Handle special cases
+  if (serviceName.includes('googleapis')) return 'google-apis';
+  if (serviceName.includes('openai')) return 'openai';
+  if (serviceName.includes('anthropic')) return 'anthropic';
+  if (serviceName.includes('elevenlabs')) return 'elevenlabs';
+  if (serviceName.includes('hedra')) return 'hedra';
+  
+  // Get the main part (e.g., "hedra" from "hedra" or "sub.hedra")
+  const parts = serviceName.split('.');
+  return parts[parts.length - 1] || serviceName;
+}
 
   const guideKey = extractGuideIdentifiers(currentStep);
   const guideData = guideKey ? guideLookup?.[guideKey] : null;
@@ -484,7 +510,7 @@ export default function WorkflowStepsViewer({
                     isExpanded={expandedStepId === currentStep.id}
                     onExpand={handleStepExpand}
                     canEditSteps={canEditSteps}
-                    setupGuide={guideData} // 🆕 Pass the guide data
+                    guideData={guideData} // 🆕 Pass the guide data
                   />
                 </div>
               </div>

@@ -3,81 +3,116 @@ import { fetchNodeUsageStats, fetchStatsWithoutGuides } from "@/utils/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, BookOpen, TrendingUp, AlertTriangle } from "lucide-react";
+import { Plus, BookOpen, TrendingUp, AlertTriangle, CheckCircle, Key, Video, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 
-// Helper function to get auth type badge color
-function getAuthTypeBadgeColor(authType: string) {
-  switch (authType) {
-    case "apiKey":
-      return "bg-blue-500/20 text-blue-600 hover:bg-blue-500/30";
-    case "oauth":
-      return "bg-green-500/20 text-green-600 hover:bg-green-500/30";
-    case "httpHeaderAuth":
-      return "bg-orange-500/20 text-orange-600 hover:bg-orange-500/30";
-    default:
-      return "bg-gray-500/20 text-gray-600 hover:bg-gray-500/30";
+// Helper function to get badge color based on host identifier
+function getHostBadgeColor(hostIdentifier: string | null) {
+  if (!hostIdentifier) {
+    return "bg-purple-500/20 text-purple-600 hover:bg-purple-500/30"; // Direct node
   }
+  
+  return "bg-blue-500/20 text-blue-600 hover:bg-blue-500/30"; // HTTP request
 }
-
-
 
 export default async function NodeGuidesPage() {
   const allStats = await fetchNodeUsageStats();
-  const statsWithoutGuides = await fetchStatsWithoutGuides();
 
   console.log('allstats', allStats)
-  console.log('statsWithoutGuides', statsWithoutGuides)
 
   if (!Array.isArray(allStats)) {
     return <div>Error loading usage stats</div>;
   }
 
-  if (!Array.isArray(statsWithoutGuides)) {
-    return <div>Error loading stats without guides</div>;
-  }
+  // Filter stats that need guides (no nodeSetupGuide)
+  const statsWithoutGuides = allStats.filter(stat => !stat.nodeSetupGuide);
+  
+  // Filter stats that have documentation
+  const statsWithGuides = allStats.filter(stat => stat.nodeSetupGuide && !stat.needsGuide);
 
-  const StatCard = ({ stat, showCreateButton = false }: { stat: any, showCreateButton?: boolean }) => (
-    <div className="flex items-center justify-between p-4 bg-card rounded-lg border hover:bg-muted/50">
+  const StatCard = ({ stat }: { stat: any }) => (
+    <div className="flex items-center justify-between p-4 bg-card rounded-lg border hover:bg-muted/50 transition-colors">
       <div className="flex-1">
-        {/* Priority Order: Host → Auth Type (removed nodeType for cleaner view) */}
-        <div className="flex items-center gap-4 mb-2">
-          {/* 1st Priority: Host Identifier (Large & Bold) */}
-          <h3 className="text-lg font-bold text-foreground">
-            {stat.hostIdentifier}
+        {/* Service Information */}
+        <div className="flex items-center gap-3 mb-2">
+          {/* Service Name (Primary) */}
+          <h3 className="text-lg font-semibold text-foreground">
+            {stat.serviceName}
           </h3>
           
-          {/* 2nd Priority: Auth Type (Colored Badge) */}
-          <Badge className={getAuthTypeBadgeColor(stat.authType)}>
-            🔐 {stat.authType}
+          {/* Service Type Badge */}
+          <Badge className={getHostBadgeColor(stat.hostIdentifier)}>
+            {stat.hostIdentifier ? 'HTTP API' : 'Direct Node'}
           </Badge>
+          
+          {/* Host Identifier if available */}
+          {stat.hostIdentifier && (
+            <Badge variant="outline" className="text-xs">
+              {stat.hostIdentifier}
+            </Badge>
+          )}
           
           {/* Usage Count */}
-          <Badge variant="outline">
-            📊 Used {stat.usageCount} times
+          <Badge variant="secondary" className="text-xs">
+            {stat.usageCount} uses
           </Badge>
           
-          {/* Has Guide Status */}
-          {stat.nodeSetupGuide && (
-            <Badge className="bg-emerald-500/20 text-emerald-600 hover:bg-emerald-500/30">
-              ✅ Has Guide
+          {/* Documentation Status */}
+          {stat.nodeSetupGuide ? (
+            <Badge className="bg-emerald-500/20 text-emerald-600">
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Documented
+            </Badge>
+          ) : (
+            <Badge className="bg-red-500/20 text-red-600">
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              Needs Guide
             </Badge>
           )}
         </div>
         
         {/* Secondary Info */}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-1">
-          <span>
-            Last used {formatDistanceToNow(new Date(stat.lastUsedAt))} ago
-          </span>
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <span>Last used {formatDistanceToNow(new Date(stat.lastUsedAt))} ago</span>
+          <span className="text-xs">Node: {stat.nodeType}</span>
         </div>
         
-        {/* Guide Title if exists */}
+        {/* Guide Title and Content Indicators */}
         {stat.nodeSetupGuide && (
-          <p className="text-sm font-medium text-emerald-600 mt-1">
-            📖 {stat.nodeSetupGuide.guideTitle}
-          </p>
+          <div className="mt-2 space-y-1">
+            <p className="text-sm font-medium text-emerald-600">
+              📖 {stat.nodeSetupGuide.title}
+            </p>
+            
+            {/* Content Indicators */}
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              {stat.nodeSetupGuide.credentialGuide && (
+                <div className="flex items-center gap-1">
+                  <Key className="h-3 w-3" />
+                  <span>Credentials</span>
+                </div>
+              )}
+              {stat.nodeSetupGuide.credentialVideo && (
+                <div className="flex items-center gap-1">
+                  <Video className="h-3 w-3" />
+                  <span>Video</span>
+                </div>
+              )}
+              {stat.nodeSetupGuide.credentialsLinks && Array.isArray(stat.nodeSetupGuide.credentialsLinks) && stat.nodeSetupGuide.credentialsLinks.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <ExternalLink className="h-3 w-3" />
+                  <span>{stat.nodeSetupGuide.credentialsLinks.length} links</span>
+                </div>
+              )}
+              {stat.nodeSetupGuide.setupInstructions && (
+                <div className="flex items-center gap-1">
+                  <BookOpen className="h-3 w-3" />
+                  <span>Setup guide</span>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
       
@@ -87,7 +122,7 @@ export default async function NodeGuidesPage() {
           <>
             <Button variant="outline" size="sm" asChild>
               <Link href={`/dashboard/node-guides/${stat.nodeSetupGuide.id}`}>
-                View Guide
+                View
               </Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
@@ -95,27 +130,15 @@ export default async function NodeGuidesPage() {
                 Edit
               </Link>
             </Button>
-            <Button variant="secondary" size="sm" asChild>
-              <Link
-                href={`/dashboard/node-guides/create?nodeType=${encodeURIComponent(
-                  stat.nodeType
-                )}&hostIdentifier=${encodeURIComponent(
-                  stat.hostIdentifier
-                )}&authType=${encodeURIComponent(stat.authType)}`}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Guide
-              </Link>
-            </Button>
           </>
         ) : (
-          <Button size={showCreateButton ? "sm" : "sm"} asChild>
+          <Button size="sm" asChild>
             <Link
-              href={`/dashboard/node-guides/create?nodeType=${encodeURIComponent(
-                stat.nodeType
+              href={`/dashboard/node-guides/create?serviceName=${encodeURIComponent(
+                stat.serviceName
               )}&hostIdentifier=${encodeURIComponent(
-                stat.hostIdentifier
-              )}&authType=${encodeURIComponent(stat.authType)}`}
+                stat.hostIdentifier || ''
+              )}&nodeType=${encodeURIComponent(stat.nodeType)}`}
             >
               <Plus className="h-4 w-4 mr-2" />
               Create Guide
@@ -131,54 +154,55 @@ export default async function NodeGuidesPage() {
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Node Setup Guides</h1>
-          <p className="text-muted-foreground">
-            Create helpful setup guides for the APIs and services you use most often
-          </p>
-          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Tracking Priority Order:</h4>
-            <div className="flex items-center gap-4 text-sm text-blue-800 dark:text-blue-200">
-              <span className="flex items-center gap-1">
-                <span className="font-bold">1st:</span> 
-                <span className="font-semibold">Service URL</span> 
-                <span className="text-xs">(which API)</span>
-              </span>
-              <span>→</span>
-              <span className="flex items-center gap-1">
-                <span className="font-bold">2nd:</span> 
-                <span className="font-semibold">Auth Method</span>
-                <span className="text-xs">(how to connect)</span>
-              </span>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Documentation Dashboard</h1>
+              <p className="text-muted-foreground">
+                Manage credential setup guides for the services you use in your workflows
+              </p>
             </div>
+            <Button asChild>
+              <Link href="/dashboard/node-guides/create">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Guide
+              </Link>
+            </Button>
+          </div>
+          
+          <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">🔐 Credential Documentation</h4>
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              Services are automatically tracked from your workflow uploads. Create credential setup guides for the ones you use most often.
+            </p>
           </div>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total APIs Used</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Services</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{allStats.length}</div>
               <p className="text-xs text-muted-foreground">
-                Across all your workflows
+                Used across workflows
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Guides Created</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Documented</CardTitle>
+              <CheckCircle className="h-4 w-4 text-emerald-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {allStats.filter((stat) => stat.nodeSetupGuide).length}
+              <div className="text-2xl font-bold text-emerald-600">
+                {statsWithGuides.length}
               </div>
               <p className="text-xs text-muted-foreground">
-                Setup guides available
+                Credential guides created
               </p>
             </CardContent>
           </Card>
@@ -186,36 +210,52 @@ export default async function NodeGuidesPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Need Guides</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              <AlertTriangle className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{statsWithoutGuides.length}</div>
+              <div className="text-2xl font-bold text-destructive">
+                {statsWithoutGuides.length}
+              </div>
               <p className="text-xs text-muted-foreground">
-                APIs without setup guides
+                Missing credential guides
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Coverage</CardTitle>
+              <Key className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {allStats.length > 0 ? Math.round((statsWithGuides.length / allStats.length) * 100) : 0}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Credential documentation coverage
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* APIs Without Guides - Priority Section */}
+        {/* Services That Need Guides - Priority Section */}
         {statsWithoutGuides.length > 0 && (
           <Card className="mb-8 border-destructive/20 bg-destructive/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
                 <AlertTriangle className="h-5 w-5" />
-                APIs That Need Setup Guides
+                Services That Need Credential Guides ({statsWithoutGuides.length})
               </CardTitle>
               <p className="text-destructive/80">
-                These are your most-used APIs that don&apos;t have setup guides yet
+                These services are used in your workflows but don't have credential setup guides yet
               </p>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4">
+              <div className="space-y-3">
                 {statsWithoutGuides.map((stat) => (
                   <StatCard 
-                    key={`${stat.nodeType}-${stat.hostIdentifier}-${stat.authType}`}
-                    stat={stat} 
-                    showCreateButton={true}
+                    key={`${stat.serviceName}-${stat.hostIdentifier || 'null'}`}
+                    stat={stat}
                   />
                 ))}
               </div>
@@ -223,37 +263,45 @@ export default async function NodeGuidesPage() {
           </Card>
         )}
 
-        {/* APIs With Guides - Completed Section */}
-        {allStats.filter((stat) => stat.nodeSetupGuide).length > 0 && (
+        {/* Services With Documentation - Completed Section */}
+        {statsWithGuides.length > 0 && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-emerald-600">
-                  <BookOpen className="h-5 w-5" />
-                  APIs With Setup Guides
-                </CardTitle>
-                <p className="text-muted-foreground">
-                  APIs that already have setup guides created
-                </p>
-              </div>
-              <Button asChild>
-                <Link href="/dashboard/node-guides/create">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Guide
-                </Link>
-              </Button>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-emerald-600">
+                <CheckCircle className="h-5 w-5" />
+                Services With Credential Guides ({statsWithGuides.length})
+              </CardTitle>
+              <p className="text-muted-foreground">
+                Services that have credential setup guides created
+              </p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {allStats
-                  .filter((stat) => stat.nodeSetupGuide)
-                  .map((stat) => (
-                    <StatCard 
-                      key={`${stat.nodeType}-${stat.hostIdentifier}-${stat.authType}`}
-                      stat={stat}
-                    />
-                  ))}
+              <div className="space-y-3">
+                {statsWithGuides.map((stat) => (
+                  <StatCard 
+                    key={`${stat.serviceName}-${stat.hostIdentifier || 'null'}`}
+                    stat={stat}
+                  />
+                ))}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Empty State */}
+        {allStats.length === 0 && (
+          <Card className="text-center py-16">
+            <CardContent>
+              <Key className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Services Found</h3>
+              <p className="text-muted-foreground mb-4">
+                Upload some workflows to start tracking services and create credential guides
+              </p>
+              <Button asChild>
+                <Link href="/dashboard/workflows/upload">
+                  Upload Workflow
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         )}

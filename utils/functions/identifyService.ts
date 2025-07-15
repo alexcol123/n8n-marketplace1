@@ -5,6 +5,7 @@ interface WorkflowStep {
   id: string;
   name: string;
   type: string;
+  nodeType?:string;
   parameters?: any;
   credentials?: any;
   typeVersion?: number;
@@ -22,7 +23,7 @@ interface ServiceInfo {
  * Handles both direct nodes and HTTP requests
  */
 export function identifyService(step: WorkflowStep): ServiceInfo {
-  const nodeType = step.type;
+  const nodeType = step.type || step.nodeType;
   
   // For HTTP requests, try to extract service from URL
   if (nodeType === 'n8n-nodes-base.httpRequest') {
