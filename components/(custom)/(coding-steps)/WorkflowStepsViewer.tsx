@@ -1,4 +1,4 @@
-// components/(custom)/(workflow)/WorkflowStepsViewer.tsx
+// components/(custom)/(coding-steps)/WorkflowStepsViewer.tsx
 "use client";
 
 import { useState, useMemo } from "react";
@@ -26,8 +26,8 @@ import { cn } from "@/lib/utils";
 import MarkCompletedButton from "./MarkCompletedButton";
 import { WorkflowStep } from "@prisma/client";
 import { JsonValue } from "@prisma/client/runtime/library";
+import { identifyService } from "@/utils/functions/identifyService";
 
-// ✅ FIXED: Update local interface to match the imported one (including index signature)
 interface OrderedWorkflowStep {
   id: string;
   name: string;
@@ -39,7 +39,6 @@ interface OrderedWorkflowStep {
   isMergeNode: boolean;
   isDependency: boolean;
   isDisconnected?: boolean;
-  // Additional fields from database - Fixed null handling
   stepDescription?: string | null;
   credentials?: unknown;
   typeVersion?: number;
@@ -50,8 +49,22 @@ interface OrderedWorkflowStep {
   helpText?: string | null;
   helpLinks?: { label: string; url: string }[] | null;
   originalApiStep?: WorkflowStep;
-  connectionInfo?: ConnectionInfo; // ✅ FIXED: Make this optional to match imported type
-  [key: string]: unknown; // ✅ FIXED: Add index signature to match WorkflowNode
+  connectionInfo?: ConnectionInfo;
+  [key: string]: unknown;
+}
+
+interface SetupGuideData {
+  guide: {
+    id: string;
+    guideTitle: string;
+    guideVideoUrl?: string | null;
+    helpText?: string | null;
+    helpLinks?: Record<string, string> | null;
+    credentialNameHint?: string | null;
+    // Add other properties as needed
+  };
+  usageCount: number;
+  lastUsedAt: Date | string;
 }
 
 interface WorkflowStepsViewerProps {
@@ -61,10 +74,9 @@ interface WorkflowStepsViewerProps {
   showStats?: boolean;
   workflowSteps: WorkflowStep[];
   canEditSteps?: boolean;
-  guideLookup?: Record<string, any>; // 🆕 New prop
+  guideLookup?: Record<string, SetupGuideData>; // Changed from Record<string, unknown>
 }
 
-// ✅ NEW: Helper function to create default ConnectionInfo
 const createDefaultConnectionInfo = (): ConnectionInfo => ({
   connectsTo: [],
   connectsFrom: [],
@@ -84,21 +96,16 @@ export default function WorkflowStepsViewer({
   const [viewedSteps, setViewedSteps] = useState<Set<string>>(new Set());
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
   const [localWorkflowSteps] = useState<WorkflowStep[]>(workflowSteps);
-
-  // Pass relevant guide to each step card
-
-  // Step navigation state
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
 
   // Transform API workflow steps to OrderedWorkflowStep format
   const orderedSteps: OrderedWorkflowStep[] = useMemo(() => {
-    // Helper function to safely convert position
     const convertPosition = (position: JsonValue): [number, number] => {
       if (Array.isArray(position) && position.length >= 2) {
         const [x, y] = position;
         return [typeof x === "number" ? x : 0, typeof y === "number" ? y : 0];
       }
-      return [0, 0]; // Default position if invalid or null
+      return [0, 0];
     };
 
     return localWorkflowSteps
@@ -113,7 +120,7 @@ export default function WorkflowStepsViewer({
       })
       .map((step) => ({
         id: step.id,
-        name: step.stepTitle || "Untitled Step", // Handle null stepTitle
+        name: step.stepTitle || "Untitled Step",
         type: step.nodeType,
         parameters:
           step.parameters &&
@@ -121,12 +128,11 @@ export default function WorkflowStepsViewer({
           !Array.isArray(step.parameters)
             ? (step.parameters as Record<string, unknown>)
             : {},
-        position: convertPosition(step.position), // Safe conversion
+        position: convertPosition(step.position),
         stepNumber: step.stepNumber,
         isTrigger: step.isTrigger,
         isMergeNode: step.isMergeNode,
         isDependency: step.isDependency,
-        // Fixed: Keep null values as null, don't convert to undefined
         stepDescription: step.stepDescription,
         credentials: step.credentials,
         typeVersion: step.typeVersion,
@@ -138,45 +144,9 @@ export default function WorkflowStepsViewer({
         helpLinks: step.helpLinks as { label: string; url: string }[] | null,
         isDisconnected: false,
         originalApiStep: step,
-        // ✅ FIXED: Provide default connectionInfo or use optional chaining
         connectionInfo: createDefaultConnectionInfo(),
       }));
   }, [localWorkflowSteps]);
-
-  // Handle step expansion tracking
-  const handleStepToggleExpanded = (stepId: string, isExpanded: boolean) => {
-    if (isExpanded) {
-      setViewedSteps((prev) => new Set([...prev, stepId]));
-    }
-  };
-
-  const handleStepExpand = (stepId: string) => {
-    if (expandedStepId === stepId) {
-      setExpandedStepId(null);
-    } else {
-      setExpandedStepId(stepId);
-      setViewedSteps((prev) => new Set([...prev, stepId]));
-    }
-  };
-
-  // Navigation handlers
-  const goToNextStep = () => {
-    if (currentStepIndex < displayedSteps.length - 1) {
-      const currentStep = displayedSteps[currentStepIndex];
-      if (currentStep) {
-        setViewedSteps((prev) => new Set([...prev, currentStep.id]));
-      }
-      setCurrentStepIndex(currentStepIndex + 1);
-    } else if (currentStepIndex === displayedSteps.length - 1) {
-      setCurrentStepIndex(displayedSteps.length);
-    }
-  };
-
-  const goToPreviousStep = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(currentStepIndex - 1);
-    }
-  };
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -223,98 +193,73 @@ export default function WorkflowStepsViewer({
       : 0;
 
   // Helper function to extract guide identifiers from a step
-  // Helper function to extract guide identifiers from a step
-
-const extractGuideIdentifiers = (step: OrderedWorkflowStep) => {
-  // Skip return steps and non-HTTP nodes - EXACTLY like fetchWorkflowGuides
-  if (step.isReturnStep || step.type.includes("StickyNote")) {
-    return null;
-  }
-
-  const nodeType = step.type;
-  let hostIdentifier = null;
-  let serviceName = null;
-
-  // Extract info based on node type (same logic as fetchWorkflowGuides)
-  if (nodeType === 'n8n-nodes-base.httpRequest') {
-    // Extract host from URL parameter
-    const url = step.parameters?.url;
-    
-    if (url && typeof url === 'string') {
-      try {
-        let cleanUrl = url;
-        
-        // Remove leading equals sign if present
-        if (cleanUrl.startsWith('=')) {
-          cleanUrl = cleanUrl.substring(1);
-        }
-        
-        // Extract the base URL before any template expressions
-        const urlMatch = cleanUrl.match(/https?:\/\/([^\/\{\s]+)/);
-        if (urlMatch) {
-          hostIdentifier = urlMatch[1];
-          
-          // Extract service name from hostIdentifier
-          serviceName = extractServiceFromHost(hostIdentifier);
-        }
-      } catch (error) {
-        return null;
-      }
+  const extractGuideIdentifiers = (step: OrderedWorkflowStep | undefined) => {
+    // ✅ FIXED: Add null check for step
+    if (!step) {
+      return null;
     }
-  } else if (nodeType.includes('openAi') || nodeType.includes('OpenAi')) {
-    serviceName = 'openai';
-    hostIdentifier = 'api.openai.com';
-  } else if (nodeType.includes('slack')) {
-    serviceName = 'slack';
-    hostIdentifier = 'slack.com';
-  } else if (nodeType.includes('google')) {
-    serviceName = 'google-apis';
-    hostIdentifier = 'googleapis.com';
-  } else if (nodeType.includes('stripe')) {
-    serviceName = 'stripe';
-    hostIdentifier = 'api.stripe.com';
-  } else if (nodeType.includes('hedra')) {
-    serviceName = 'hedra';
-    hostIdentifier = 'api.hedra.com';
-  } else if (nodeType.includes('elevenlabs')) {
-    serviceName = 'elevenlabs';
-    hostIdentifier = 'api.elevenlabs.io';
-  }
-  // Add more service-specific logic as needed...
 
-  // Return the key format that matches your guideLookup data structure: "serviceName|hostIdentifier"
-  if (serviceName && hostIdentifier) {
-    return `${serviceName}|${hostIdentifier}`;
-  }
-  return null;
-};
+    // Skip return steps and sticky notes
+    if (step.type.includes("StickyNote")) {
+      return null;
+    }
 
-// Helper function to extract service name from hostname (same as in identifyService.ts)
-function extractServiceFromHost(hostname: string): string {
-  // Remove common prefixes
-  const serviceName = hostname
-    .replace(/^(api\.|www\.|m\.)/, '') // Remove api., www., m. prefixes
-    .replace(/\.com$|\.io$|\.net$|\.org$/, ''); // Remove common TLDs
-  
-  // Handle special cases
-  if (serviceName.includes('googleapis')) return 'google-apis';
-  if (serviceName.includes('openai')) return 'openai';
-  if (serviceName.includes('anthropic')) return 'anthropic';
-  if (serviceName.includes('elevenlabs')) return 'elevenlabs';
-  if (serviceName.includes('hedra')) return 'hedra';
-  
-  // Get the main part (e.g., "hedra" from "hedra" or "sub.hedra")
-  const parts = serviceName.split('.');
-  return parts[parts.length - 1] || serviceName;
-}
+    // Use the same identifyService function that's used elsewhere
+    const service = identifyService(step);
 
+    // Build the key to match guideLookup format
+    if (service.serviceName) {
+      // For HTTP nodes with hostIdentifier, use "serviceName|hostIdentifier" format
+      if (service.hostIdentifier) {
+        return `${service.serviceName}|${service.hostIdentifier}`;
+      }
+      // For native nodes (no hostIdentifier), just use serviceName
+      return service.serviceName;
+    }
+
+    return null;
+  };
+
+  // ✅ FIXED: Now currentStep is safely checked before being passed to extractGuideIdentifiers
   const guideKey = extractGuideIdentifiers(currentStep);
   const guideData = guideKey ? guideLookup?.[guideKey] : null;
-  console.log("guide key ");
-  console.log(guideKey);
-  console.log("guide data ");
-  console.log(guideData);
 
+  // Handle step expansion tracking
+  const handleStepToggleExpanded = (stepId: string, isExpanded: boolean) => {
+    if (isExpanded) {
+      setViewedSteps((prev) => new Set([...prev, stepId]));
+    }
+  };
+
+  const handleStepExpand = (stepId: string) => {
+    if (expandedStepId === stepId) {
+      setExpandedStepId(null);
+    } else {
+      setExpandedStepId(stepId);
+      setViewedSteps((prev) => new Set([...prev, stepId]));
+    }
+  };
+
+  // Navigation handlers
+  const goToNextStep = () => {
+    if (currentStepIndex < displayedSteps.length - 1) {
+      const currentStep = displayedSteps[currentStepIndex];
+      if (currentStep) {
+        setViewedSteps((prev) => new Set([...prev, currentStep.id]));
+      }
+      setCurrentStepIndex(currentStepIndex + 1);
+    } else if (currentStepIndex === displayedSteps.length - 1) {
+      setCurrentStepIndex(displayedSteps.length);
+    }
+  };
+
+  const goToPreviousStep = () => {
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex(currentStepIndex - 1);
+    }
+  };
+
+  // Early return if no steps
   if (!orderedSteps || orderedSteps.length === 0) {
     return (
       <Card className={cn("border-destructive/30", className)}>
@@ -510,7 +455,7 @@ function extractServiceFromHost(hostname: string): string {
                     isExpanded={expandedStepId === currentStep.id}
                     onExpand={handleStepExpand}
                     canEditSteps={canEditSteps}
-                    guideData={guideData} // 🆕 Pass the guide data
+                    guideData={guideData as SetupGuideData | undefined} // Changed prop name to match UnifiedStepCard
                   />
                 </div>
               </div>

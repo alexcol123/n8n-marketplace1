@@ -65,8 +65,8 @@ export default function WorkflowAIGenerator() {
 
     try {
       return JSON.parse(jsonValue);
-    } catch (err) {
-      console.log(err);
+    } catch (error) {
+      console.log(error);
       toast.error("Invalid JSON. Please check your workflow data.");
       return null;
     }

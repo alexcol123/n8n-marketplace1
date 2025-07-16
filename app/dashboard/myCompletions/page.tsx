@@ -86,7 +86,7 @@ export default function MyCompletionsPage() {
     return title.includes(search) || category.includes(search);
   });
 
-  console.log("Filtered Completions:", filteredCompletions);
+
   
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {

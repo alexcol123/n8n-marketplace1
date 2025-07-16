@@ -57,8 +57,7 @@ const SingleWorkflowPage = async ({
   const workflow = result as WorkflowWithAuthor;
   if (!workflow) return <EmptyList />;
 
-  // console.log("workflow.workflowSteps:", workflow.workflowSteps);
-  // console.log("workflowSteps length:", workflow.workflowSteps?.length);
+
 
   const orderedSteps = workflow.workflowSteps
     ? [...workflow.workflowSteps]
@@ -91,7 +90,7 @@ const SingleWorkflowPage = async ({
 
   // 2. Fetch guides for this workflow (new)
   const guideLookup = await fetchWorkflowGuides(workflow.workflowSteps);
-   console.log("guideLookup", guideLookup);
+
 
 
   return (

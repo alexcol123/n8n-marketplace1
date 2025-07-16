@@ -16,11 +16,16 @@ import { revalidatePath } from "next/cache";
 import { deleteImage, uploadImage } from "./supabase";
 
 import slug from "slug";
-import { CategoryType, IssueStatus, Priority } from "@prisma/client";
+import {
+  CategoryType,
+  IssueStatus,
+  Priority,
+  WorkflowStep,
+} from "@prisma/client";
 import { getDateTime } from "./functions/getDateTime";
 import { extractAndSaveWorkflowSteps } from "./functions/extractWorkflowSteps";
 import { CompletionCountData, CompletionWithUserData } from "./types";
-import nodeTypeToServiceName from "./functions/nodeTypeToServiceName";
+
 import { identifyService } from "./functions/identifyService";
 
 const getAuthUser = async () => {
@@ -414,23 +419,9 @@ export const createWorkflowAction = async (
     };
 
     // CREATE WORKFLOW
-    const workflow = await db.workflow.create({
+    await db.workflow.create({
       data: workflowData,
     });
-
-    // Extract and save rich step data to WorkflowStep table from JSON
-    try {
-      const stepExtractionResult = await extractAndSaveWorkflowSteps(
-        workflow.id,
-        workFlowJson
-      );
-      console.log(
-        `Successfully extracted ${stepExtractionResult.stepsCreated} workflow steps with full node data`
-      );
-    } catch (stepError) {
-      console.error("Error extracting workflow steps:", stepError);
-      // Don't fail the whole workflow creation if step extraction fails
-    }
 
     // Revalidate the dashboard to show the new workflow
     revalidatePath("/dashboard/wf");
@@ -748,10 +739,6 @@ export const deleteWorkflowAction = async (
 
       // Wait for all image deletions to complete
       await Promise.allSettled(deletePromises);
-
-      console.log(
-        `Attempted to delete ${imagesToDelete.length} images from storage`
-      );
     }
 
     // Revalidate relevant paths to update the UI
@@ -2309,8 +2296,6 @@ export const updateWorkflowStepAction = async (
     // Validate the input data
     const validatedFields = validateWithZodSchema(workflowStepSchema, data);
 
-    console.log("step id :", stepId);
-
     // First, check if the step exists and verify ownership through the workflow
     const step = await db.workflowStep.findUnique({
       where: { id: stepId },
@@ -2642,27 +2627,23 @@ export const updateWorkflowStepFormAction = async (
 // Add this action to your utils/actions.ts
 
 // Fetch setup guides for a specific workflow's steps
-export const fetchWorkflowGuides = async (workflowSteps: any[]) => {
+
+export const fetchWorkflowGuides = async (workflowSteps) => {
   try {
-    // Extract unique service combinations from workflow steps
-    console.log("=== Starting fetchWorkflowGuides ===");
     const serviceMap = new Map<string, any>();
 
     for (const step of workflowSteps) {
       // Skip return steps and non-HTTP nodes
-      if (step.isReturnStep || step.nodeType.includes("StickyNote")) {
+      if (step.nodeType.includes("StickyNote")) {
         continue;
       }
 
       const service = identifyService(step);
-      console.log("Identified service:", service);
 
       // Only track services that we can identify
       if (service.serviceName) {
         // Create a unique key that handles null properly
-        const key = `${service.serviceName}::${
-          service.hostIdentifier || "NO_HOST"
-        }`;
+        const key = `${service.serviceName}::${service.hostIdentifier}`;
 
         if (!serviceMap.has(key)) {
           serviceMap.set(key, {
@@ -2673,33 +2654,22 @@ export const fetchWorkflowGuides = async (workflowSteps: any[]) => {
       }
     }
 
-    console.log("Unique services found:", Array.from(serviceMap.values()));
+    const serviceConditions = Array.from(serviceMap.values());
 
-    // Fetch all guides for the identified services in a single query
-    const serviceConditions = Array.from(serviceMap.values()).map(
-      (service) => ({
-        serviceName: service.serviceName,
-        hostIdentifier: service.hostIdentifier,
-      })
-    );
-
-    console.log("Fetching guides for services:", serviceConditions);
-
-    // Fetch all matching guides in one query
     const guides = await db.nodeDocumentation.findMany({
       where: {
         OR: serviceConditions,
       },
     });
 
-    console.log(`Found ${guides.length} guides`);
+    //    return `${serviceName}|${hostIdentifier}`;
 
     // Build the guides map
     const guidesMap: Record<string, any> = {};
 
     for (const guide of guides) {
       const guideKey = guide.hostIdentifier
-        ? `${guide.serviceName}-${guide.hostIdentifier}`
+        ? `${guide.serviceName}|${guide.hostIdentifier}`
         : guide.serviceName;
 
       guidesMap[guideKey] = {
@@ -2717,15 +2687,14 @@ export const fetchWorkflowGuides = async (workflowSteps: any[]) => {
       };
     }
 
-    console.log("=== Final guides map ===");
-    console.log("Guides found:", Object.keys(guidesMap));
-
     return guidesMap;
   } catch (error) {
-    console.error("Error fetching workflow guides:", error);
-    return {};
+    console.log(error);
   }
+
+  return;
 };
+
 //  node-guides ==============>>>
 // utils/actions.ts - Updated actions for Node Guides
 // utils/actions.ts - Updated actions for Node Guides
@@ -2816,6 +2785,7 @@ export const createNodeSetupGuideAction = async (
       try {
         helpLinks = JSON.parse(rawData.helpLinks as string);
       } catch (error) {
+        console.log(error);
         return {
           message: "Invalid JSON format for help links",
           success: false,
@@ -2828,6 +2798,7 @@ export const createNodeSetupGuideAction = async (
       try {
         videoLinks = JSON.parse(rawData.videoLinks as string);
       } catch (error) {
+        console.log(error);
         return {
           message: "Invalid JSON format for video links",
           success: false,
@@ -2843,6 +2814,7 @@ export const createNodeSetupGuideAction = async (
       try {
         troubleshooting = JSON.parse(rawData.troubleshooting as string);
       } catch (error) {
+        console.log(error);
         return {
           message: "Invalid JSON format for troubleshooting",
           success: false,
@@ -2859,6 +2831,7 @@ export const createNodeSetupGuideAction = async (
       try {
         credentialsLinks = JSON.parse(rawData.credentialsLinks as string);
       } catch (error) {
+        console.log(error);
         return {
           message: "Invalid JSON format for credentials links",
           success: false,
@@ -2948,6 +2921,7 @@ export const updateNodeSetupGuideAction = async (
       try {
         helpLinks = JSON.parse(rawData.helpLinks as string);
       } catch (error) {
+        console.log(error);
         return {
           message: "Invalid JSON format for help links",
           success: false,
@@ -2960,6 +2934,7 @@ export const updateNodeSetupGuideAction = async (
       try {
         videoLinks = JSON.parse(rawData.videoLinks as string);
       } catch (error) {
+        console.log(error);
         return {
           message: "Invalid JSON format for video links",
           success: false,
@@ -2975,6 +2950,7 @@ export const updateNodeSetupGuideAction = async (
       try {
         troubleshooting = JSON.parse(rawData.troubleshooting as string);
       } catch (error) {
+        console.log(error);
         return {
           message: "Invalid JSON format for troubleshooting",
           success: false,
@@ -2991,6 +2967,7 @@ export const updateNodeSetupGuideAction = async (
       try {
         credentialsLinks = JSON.parse(rawData.credentialsLinks as string);
       } catch (error) {
+        console.log(error);
         return {
           message: "Invalid JSON format for credentials links",
           success: false,

@@ -1,4 +1,3 @@
-
 import {
   getWorkflowStepsInOrder,
   WorkflowJson,
@@ -9,19 +8,6 @@ import db from "@/utils/db";
 import { identifyService } from "./identifyService";
 
 async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
-  console.log("🔄 Updating node usage statistics...");
-  console.log(`📊 Total steps received: ${orderedSteps.length}`);
-
-  // Debug: Log all step types first
-  console.log(
-    "🔍 All step types:",
-    orderedSteps.map((s) => ({
-      name: s.name,
-      type: s.type,
-      isReturnStep: s.isReturnStep,
-    }))
-  );
-
   // Group services to avoid duplicates within the same workflow
   const serviceMap = new Map<
     string,
@@ -34,21 +20,13 @@ async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
   >();
 
   for (const step of orderedSteps) {
-    console.log(`🔍 Processing step: ${step.name} (${step.type})`);
-
     // Skip return steps and sticky notes - they're not real nodes
     if (step.isReturnStep || step.type.includes("StickyNote")) {
-      console.log(
-        `⏭️ SKIPPED: ${step.name} - isReturnStep: ${step.isReturnStep}, type: ${step.type}`
-      );
       continue;
     }
 
-    console.log(`✅ PROCESSING: ${step.name} (${step.type})`);
-
     // Use your new identifyService function
     const serviceInfo = identifyService(step);
-    console.log(`🎯 Service info:`, serviceInfo);
 
     // Create unique key for this service
     const serviceKey = `${serviceInfo.serviceName}|${
@@ -58,7 +36,6 @@ async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
     if (serviceMap.has(serviceKey)) {
       // Increment count if service already exists in this workflow
       serviceMap.get(serviceKey)!.count++;
-      console.log(`📈 Incremented count for: ${serviceInfo.serviceName}`);
     } else {
       // Add new service
       serviceMap.set(serviceKey, {
@@ -67,21 +44,10 @@ async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
         nodeType: serviceInfo.nodeType,
         count: 1,
       });
-      console.log(`✨ Added new service: ${serviceInfo.serviceName}`);
     }
-
-    console.log(
-      `🎯 Identified service: ${serviceInfo.serviceName} (${
-        serviceInfo.hostIdentifier || "direct node"
-      })`
-    );
   }
 
-  console.log(`📈 Found ${serviceMap.size} unique services to track`);
-  console.log("🗺️ Service map:", Array.from(serviceMap.entries()));
-
   if (serviceMap.size === 0) {
-    console.log("⚠️ No trackable services found");
     return [];
   }
 
@@ -89,10 +55,6 @@ async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
   // Replace the entire upsert section with this:
   const upsertPromises = Array.from(serviceMap.values()).map(
     async ({ serviceName, hostIdentifier, nodeType, count }) => {
-      console.log(
-        `💾 Tracking: ${serviceName} (used ${count} times in this workflow)`
-      );
-
       // Handle NULL hostIdentifier with findFirst + create/update
       const existingRecord = await db.nodeUsageStats.findFirst({
         where: {
@@ -129,11 +91,11 @@ async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
 
   try {
     const results = await Promise.all(upsertPromises);
-    console.log(`✅ Updated ${results.length} service usage stats`);
+
     return results;
   } catch (error) {
     console.error("❌ Database error:", error);
-    console.error("Error details:", error);
+
     return [];
   }
 }
@@ -143,8 +105,6 @@ export async function extractAndSaveWorkflowSteps(
   workflowJson: unknown
 ) {
   try {
-    console.log("🚀 Starting workflow step extraction...");
-
     // Type guard and cast to ensure workflowJson is compatible
     if (!workflowJson || typeof workflowJson !== "object") {
       throw new Error("Invalid workflow JSON: must be a valid object");
@@ -158,7 +118,6 @@ export async function extractAndSaveWorkflowSteps(
 
     // Use your existing function to get ordered steps with full node data
     const orderedSteps = getWorkflowStepsInOrder(typedWorkflowJson);
-    console.log(`📋 Found ${orderedSteps.length} total steps`);
 
     // 🆕 UPDATE USAGE STATISTICS FIRST
     await updateNodeUsageStats(orderedSteps);
@@ -203,10 +162,6 @@ export async function extractAndSaveWorkflowSteps(
     await db.workflowStep.createMany({
       data: stepData,
     });
-
-    console.log(
-      `✅ Successfully processed workflow with ${stepData.length} steps`
-    );
 
     return {
       success: true,

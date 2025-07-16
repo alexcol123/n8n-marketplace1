@@ -29,18 +29,9 @@ function FormContainer({
 }: FormContainerProps) {
   // Wrap the action to log form data
   const wrappedAction = async (prevState: FormState, formData: FormData): Promise<FormState> => {
-    // Console log all form inputs
-    console.log("=== FORM SUBMISSION ===");
-    console.log("FormData entries:");
+  
     
-    for (const [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
-    }
-    
-    // Convert to object for easier viewing
-    const formObject = Object.fromEntries(formData.entries());
-    console.log("Form data as object:", formObject);
-    
+
     // Call the original action
     return await action(prevState, formData);
   };

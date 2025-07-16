@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, BookOpen, Save, Plus, Trash2, ExternalLink, PlayCircle, AlertCircle, Key, Video } from "lucide-react";
+import { ArrowLeft, BookOpen, Save, Plus, Trash2, ExternalLink, AlertCircle, Key, Video } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -50,6 +50,7 @@ export default function CreateNodeGuidePage() {
         title: newTitle
       }));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.serviceName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -236,7 +237,7 @@ export default function CreateNodeGuidePage() {
                     rows={3}
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    What this service does and why it's useful
+                    What this service does and why it&apos;s useful
                   </p>
                 </div>
               </CardContent>

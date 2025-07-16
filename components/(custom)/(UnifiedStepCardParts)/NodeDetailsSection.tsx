@@ -480,3 +480,4 @@ export default function NodeDetailsSection({
       )}
     </div>
   )
+}

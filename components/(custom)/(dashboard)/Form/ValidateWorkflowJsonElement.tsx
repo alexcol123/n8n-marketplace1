@@ -58,8 +58,8 @@ export const validateWorkflowJson = (
   let parsedJson: WorkflowData;
   try {
     parsedJson = JSON.parse(jsonValue) as WorkflowData;
-  } catch (err) {
-    console.log(err)
+  } catch (error) {
+    console.log(error)
     const message = "Invalid JSON format. Please check your workflow data.";
     if (showToasts) toast.error(message);
     return { isValid: false, parsedJson: null, message };

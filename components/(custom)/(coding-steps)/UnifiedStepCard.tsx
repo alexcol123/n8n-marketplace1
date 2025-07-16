@@ -32,6 +32,7 @@ import { type OrderedWorkflowStep } from "@/utils/functions/WorkflowStepsInOrder
 import { getDefaultNodeImage } from "@/utils/functions/getDefaultNodeImage";
 import EditCardHelp from "./EditCardHelp";
 import NodeDetailsSection from "../(UnifiedStepCardParts)/NodeDetailsSection";
+import NodeDocumentationSection from "../(UnifiedStepCardParts)/NodeDocumentationSection";
 
 // Mock interfaces to match the original
 interface AIMessage {
@@ -775,6 +776,14 @@ export default function UnifiedStepCard({
             </div>
           </div>
 
+          {guideData && (
+            <div>
+              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                📖 Setup Guide Available
+              </Badge>
+            </div>
+          )}
+
           {/* Action buttons - only view details button now */}
           <div className="mt-6">
             <div className="flex items-center gap-3">
@@ -811,180 +820,7 @@ export default function UnifiedStepCard({
               <div>
                 {/* 🆕 Setup Guide Section - Dark Theme */}
                 {guideData && (
-                  <div className="mb-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                          📖 Setup Guide Available
-                        </Badge>
-                        <Badge
-                          variant="outline"
-                          className="text-emerald-400 border-emerald-500/30"
-                        >
-                          Used {guideData.usageCount} times
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-emerald-400">
-                        Last used{" "}
-                        {new Date(guideData.lastUsedAt).toLocaleDateString()}
-                      </div>
-                    </div>
-
-                    {/* Guide Title */}
-                    <h4 className="font-semibold text-emerald-300 mb-2">
-                      {guideData.guide.title}
-                    </h4>
-
-                    {/* Guide Description */}
-                    {guideData.guide.description && (
-                      <p className="text-emerald-200 text-sm mb-3 leading-relaxed">
-                        {guideData.guide.description}
-                      </p>
-                    )}
-
-                    {/* Setup Instructions */}
-                    {guideData.guide.setupInstructions && (
-                      <div className="mb-3">
-                        <h5 className="text-emerald-300 font-medium mb-2">
-                          Setup Instructions:
-                        </h5>
-                        <div className="text-emerald-200 text-sm bg-emerald-500/5 p-3 rounded border border-emerald-500/10">
-                          {guideData.guide.setupInstructions}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Credentials Links */}
-                    {guideData.guide.credentialsLinks &&
-                      guideData.guide.credentialsLinks.length > 0 && (
-                        <div className="mb-3">
-                          <h5 className="text-emerald-300 font-medium mb-2">
-                            Get Credentials:
-                          </h5>
-                          <div className="flex flex-wrap gap-2">
-                            {guideData.guide.credentialsLinks.map(
-                              (link, index) => (
-                                <Button
-                                  key={index}
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                                  onClick={() =>
-                                    window.open(link.url, "_blank")
-                                  }
-                                >
-                                  🔑 {link.title}
-                                </Button>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                    {/* Help Links */}
-                    {guideData.guide.helpLinks &&
-                      guideData.guide.helpLinks.length > 0 && (
-                        <div className="mb-3">
-                          <h5 className="text-emerald-300 font-medium mb-2">
-                            Help & Documentation:
-                          </h5>
-                          <div className="flex flex-wrap gap-2">
-                            {guideData.guide.helpLinks.map((link, index) => (
-                              <Button
-                                key={index}
-                                size="sm"
-                                variant="outline"
-                                className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                                onClick={() => window.open(link.url, "_blank")}
-                              >
-                                📚 {link.title}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                    {/* Video Links */}
-                    {guideData.guide.videoLinks &&
-                      guideData.guide.videoLinks.length > 0 && (
-                        <div className="mb-3">
-                          <h5 className="text-emerald-300 font-medium mb-2">
-                            Video Tutorials:
-                          </h5>
-                          <div className="flex flex-wrap gap-2">
-                            {guideData.guide.videoLinks.map((video, index) => (
-                              <Button
-                                key={index}
-                                size="sm"
-                                variant="outline"
-                                className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                                onClick={() => window.open(video.url, "_blank")}
-                              >
-                                🎥 {video.title}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                    {/* Credential Guide */}
-                    {guideData.guide.credentialGuide && (
-                      <div className="mb-3">
-                        <h5 className="text-emerald-300 font-medium mb-2">
-                          Credential Setup Guide:
-                        </h5>
-                        <div className="text-emerald-200 text-sm bg-emerald-500/5 p-3 rounded border border-emerald-500/10">
-                          {guideData.guide.credentialGuide}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Credential Video */}
-                    {guideData.guide.credentialVideo && (
-                      <div className="mb-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                          onClick={() =>
-                            window.open(
-                              guideData.guide.credentialVideo,
-                              "_blank"
-                            )
-                          }
-                        >
-                          🎬 Credential Setup Video
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Troubleshooting */}
-                    {guideData.guide.troubleshooting &&
-                      guideData.guide.troubleshooting.length > 0 && (
-                        <div className="mb-3">
-                          <h5 className="text-emerald-300 font-medium mb-2">
-                            Troubleshooting:
-                          </h5>
-                          <div className="space-y-2">
-                            {guideData.guide.troubleshooting.map(
-                              (issue, index) => (
-                                <div
-                                  key={index}
-                                  className="bg-emerald-500/5 p-3 rounded border border-emerald-500/10"
-                                >
-                                  <h6 className="text-emerald-300 font-medium text-sm mb-1">
-                                    {issue.title}
-                                  </h6>
-                                  <p className="text-emerald-200 text-sm">
-                                    {issue.solution}
-                                  </p>
-                                </div>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      )}
-                  </div>
+                  <NodeDocumentationSection guideData={guideData} />
                 )}
               </div>
 

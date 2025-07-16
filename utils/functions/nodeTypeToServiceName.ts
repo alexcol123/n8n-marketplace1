@@ -4,5 +4,3 @@ export default function nodeTypeToServiceName(nodeType: string): string {
 }
 
 
-// console.log(nodeTypeToServiceName('n8n-nodes-base.formTrigger')); // "form-trigger"
-// console.log(nodeTypeToServiceName('@n8n/n8n-nodes-langchain.lmChatOpenAi')); // 
