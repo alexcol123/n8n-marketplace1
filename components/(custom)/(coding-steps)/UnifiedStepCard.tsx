@@ -33,6 +33,7 @@ import { getDefaultNodeImage } from "@/utils/functions/getDefaultNodeImage";
 import EditCardHelp from "./EditCardHelp";
 import NodeDetailsSection from "../(UnifiedStepCardParts)/NodeDetailsSection";
 import NodeDocumentationSection from "../(UnifiedStepCardParts)/NodeDocumentationSection";
+import { NodeDocumentation } from "@prisma/client";
 
 // Mock interfaces to match the original
 interface AIMessage {
@@ -51,7 +52,7 @@ interface UnifiedStepCardProps {
   isExpanded?: boolean;
   canEditSteps?: boolean;
   onExpand?: (stepId: string) => void;
-  guideData?: any;
+  guideData?: NodeDocumentation; // ✅ Use Prisma type instead of custom GuideData
 }
 
 export default function UnifiedStepCard({
@@ -68,7 +69,8 @@ export default function UnifiedStepCard({
   const [isHovered, setIsHovered] = useState(false);
 
   const nodeImage = getDefaultNodeImage(step.type);
-
+  console.log('guide data ', guideData)
+  
   // Handle expansion toggle
   const handleToggleExpanded = () => {
     if (isExpanded) {

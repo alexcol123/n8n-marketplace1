@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MarkCompletedButton from "./MarkCompletedButton";
-import { WorkflowStep } from "@prisma/client";
+import { NodeDocumentation, WorkflowStep } from "@prisma/client";
 import { JsonValue } from "@prisma/client/runtime/library";
 import { identifyService } from "@/utils/functions/identifyService";
 
@@ -455,7 +455,7 @@ export default function WorkflowStepsViewer({
                     isExpanded={expandedStepId === currentStep.id}
                     onExpand={handleStepExpand}
                     canEditSteps={canEditSteps}
-                    guideData={guideData as SetupGuideData | undefined} // Changed prop name to match UnifiedStepCard
+                    guideData={guideData as NodeDocumentation | undefined} // Changed prop name to match UnifiedStepCard
                   />
                 </div>
               </div>
