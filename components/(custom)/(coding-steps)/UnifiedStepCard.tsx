@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertTriangle,
@@ -25,6 +25,9 @@ import {
   Play,
   Sparkles,
   Activity,
+  BookOpen,
+  Info,
+  Edit,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -67,10 +70,11 @@ export default function UnifiedStepCard({
 }: UnifiedStepCardProps) {
   const [nodeCopied, setNodeCopied] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [activeTab, setActiveTab] = useState("details"); // Default to guide tab
 
   const nodeImage = getDefaultNodeImage(step.type);
-  console.log('guide data ', guideData)
-  
+  console.log("guide data ", guideData);
+
   // Handle expansion toggle
   const handleToggleExpanded = () => {
     if (isExpanded) {
@@ -811,35 +815,70 @@ export default function UnifiedStepCard({
           </div>
         </CardHeader>
 
-        {/* Expanded content */}
+        {/* Expanded content with Tabs */}
         {isExpanded && (
           <CardContent className="pt-0 pb-6">
             <Separator className="mb-6 text-primary" />
 
-            <div className="border-4 border-primary/60 p-3 rounded-2xl    bg-neutral-950  overflow-hidden">
-              {/* Edit card help */}
+            <div className="border-4 border-primary/60 p-3 rounded-2xl bg-neutral-950 overflow-hidden">
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger
+                    value="details"
+                    className="flex items-center gap-2"
+                  >
+                    <Info className="w-4 h-4" />
+                    Node Details
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="guide"
+                    className="flex items-center gap-2"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    Setup Guide
+                  </TabsTrigger>
+                  <TabsTrigger value="help" className="flex items-center gap-2">
+                    <Edit className="w-4 h-4" />
+                    Edit Help
+                  </TabsTrigger>
+                </TabsList>
 
-              <div>
-                {/* 🆕 Setup Guide Section - Dark Theme */}
-                {guideData && (
-                  <NodeDocumentationSection guideData={guideData} />
-                )}
-              </div>
+                <TabsContent value="guide" className="mt-0">
+                  {guideData ? (
+                    <NodeDocumentationSection guideData={guideData} />
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <h3 className="text-lg font-semibold mb-2">
+                        No Setup Guide Available
+                      </h3>
+                      <p className="text-sm">
+                        This node doesn't have a specific setup guide yet. Check
+                        the Node Details tab for configuration information.
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
 
-              <Separator className="my-5" />
+                <TabsContent value="details" className="mt-0">
+                  <NodeDetailsSection
+                    step={step}
+                    isAINode={isAINode}
+                    isCodeNode={isCodeNode}
+                    getCodeContent={getCodeContent}
+                    getAIPrompts={getAIPrompts}
+                    formatAIPrompt={formatAIPrompt}
+                  />
+                </TabsContent>
 
-              <EditCardHelp step={step} canEditSteps={canEditSteps} />
-
-              <Separator className="my-5" />
-
-              <NodeDetailsSection
-                step={step}
-                isAINode={isAINode}
-                isCodeNode={isCodeNode}
-                getCodeContent={getCodeContent}
-                getAIPrompts={getAIPrompts}
-                formatAIPrompt={formatAIPrompt}
-              />
+                <TabsContent value="help" className="mt-0">
+                  <EditCardHelp step={step} canEditSteps={canEditSteps} />
+                </TabsContent>
+              </Tabs>
             </div>
           </CardContent>
         )}

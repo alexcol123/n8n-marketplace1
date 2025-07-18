@@ -15,6 +15,8 @@ import {
   Trash2,
   Copy,
   Sparkles,
+  User,
+
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -64,7 +66,6 @@ const EditCardHelp = ({
 }: EditCardHelpProps) => {
   const router = useRouter();
   const [isEditMode, setIsEditMode] = useState(false);
-
 
   const convertToHelpLink = (link: unknown): HelpLink => {
     if (typeof link === "object" && link !== null) {
@@ -231,8 +232,18 @@ const EditCardHelp = ({
             <h3 className="text-xl font-bold text-blue-900 dark:text-blue-100 mb-1">
               {displayTitle}
             </h3>
-            <p className="text-sm text-blue-700/70 dark:text-blue-300/70 font-medium">
-              Step Guide & Resources
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-sm text-blue-700/70 dark:text-blue-300/70 font-medium">
+                Step Guide & Resources
+              </p>
+              <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
+                <User className="h-3 w-3" />
+                <span>Creator</span>
+              </div>
+            </div>
+            <p className="text-xs text-amber-800 dark:text-amber-200 mt-2 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-1 w-fit bg-amber-100 dark:bg-amber-900/30 font-medium">
+              ⚠️ Custom instructions written by the workflow creator
+              specifically for this n8n step
             </p>
           </div>
         </div>
@@ -327,7 +338,7 @@ const EditCardHelp = ({
               </h4>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               {displayHelpLinks.map((link: HelpLink, index: number) => (
                 <div
                   key={index}
@@ -342,11 +353,11 @@ const EditCardHelp = ({
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-200 hover:underline transition-colors duration-200 truncate block"
+                        className="text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-200 hover:underline transition-colors duration-200 block"
                       >
                         {link.title}
                       </Link>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         {(() => {
                           try {
                             return new URL(link.url).hostname;
@@ -387,37 +398,42 @@ const EditCardHelp = ({
         {/* Edit Controls */}
         {canEditSteps && (
           <div className="pt-4 border-t border-blue-200/40 dark:border-blue-800/40">
-            <div className="flex items-center justify-between gap-4">
-              <ImageInputContainer
-                image={currentImage}
-                name="image"
-                text="Update Image"
-                stepId={step.id}
-                action={updateWorkflowStepImageAction}
-              />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <ImageInputContainer
+                  image={currentImage}
+                  name="image"
+                  text="Update Image"
+                  stepId={step.id}
+                  action={updateWorkflowStepImageAction}
+                />
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  Add screenshots to help users understand this step
+                </div>
+              </div>
               <Button
                 onClick={() => setIsEditMode(true)}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 w-full sm:w-auto"
               >
                 <Edit className="w-4 h-4 mr-2" />
-                Edit Tutorial
+                Edit Instructions
               </Button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Edit Dialog - keeping original */}
+      {/* Edit Dialog */}
       <Dialog open={isEditMode} onOpenChange={setIsEditMode}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <Edit className="h-5 w-5 text-blue-600" />
-              Edit Tutorial Step
+              Edit Creator Instructions
             </DialogTitle>
             <DialogDescription>
-              Customize this tutorial step to provide better guidance and
-              context.
+              Add custom guidance, troubleshooting tips, and resources to help
+              users complete this n8n workflow step successfully.
             </DialogDescription>
           </DialogHeader>
 

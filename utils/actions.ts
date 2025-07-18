@@ -16,14 +16,9 @@ import { revalidatePath } from "next/cache";
 import { deleteImage, uploadImage } from "./supabase";
 
 import slug from "slug";
-import {
-  CategoryType,
-  IssueStatus,
-  Priority,
-  WorkflowStep,
-} from "@prisma/client";
+import { CategoryType, IssueStatus, Priority } from "@prisma/client";
 import { getDateTime } from "./functions/getDateTime";
-import { extractAndSaveWorkflowSteps } from "./functions/extractWorkflowSteps";
+
 import { CompletionCountData, CompletionWithUserData } from "./types";
 
 import { identifyService } from "./functions/identifyService";
@@ -2756,12 +2751,9 @@ export const createNodeSetupGuideAction = async (
   formData: FormData
 ): Promise<{ message: string; success: boolean }> => {
   try {
-    const user = await getAuthUser();
-    if (!user) {
-      return {
-        message: "Authentication required",
-        success: false,
-      };
+    const isAdmin = await isAdminUser();
+    if (!isAdmin) {
+      throw new Error("Access denied. Admin privileges required.");
     }
 
     // Get form data
@@ -2896,12 +2888,9 @@ export const updateNodeSetupGuideAction = async (
   formData: FormData
 ): Promise<{ message: string; success: boolean }> => {
   try {
-    const user = await getAuthUser();
-    if (!user) {
-      return {
-        message: "Authentication required",
-        success: false,
-      };
+    const isAdmin = await isAdminUser();
+    if (!isAdmin) {
+      throw new Error("Access denied. Admin privileges required.");
     }
 
     // Get form data
@@ -3017,12 +3006,9 @@ export const deleteNodeSetupGuideAction = async (
   guideId: string
 ): Promise<{ message: string; success: boolean }> => {
   try {
-    const user = await getAuthUser();
-    if (!user) {
-      return {
-        message: "Authentication required",
-        success: false,
-      };
+    const isAdmin = await isAdminUser();
+    if (!isAdmin) {
+      throw new Error("Access denied. Admin privileges required.");
     }
 
     // Update associated usage stats to indicate they need guides again

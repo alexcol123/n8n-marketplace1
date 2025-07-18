@@ -56,11 +56,7 @@ export const navigation: NavItem[] = [
     href: "/dashboard/wf/create",
     icon: PlusCircle,
   },
-  {
-    name: "API Setup Guides", // 🆕 NEW: API Guides
-    href: "/dashboard/node-guides",
-    icon: BookOpen,
-  },
+
 ];
 
 export const adminNavigation: NavItem[] = [
@@ -73,6 +69,11 @@ export const adminNavigation: NavItem[] = [
     name: "Issues Management",
     href: "/admin/issues",
     icon: AlertCircle,
+  },
+    {
+    name: "API Setup Guides", // 🆕 NEW: API Guides
+    href: "/admin/node-guides",
+    icon: BookOpen,
   },
 ];
 

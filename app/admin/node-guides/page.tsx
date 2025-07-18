@@ -160,7 +160,7 @@ export default async function NodeGuidesPage() {
         {stat.nodeSetupGuide ? (
           <>
             <Button
-              variant="outline"
+              variant="destructive"
               size="sm"
               className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900/20"
               asChild
@@ -170,7 +170,7 @@ export default async function NodeGuidesPage() {
               </Link>
             </Button>
             <Button
-              variant="outline"
+              variant='default'
               size="sm"
               className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900/20"
               asChild
