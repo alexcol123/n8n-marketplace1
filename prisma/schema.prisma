@@ -163,7 +163,7 @@ model NodeUsageStats {
 
   // --- Constraints ---
   // One usage stat record per unique service (serviceName + hostIdentifier combination)
-// Use a different approach for unique constraint with nullable field
+  // Use a different approach for unique constraint with nullable field
   @@unique([serviceName, hostIdentifier])
   @@index([serviceName])
   @@index([needsGuide])
@@ -179,21 +179,21 @@ model NodeDocumentation {
 
   // --- Content creation (manual) ---
   // The actual helpful content you create for students
-  title             String // Guide title: "Hedra API Setup Guide"
-  description       String? // What this service does: "AI video generation platform"
-  
+  title       String // Guide title: "Hedra API Setup Guide"
+  description String? // What this service does: "AI video generation platform"
+
   // --- Credentials section ---
-  credentialGuide   String? // Complete step-by-step credential setup instructions
-  credentialVideo   String? // Single video URL for credential setup walkthrough
-  credentialsLinks  Json? // Links specific to getting credentials: [{"title": "Get API Key", "url": "https://..."}]
-  
+  credentialGuide  String? // Complete step-by-step credential setup instructions
+  credentialVideo  String? // Single video URL for credential setup walkthrough
+  credentialsLinks Json? // Links specific to getting credentials: [{"title": "Get API Key", "url": "https://..."}]
+
   // --- General setup (after credentials) ---
   setupInstructions String? // Step-by-step setup text (markdown supported)
-  
+
   // --- General resources ---
-  helpLinks         Json? // General helpful links: [{"title": "Documentation", "url": "https://..."}]
-  videoLinks        Json? // Other tutorial videos: [{"title": "Advanced Usage", "url": "youtube-url"}]
-  troubleshooting   Json? // Common issues: [{"title": "401 Error", "solution": "Check your API key"}]
+  helpLinks       Json? // General helpful links: [{"title": "Documentation", "url": "https://..."}]
+  videoLinks      Json? // Other tutorial videos: [{"title": "Advanced Usage", "url": "youtube-url"}]
+  troubleshooting Json? // Common issues: [{"title": "401 Error", "solution": "Check your API key"}]
 
   // --- Standard fields ---
   createdAt DateTime @default(now()) // When guide was created

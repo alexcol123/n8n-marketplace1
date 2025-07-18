@@ -2887,6 +2887,8 @@ export const createNodeSetupGuideAction = async (
   }
 };
 
+// Add these actions to your utils/actions.ts file
+
 // Update an existing setup guide
 export const updateNodeSetupGuideAction = async (
   guideId: string,
@@ -2994,6 +2996,7 @@ export const updateNodeSetupGuideAction = async (
     });
 
     revalidatePath("/dashboard/node-guides");
+    revalidatePath(`/dashboard/node-guides/${guideId}`);
 
     return {
       message: "Setup guide updated successfully!",
