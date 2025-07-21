@@ -30,7 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { type OrderedWorkflowStep } from "@/utils/functions/WorkflowStepsInOrder";
-import { getDefaultNodeImage } from "@/utils/functions/getDefaultNodeImage";
+
 import EditCardHelp from "./EditCardHelp";
 import NodeDetailsSection from "../(UnifiedStepCardParts)/NodeDetailsSection";
 import NodeDocumentationSection from "../(UnifiedStepCardParts)/NodeDocumentationSection";
@@ -232,7 +232,8 @@ export default function UnifiedStepCard({
   const [nodeCopied, setNodeCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
 
-  const nodeImage = getDefaultNodeImage(step.type);
+  const nodeImage = guideData?.nodeImage || null;
+
   const theme = getTheme(step);
   const hasParameters =
     step.parameters && Object.keys(step.parameters).length > 0;

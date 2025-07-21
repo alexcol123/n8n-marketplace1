@@ -2696,6 +2696,7 @@ export const fetchWorkflowGuides = async (workflowSteps) => {
         credentialsLinks: guide.credentialsLinks,
         setupInstructions: guide.setupInstructions,
         helpLinks: guide.helpLinks,
+        nodeImage: guide.nodeImage,
         videoLinks: guide.videoLinks,
         troubleshooting: guide.troubleshooting,
       };
@@ -2918,6 +2919,176 @@ export const createNodeSetupGuideAction = async (
 };
 
 // Add these actions to your utils/actions.ts file
+
+// Add this to your utils/actions.ts file
+
+// export const updateNodeGuideImageAction = async (
+//   prevState: Record<string, unknown>,
+//   formData: FormData
+// ): Promise<{ message: string; success?: boolean; imageUrl?: string; stepId?: string }> => {
+//   try {
+//     const guideId = formData.get("stepId") as string; // Note: ImageInputContainer sends this as "stepId"
+//     const image = formData.get("image") as File;
+
+//     if (!guideId) {
+//       return { message: "Guide ID is required" };
+//     }
+
+//     if (!image || image.size === 0) {
+//       return { message: "Image file is required" };
+//     }
+
+//     const isAdmin = await isAdminUser();
+//     if (!isAdmin) {
+//       return { message: "Access denied. Admin privileges required." };
+//     }
+
+//     // Validate the image
+//     const validatedFields = validateWithZodSchema(imageSchema, { image });
+
+//     // Get the current guide to retrieve the old image URL
+//     const currentGuide = await db.nodeDocumentation.findUnique({
+//       where: { id: guideId },
+//       select: { nodeImage: true },
+//     });
+
+//     if (!currentGuide) {
+//       return { message: "Guide not found" };
+//     }
+
+//     // Upload the new image
+//     const fullPath = await uploadImage(validatedFields.image);
+
+//     // Update the guide with the new image
+//     await db.nodeDocumentation.update({
+//       where: { id: guideId },
+//       data: { nodeImage: fullPath },
+//     });
+
+//     // Delete the old image from storage (if it exists and is a Supabase URL)
+//     if (
+//       currentGuide.nodeImage &&
+//       currentGuide.nodeImage.includes("supabase.co")
+//     ) {
+//       try {
+//         await deleteImage(currentGuide.nodeImage);
+//       } catch (deleteError) {
+//         console.error("Failed to delete old node image:", deleteError);
+//         // Don't fail the entire operation if image deletion fails
+//       }
+//     }
+
+//     // Revalidate the relevant pages
+//     revalidatePath("/admin/node-guides");
+//     revalidatePath(`/admin/node-guides/${guideId}`);
+//     revalidatePath(`/admin/node-guides/${guideId}/edit`);
+
+//     return {
+//       message: "Node image updated successfully",
+//       success: true,
+//       imageUrl: fullPath,
+//       stepId: guideId,
+//     };
+//   } catch (error) {
+//     console.error("Error updating node guide image:", error);
+//     return {
+//       message: error instanceof Error ? error.message : "Failed to update node image",
+//     };
+//   }
+// };
+export const updateNodeGuideImageAction = async (
+  prevState: Record<string, unknown>,
+  formData: FormData
+): Promise<{ message: string; success?: boolean; imageUrl?: string; stepId?: string }> => {
+  console.log('=== NODE GUIDE IMAGE UPDATE ACTION CALLED ===');
+  console.log('FormData entries:');
+  for (let [key, value] of formData.entries()) {
+    console.log(key, value);
+  }
+
+  try {
+    const guideId = formData.get("stepId") as string; // Note: ImageInputContainer sends this as "stepId"
+    const image = formData.get("image") as File;
+
+    console.log('Guide ID:', guideId);
+    console.log('Image file:', image?.name, image?.size);
+
+    if (!guideId) {
+      return { message: "Guide ID is required" };
+    }
+
+    if (!image || image.size === 0) {
+      return { message: "Image file is required" };
+    }
+
+    const isAdmin = await isAdminUser();
+    if (!isAdmin) {
+      return { message: "Access denied. Admin privileges required." };
+    }
+
+    // Validate the image
+    const validatedFields = validateWithZodSchema(imageSchema, { image });
+
+    // Get the current guide to retrieve the old image URL
+    const currentGuide = await db.nodeDocumentation.findUnique({
+      where: { id: guideId },
+      select: { nodeImage: true },
+    });
+
+    if (!currentGuide) {
+      return { message: "Guide not found" };
+    }
+
+    console.log('Current guide found, uploading new image...');
+
+    // Upload the new image
+    const fullPath = await uploadImage(validatedFields.image);
+
+    console.log('Image uploaded to:', fullPath);
+
+    // Update the guide with the new image
+    await db.nodeDocumentation.update({
+      where: { id: guideId },
+      data: { nodeImage: fullPath },
+    });
+
+    console.log('Database updated successfully');
+
+    // Delete the old image from storage (if it exists and is a Supabase URL)
+    if (
+      currentGuide.nodeImage &&
+      currentGuide.nodeImage.includes("supabase.co")
+    ) {
+      try {
+        console.log('Deleting old image:', currentGuide.nodeImage);
+        await deleteImage(currentGuide.nodeImage);
+        console.log('Old image deleted successfully');
+      } catch (deleteError) {
+        console.error("Failed to delete old node image:", deleteError);
+        // Don't fail the entire operation if image deletion fails
+      }
+    }
+
+    // Revalidate the relevant pages
+  
+    // revalidatePath(`/admin/node-guides/${guideId}/edit`);
+
+    console.log('Paths revalidated, returning success');
+
+    return {
+      message: "Node image updated successfully",
+      success: true,
+      imageUrl: fullPath,
+      stepId: guideId,
+    };
+  } catch (error) {
+    console.error("Error updating node guide image:", error);
+    return {
+      message: error instanceof Error ? error.message : "Failed to update node image",
+    };
+  }
+};
+
 
 // Update an existing setup guide
 export const updateNodeSetupGuideAction = async (
@@ -3167,6 +3338,7 @@ export const getNodeSetupGuide = async (guideId: string) => {
       videoLinks: documentation.videoLinks,
       troubleshooting: documentation.troubleshooting,
       usageStats: documentation.usageStats,
+      nodeImage: documentation.nodeImage,
     };
   } catch (error) {
     console.error("Error fetching setup guide:", error);

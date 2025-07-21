@@ -18,6 +18,9 @@ import {
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { NodeDocumentation } from "@prisma/client";
+import EditNodeImageDialog from "@/components/(custom)/(admin)/edit/EditNodeImageDialog";
+
+
 
 // Types for the node guides
 
@@ -160,7 +163,7 @@ export default async function NodeGuidesPage() {
         {stat.nodeSetupGuide ? (
           <>
             <Button
-              variant="destructive"
+              variant="outline"
               size="sm"
               className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900/20"
               asChild
@@ -170,7 +173,7 @@ export default async function NodeGuidesPage() {
               </Link>
             </Button>
             <Button
-              variant="default"
+              variant="outline"
               size="sm"
               className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900/20"
               asChild
@@ -179,6 +182,14 @@ export default async function NodeGuidesPage() {
                 Edit
               </Link>
             </Button>
+            <EditNodeImageDialog
+              guide={{
+                id: stat.nodeSetupGuide.id,
+                serviceName: stat.serviceName,
+         
+              }}
+       
+            />
           </>
         ) : (
           <Button

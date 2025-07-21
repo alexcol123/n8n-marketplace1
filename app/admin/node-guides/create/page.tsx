@@ -9,11 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, BookOpen, Save, Plus, Trash2, ExternalLink, AlertCircle, Key, Video, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Save, Plus, Trash2, ExternalLink, AlertCircle, Key, Video, CheckCircle2, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import ImageInput from "@/components/(custom)/(dashboard)/Form/ImageInput";
 
 export default function CreateNodeGuidePage() {
   const searchParams = useSearchParams();
@@ -22,7 +23,7 @@ export default function CreateNodeGuidePage() {
   // Pre-populate from URL params if available
   const [formData, setFormData] = useState({
     serviceName: searchParams.get('serviceName') || '',
-    hostIdentifier: searchParams.get('hostIdentifier') || '',
+    hostIdentifier: searchParams.get('hostIdentifier') || null,
     nodeType: searchParams.get('nodeType') || '',
     title: '',
     description: '',
@@ -60,11 +61,11 @@ export default function CreateNodeGuidePage() {
     setIsSubmitting(true);
 
     try {
-      const formDataObj = new FormData();
+      const formDataObj = new FormData(e.target as HTMLFormElement);
       
-      // Add basic form fields
+      // Add basic form fields that aren't in the FormData automatically
       Object.entries(formData).forEach(([key, value]) => {
-        if (value) {
+        if (value && !formDataObj.has(key)) {
           formDataObj.append(key, value);
         }
       });
@@ -94,7 +95,7 @@ export default function CreateNodeGuidePage() {
       
       if (result.success) {
         toast.success(result.message);
-        window.location.href = '/dashboard/node-guides';
+        window.location.href = '/admin/node-guides';
       } else {
         toast.error(result.message);
       }
@@ -177,7 +178,7 @@ export default function CreateNodeGuidePage() {
         <div className="bg-gradient-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-950/20 dark:to-teal-950/20 border border-emerald-200/60 dark:border-emerald-800/30 rounded-xl p-6 shadow-sm mb-8">
           <div className="flex items-center gap-4 mb-4">
             <Button variant="outline" size="sm" className="border-emerald-300 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/20" asChild>
-              <Link href="/dashboard/node-guides">
+              <Link href="/admin/node-guides">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Dashboard
               </Link>
@@ -234,6 +235,7 @@ export default function CreateNodeGuidePage() {
                 <div>
                   <Label htmlFor="title" className="mb-2 block text-slate-700 dark:text-slate-300 font-medium">Guide Title</Label>
                   <Input
+                    name="title"
                     id="title"
                     value={formData.title}
                     onChange={(e) => handleChange('title', e.target.value)}
@@ -246,6 +248,7 @@ export default function CreateNodeGuidePage() {
                 <div>
                   <Label htmlFor="description" className="mb-2 block text-slate-700 dark:text-slate-300 font-medium">Description</Label>
                   <Textarea
+                    name="description"
                     id="description"
                     value={formData.description}
                     onChange={(e) => handleChange('description', e.target.value)}
@@ -257,6 +260,26 @@ export default function CreateNodeGuidePage() {
                     What this service does and why it&apos;s useful
                   </p>
                 </div>
+
+                {/* Node Image Upload */}
+                <div>
+                  <Label className="mb-2 block text-slate-700 dark:text-slate-300 font-medium flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" />
+                    Node Image
+                  </Label>
+                  <ImageInput 
+                    name="image" 
+                    label="Upload node image (shows what the node looks like in n8n)" 
+                  />
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Optional: Upload an image showing what this node looks like in n8n workflow
+                  </p>
+                </div>
+
+                {/* Hidden fields for form submission */}
+                <input type="hidden" name="serviceName" value={formData.serviceName} />
+                <input type="hidden" name="hostIdentifier" value={formData.hostIdentifier} />
+                <input type="hidden" name="nodeType" value={formData.nodeType} />
               </CardContent>
             </Card>
 
@@ -277,6 +300,7 @@ export default function CreateNodeGuidePage() {
                     Step-by-step Credential Instructions
                   </Label>
                   <Textarea
+                    name="credentialGuide"
                     id="credentialGuide"
                     value={formData.credentialGuide}
                     onChange={(e) => handleChange('credentialGuide', e.target.value)}
@@ -294,6 +318,7 @@ export default function CreateNodeGuidePage() {
                     Credential Setup Video (Optional)
                   </Label>
                   <Input
+                    name="credentialVideo"
                     id="credentialVideo"
                     type="url"
                     value={formData.credentialVideo}
@@ -371,6 +396,7 @@ export default function CreateNodeGuidePage() {
                 <div>
                   <Label htmlFor="setupInstructions" className="mb-2 block text-emerald-800 dark:text-emerald-200 font-medium">Post-Credential Setup Steps</Label>
                   <Textarea
+                    name="setupInstructions"
                     id="setupInstructions"
                     value={formData.setupInstructions}
                     onChange={(e) => handleChange('setupInstructions', e.target.value)}
@@ -561,7 +587,7 @@ export default function CreateNodeGuidePage() {
             {/* Submit Button */}
             <div className="flex justify-end gap-4 pt-4">
               <Button type="button" variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900/20" asChild>
-                <Link href="/dashboard/node-guides">Cancel</Link>
+                <Link href="/admin/node-guides">Cancel</Link>
               </Button>
               <Button type="submit" disabled={isSubmitting} className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-800">
                 {isSubmitting ? (

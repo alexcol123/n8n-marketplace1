@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import Image from "next/image";
 
-import { ArrowLeft, Edit, BookOpen, Key, Video, ExternalLink, AlertTriangle, Play, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Edit, BookOpen, Key, Video, ExternalLink, AlertTriangle, Play, CheckCircle2, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -20,16 +21,20 @@ interface TroubleshootingItem {
   solution: string;
 }
 
-export default async function ViewNodeGuidePage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const guide = await getNodeSetupGuide(params.id);
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function ViewNodeGuidePage({ params }: PageProps) {
+  // Await the params Promise
+  const { id } = await params;
+  const guide = await getNodeSetupGuide(id);
 
   if (!guide) {
     notFound();
   }
+
+  console.log("Guide data:", guide);
 
   // Helper function to get badge color based on host identifier
   function getHostBadgeColor(hostIdentifier: string | null) {
@@ -111,14 +116,14 @@ export default async function ViewNodeGuidePage({
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <Button variant="outline" size="sm" className="border-emerald-300 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/20" asChild>
-                <Link href="/dashboard/node-guides">
+                <Link href="/admin/node-guides">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Dashboard
                 </Link>
               </Button>
             </div>
             <Button className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-800" asChild>
-              <Link href={`/dashboard/node-guides/${guide.id}/edit`}>
+              <Link href={`/admin/node-guides/${guide.id}/edit`}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Guide
               </Link>
@@ -161,19 +166,48 @@ export default async function ViewNodeGuidePage({
         </div>
 
         <div className="space-y-6">
-          {/* Description */}
-          {guide.description && (
+          {/* Description + Node Image */}
+          {(guide.description || guide.nodeImage) && (
             <Card className="border-slate-200 bg-white/50 dark:border-slate-800/50 dark:bg-slate-950/10 shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
                   <BookOpen className="h-5 w-5" />
-                  Description
+                  Service Overview
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-                  {guide.description}
-                </p>
+              <CardContent className="space-y-6">
+                {guide.description && (
+                  <div>
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-3">Description</h4>
+                    <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                      {guide.description}
+                    </p>
+                  </div>
+                )}
+                
+                {guide.nodeImage && (
+                  <div>
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4" />
+                      Node in n8n
+                    </h4>
+                    <div className="bg-white/80 dark:bg-slate-950/20 border border-slate-200 dark:border-slate-800/50 rounded-lg p-4 max-w-md">
+                      <div className="relative">
+                        <Image
+                          src={guide.nodeImage}
+                          alt={`${guide.serviceName} node in n8n`}
+                          width={400}
+                          height={300}
+                          className="rounded-lg shadow-sm"
+                          style={{ width: 'auto', height: 'auto', maxWidth: '100%' }}
+                        />
+                      </div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 text-center">
+                        How the {guide.serviceName} node appears in n8n
+                      </p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

@@ -131,11 +131,11 @@ export default function WorkflowStepsViewer({
         isDisconnected: false,
         isReturnStep: step.nodeId.includes("_return_") as boolean,
         originalApiStep: step,
+   
         connectionInfo: createDefaultConnectionInfo(),
       }));
   }, [workflowSteps]);
 
-  console.log("Ordered steps:", orderedSteps);
 
   // Calculate stats
   const stats = useMemo(() => {
