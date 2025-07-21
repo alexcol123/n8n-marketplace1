@@ -7,13 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import UnifiedStepCard from "./UnifiedStepCard";
+import { ConnectionInfo } from "@/utils/functions/WorkflowStepsInOrder";
 import {
-  ConnectionInfo,
-  type WorkflowJson,
-} from "@/utils/functions/WorkflowStepsInOrder";
-import {
-  Eye,
-  EyeOff,
   AlertTriangle,
   Workflow,
   ChevronLeft,
@@ -68,13 +63,12 @@ interface SetupGuideData {
 }
 
 interface WorkflowStepsViewerProps {
-  workflowJson: WorkflowJson | unknown;
   workflowId: string;
   className?: string;
   showStats?: boolean;
   workflowSteps: WorkflowStep[];
   canEditSteps?: boolean;
-  guideLookup?: Record<string, SetupGuideData>; // Changed from Record<string, unknown>
+  guideLookup?: Record<string, SetupGuideData>;
 }
 
 const createDefaultConnectionInfo = (): ConnectionInfo => ({
@@ -92,10 +86,8 @@ export default function WorkflowStepsViewer({
   workflowSteps,
   guideLookup,
 }: WorkflowStepsViewerProps) {
-  const [showDisconnected, setShowDisconnected] = useState(false);
   const [viewedSteps, setViewedSteps] = useState<Set<string>>(new Set());
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
-  const [localWorkflowSteps] = useState<WorkflowStep[]>(workflowSteps);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
 
   // Transform API workflow steps to OrderedWorkflowStep format
@@ -108,16 +100,9 @@ export default function WorkflowStepsViewer({
       return [0, 0];
     };
 
-    return localWorkflowSteps
-      .filter((step) => {
-        const nodeType = step.nodeType.toLowerCase();
-        return (
-          !nodeType.includes("stickynote") &&
-          !nodeType.includes("sticky-note") &&
-          !nodeType.includes("note") &&
-          !step.nodeType.includes("StickyNote")
-        );
-      })
+    return workflowSteps
+
+      .sort((a, b) => a.stepNumber - b.stepNumber) // Sort by existing stepNumber
       .map((step) => ({
         id: step.id,
         name: step.stepTitle || "Untitled Step",
@@ -129,7 +114,7 @@ export default function WorkflowStepsViewer({
             ? (step.parameters as Record<string, unknown>)
             : {},
         position: convertPosition(step.position),
-        stepNumber: step.stepNumber,
+        stepNumber: step.stepNumber, // Use the existing stepNumber from DB
         isTrigger: step.isTrigger,
         isMergeNode: step.isMergeNode,
         isDependency: step.isDependency,
@@ -146,21 +131,13 @@ export default function WorkflowStepsViewer({
         originalApiStep: step,
         connectionInfo: createDefaultConnectionInfo(),
       }));
-  }, [localWorkflowSteps]);
+  }, [workflowSteps]);
+
+  console.log("Ordered steps:", orderedSteps);
 
   // Calculate stats
   const stats = useMemo(() => {
-    const filteredSteps = localWorkflowSteps.filter((step) => {
-      const nodeType = step.nodeType.toLowerCase();
-      return (
-        !nodeType.includes("stickynote") &&
-        !nodeType.includes("sticky-note") &&
-        !nodeType.includes("note") &&
-        !step.nodeType.includes("StickyNote")
-      );
-    });
-
-    const totalSteps = filteredSteps.length;
+    const totalSteps = workflowSteps.length;
     const complexity =
       totalSteps <= 5
         ? "Beginner"
@@ -172,13 +149,9 @@ export default function WorkflowStepsViewer({
       totalSteps,
       complexity,
     };
-  }, [localWorkflowSteps]);
+  }, [workflowSteps]);
 
-  const displayedSteps = showDisconnected
-    ? orderedSteps
-    : orderedSteps.filter((step) => !step.isDisconnected);
-
-  const disconnectedSteps = orderedSteps.filter((step) => step.isDisconnected);
+  const displayedSteps = orderedSteps;
   const currentStep = displayedSteps[currentStepIndex];
   const isOnCompletionStep = currentStepIndex === displayedSteps.length;
   const totalStepsWithCompletion = displayedSteps.length + 1;
@@ -194,13 +167,10 @@ export default function WorkflowStepsViewer({
 
   // Helper function to extract guide identifiers from a step
   const extractGuideIdentifiers = (step: OrderedWorkflowStep | undefined) => {
-    // ✅ FIXED: Add null check for step
-    if (!step) {
-      return null;
-    }
+    console.log(step, "in extractGuideIdentifiers");
 
-    // Skip return steps and sticky notes
-    if (step.type.includes("StickyNote")) {
+    // Add null check for step
+    if (!step) {
       return null;
     }
 
@@ -220,7 +190,7 @@ export default function WorkflowStepsViewer({
     return null;
   };
 
-  // ✅ FIXED: Now currentStep is safely checked before being passed to extractGuideIdentifiers
+  // Now currentStep is safely checked before being passed to extractGuideIdentifiers
   const guideKey = extractGuideIdentifiers(currentStep);
   const guideData = guideKey ? guideLookup?.[guideKey] : null;
 
@@ -299,11 +269,11 @@ export default function WorkflowStepsViewer({
                   Tutorial
                 </Badge>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div className="hidden md:flex items-center gap-1  ">
+                  <div className="hidden md:flex items-center gap-1">
                     <Clock className="h-4 w-4" />
                     <span>{stats.totalSteps}min</span>
                   </div>
-                  <div className="hidden md:flex   items-center gap-1">
+                  <div className="hidden md:flex items-center gap-1">
                     <BarChart3 className="h-4 w-4" />
                     <span>{stats.totalSteps} Steps</span>
                   </div>
@@ -338,22 +308,6 @@ export default function WorkflowStepsViewer({
                     {viewedSteps.size} viewed • {completionPercentage}% complete
                   </div>
                 </div>
-
-                {disconnectedSteps.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowDisconnected(!showDisconnected)}
-                    className="gap-2 text-xs"
-                  >
-                    {showDisconnected ? (
-                      <EyeOff className="h-3 w-3" />
-                    ) : (
-                      <Eye className="h-3 w-3" />
-                    )}
-                    Disconnected ({disconnectedSteps.length})
-                  </Button>
-                )}
               </div>
             </div>
 
@@ -455,7 +409,7 @@ export default function WorkflowStepsViewer({
                     isExpanded={expandedStepId === currentStep.id}
                     onExpand={handleStepExpand}
                     canEditSteps={canEditSteps}
-                    guideData={guideData as NodeDocumentation | undefined} // Changed prop name to match UnifiedStepCard
+                    guideData={guideData as NodeDocumentation | undefined}
                   />
                 </div>
               </div>

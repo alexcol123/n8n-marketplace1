@@ -99,7 +99,7 @@ export const workflowSchema = z.object({
     message: "Content must be at least 100 characters.",
   }),
   category: CategoryTypeEnum,
-  // REMOVED: steps: z.string().optional().default("[]"),
+  steps: z.string().optional().default("[]"),
 
   videoUrl: z
     .string()

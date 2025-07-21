@@ -16,6 +16,8 @@ async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
       hostIdentifier: string | null;
       nodeType: string;
       count: number;
+      isReturnStep?: boolean;
+      
     }
   >();
 
@@ -157,6 +159,8 @@ export async function extractAndSaveWorkflowSteps(
         isMergeNode: step.isMergeNode,
         isDependency: step.isDependency || false,
       }));
+
+
 
     // Save complete step data to WorkflowStep table
     await db.workflowStep.createMany({

@@ -22,6 +22,7 @@ import { getDateTime } from "./functions/getDateTime";
 import { CompletionCountData, CompletionWithUserData } from "./types";
 
 import { identifyService } from "./functions/identifyService";
+import { extractAndSaveWorkflowSteps } from "./functions/extractWorkflowSteps";
 
 const getAuthUser = async () => {
   const user = await currentUser();
@@ -393,6 +394,22 @@ export const createWorkflowAction = async (
       console.error("Error parsing workflow JSON:", error);
     }
 
+    // Process steps (manual user descriptions)
+    let steps = [];
+    try {
+      const stepsString = validatedFields.steps;
+      if (stepsString) {
+        const parsedSteps = JSON.parse(stepsString);
+        if (Array.isArray(parsedSteps)) {
+          steps = parsedSteps.filter(
+            (step) => typeof step === "string" && step.trim() !== ""
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error parsing steps:", error);
+    }
+
     // REMOVED: Manual steps processing - steps will be auto-generated from JSON
 
     // Extract videoUrl from the form data
@@ -414,9 +431,24 @@ export const createWorkflowAction = async (
     };
 
     // CREATE WORKFLOW
-    await db.workflow.create({
+    // CREATE WORKFLOW
+    const workflow = await db.workflow.create({
       data: workflowData,
     });
+
+    try {
+      const stepExtractionResult = await extractAndSaveWorkflowSteps(
+        workflow.id,
+        workFlowJson
+      );
+      console.log(stepExtractionResult)
+      console.log(
+        `Successfully extracted ${stepExtractionResult.stepsCreated} workflow steps with full node data`
+      );
+    } catch (stepError) {
+      console.error("Error extracting workflow steps:", stepError);
+      // Don't fail the whole workflow creation if step extraction fails
+    }
 
     // Revalidate the dashboard to show the new workflow
     revalidatePath("/dashboard/wf");

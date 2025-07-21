@@ -1,5 +1,6 @@
 // # // to push to db   npx prisma db push && npx prisma generate
 // # // to open studio npx prisma studio
+// clear cache rm -rf .next
 
 datasource db {
   provider  = "postgresql"
