@@ -204,6 +204,9 @@ model NodeDocumentation {
   // Back-reference to all usage stats using this guide
   usageStats NodeUsageStats[] // All NodeUsageStats records that link to this guide
 
+  // --- Node Image ---
+  nodeImage String? // Optional image for the node
+
   // --- Constraints ---
   // One guide per unique service (must match NodeUsageStats constraint)
   @@unique([serviceName, hostIdentifier])

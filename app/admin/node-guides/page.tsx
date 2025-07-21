@@ -165,7 +165,7 @@ export default async function NodeGuidesPage() {
               className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900/20"
               asChild
             >
-              <Link href={`/dashboard/node-guides/${stat.nodeSetupGuide.id}`}>
+              <Link href={`/admin/node-guides/${stat.nodeSetupGuide.id}`}>
                 View
               </Link>
             </Button>
@@ -176,7 +176,7 @@ export default async function NodeGuidesPage() {
               asChild
             >
               <Link
-                href={`/dashboard/node-guides/${stat.nodeSetupGuide.id}/edit`}
+                href={`/admin/node-guides/${stat.nodeSetupGuide.id}/edit`}
               >
                 Edit
               </Link>
@@ -189,7 +189,7 @@ export default async function NodeGuidesPage() {
             asChild
           >
             <Link
-              href={`/dashboard/node-guides/create?serviceName=${encodeURIComponent(
+              href={`/admin/node-guides/create?serviceName=${encodeURIComponent(
                 stat.serviceName
               )}&hostIdentifier=${encodeURIComponent(
                 stat.hostIdentifier || ""

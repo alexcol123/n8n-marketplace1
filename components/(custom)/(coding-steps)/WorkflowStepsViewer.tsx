@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Clock,
   BarChart3,
+  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MarkCompletedButton from "./MarkCompletedButton";
@@ -128,6 +129,7 @@ export default function WorkflowStepsViewer({
         helpText: step.helpText,
         helpLinks: step.helpLinks as { label: string; url: string }[] | null,
         isDisconnected: false,
+        isReturnStep: step.nodeId.includes("_return_") as boolean,
         originalApiStep: step,
         connectionInfo: createDefaultConnectionInfo(),
       }));
@@ -268,6 +270,7 @@ export default function WorkflowStepsViewer({
                   <Workflow className="h-3 w-3 mr-1" />
                   Tutorial
                 </Badge>
+
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <div className="hidden md:flex items-center gap-1">
                     <Clock className="h-4 w-4" />
@@ -291,6 +294,16 @@ export default function WorkflowStepsViewer({
                   >
                     {stats.complexity}
                   </Badge>
+
+                  {currentStep?.isReturnStep === true && (
+                    <Badge
+                      variant='default'
+                    
+                    >
+                      <ArrowLeft className="h-3 w-3 mr-1" />
+                      Return Step
+                    </Badge>
+                  )}
                 </div>
               </div>
 
@@ -410,6 +423,7 @@ export default function WorkflowStepsViewer({
                     onExpand={handleStepExpand}
                     canEditSteps={canEditSteps}
                     guideData={guideData as NodeDocumentation | undefined}
+                    isReturnStep={currentStep.isReturnStep === true}
                   />
                 </div>
               </div>

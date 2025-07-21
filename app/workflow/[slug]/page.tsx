@@ -85,8 +85,6 @@ const SingleWorkflowPage = async ({
 
   const readingTime = readingTimeFunc(
     workflow?.content,
-    // REMOVED: Array.isArray(workflow?.steps) ? workflow.steps : []
-    // Now using workflowSteps array instead of old steps field
     workflow?.workflowSteps?.map(
       (step) => step.stepDescription || step.stepTitle || ""
     ) || []

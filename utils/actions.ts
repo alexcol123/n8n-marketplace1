@@ -2790,6 +2790,24 @@ export const createNodeSetupGuideAction = async (
       };
     }
 
+    // Handle node image (optional)
+    let nodeImagePath: string | null = null;
+    const nodeImage = formData.get("image") as File;
+    if (nodeImage && nodeImage.size > 0) {
+      try {
+        const validatedNodeImage = validateWithZodSchema(imageSchema, {
+          image: nodeImage,
+        });
+        nodeImagePath = await uploadImage(validatedNodeImage.image);
+      } catch (error) {
+        console.error("Error uploading node image:", error);
+        return {
+          message: "Invalid image file. Please ensure it's under 1MB and is a valid image format.",
+          success: false,
+        };
+      }
+    }
+
     // Parse optional JSON fields
     let helpLinks = null;
     if (rawData.helpLinks && typeof rawData.helpLinks === "string") {
@@ -2857,6 +2875,7 @@ export const createNodeSetupGuideAction = async (
         hostIdentifier: hostIdentifier || null,
         title,
         description: (rawData.description as string) || null,
+        nodeImage: nodeImagePath, // Add the node image path
         // Credential fields
         credentialGuide: (rawData.credentialGuide as string) || null,
         credentialVideo: (rawData.credentialVideo as string) || null,
@@ -2925,6 +2944,53 @@ export const updateNodeSetupGuideAction = async (
       };
     }
 
+    // Handle node image update (optional)
+    let nodeImagePath: string | null | undefined = undefined; // undefined means no change
+    const nodeImage = formData.get("image") as File;
+    
+    if (nodeImage && nodeImage.size > 0) {
+      try {
+        const validatedNodeImage = validateWithZodSchema(imageSchema, {
+          image: nodeImage,
+        });
+        
+        // Get current guide to retrieve old image for deletion
+        const currentGuide = await db.nodeDocumentation.findUnique({
+          where: { id: guideId },
+          select: { nodeImage: true },
+        });
+
+        if (!currentGuide) {
+          return {
+            message: "Guide not found",
+            success: false,
+          };
+        }
+
+        // Upload new image
+        nodeImagePath = await uploadImage(validatedNodeImage.image);
+        
+        // Delete old image if it exists and is a Supabase URL
+        if (
+          currentGuide.nodeImage &&
+          currentGuide.nodeImage.includes("supabase.co")
+        ) {
+          try {
+            await deleteImage(currentGuide.nodeImage);
+          } catch (deleteError) {
+            console.error("Failed to delete old node image:", deleteError);
+            // Don't fail the entire operation if image deletion fails
+          }
+        }
+      } catch (error) {
+        console.error("Error uploading node image:", error);
+        return {
+          message: "Invalid image file. Please ensure it's under 1MB and is a valid image format.",
+          success: false,
+        };
+      }
+    }
+
     // Parse optional JSON fields
     let helpLinks = null;
     if (rawData.helpLinks && typeof rawData.helpLinks === "string") {
@@ -2985,22 +3051,30 @@ export const updateNodeSetupGuideAction = async (
       }
     }
 
+    // Prepare update data - only include nodeImage if it was actually uploaded
+    const updateData: any = {
+      title,
+      description: (rawData.description as string) || null,
+      // Credential fields
+      credentialGuide: (rawData.credentialGuide as string) || null,
+      credentialVideo: (rawData.credentialVideo as string) || null,
+      credentialsLinks,
+      // General fields
+      setupInstructions: (rawData.setupInstructions as string) || null,
+      helpLinks,
+      videoLinks,
+      troubleshooting,
+    };
+
+    // Only update nodeImage if a new image was uploaded
+    if (nodeImagePath !== undefined) {
+      updateData.nodeImage = nodeImagePath;
+    }
+
     // Update the documentation guide
     await db.nodeDocumentation.update({
       where: { id: guideId },
-      data: {
-        title,
-        description: (rawData.description as string) || null,
-        // Credential fields
-        credentialGuide: (rawData.credentialGuide as string) || null,
-        credentialVideo: (rawData.credentialVideo as string) || null,
-        credentialsLinks,
-        // General fields
-        setupInstructions: (rawData.setupInstructions as string) || null,
-        helpLinks,
-        videoLinks,
-        troubleshooting,
-      },
+      data: updateData,
     });
 
     revalidatePath("/dashboard/node-guides");
