@@ -170,14 +170,12 @@ export default async function NodeGuidesPage() {
               </Link>
             </Button>
             <Button
-              variant='default'
+              variant="default"
               size="sm"
               className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900/20"
               asChild
             >
-              <Link
-                href={`/admin/node-guides/${stat.nodeSetupGuide.id}/edit`}
-              >
+              <Link href={`/admin/node-guides/${stat.nodeSetupGuide.id}/edit`}>
                 Edit
               </Link>
             </Button>
