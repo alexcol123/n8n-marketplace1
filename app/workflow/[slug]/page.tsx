@@ -54,8 +54,11 @@ const SingleWorkflowPage = async ({
     return notFound();
   }
 
+
+
   const workflow = result as WorkflowWithAuthor;
   if (!workflow) return <EmptyList />;
+
 
 
 
@@ -66,6 +69,7 @@ const SingleWorkflowPage = async ({
   const workflowCharactersLength = JSON.stringify(
     workflow?.workFlowJson
   ).length;
+  
 
   const nodeCount = getNodeCountFunc(workflow.workFlowJson);
   const complexity = getWorkflowComplexityFunc(

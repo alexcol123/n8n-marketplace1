@@ -394,23 +394,6 @@ export const createWorkflowAction = async (
       console.error("Error parsing workflow JSON:", error);
     }
 
-    // Process steps (manual user descriptions)
-    let steps = [];
-    try {
-      const stepsString = validatedFields.steps;
-      if (stepsString) {
-        const parsedSteps = JSON.parse(stepsString);
-        if (Array.isArray(parsedSteps)) {
-          steps = parsedSteps.filter(
-            (step) => typeof step === "string" && step.trim() !== ""
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error parsing steps:", error);
-    }
-
-    // REMOVED: Manual steps processing - steps will be auto-generated from JSON
 
     // Extract videoUrl from the form data
     const videoUrl = rawData.videoUrl ? rawData.videoUrl.toString() : null;
@@ -510,7 +493,11 @@ export const fetchSingleWorkflow = async (slug: string) => {
       // User is not logged in, continue without user
       console.log("User not logged in, continuing as public user");
     }
+//  studio
+//creating-and-sharing-customized-cartoon-content-author-henry-munoz-date-072125-910am
+//automated-cartoon-video-creation-and-sharing-author-henry-munoz-date-072125-907am
 
+    console.log(slug)
     const workflow = await db.workflow.findUnique({
       where: { slug },
       include: {
