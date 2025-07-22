@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import MarkCompletedButton from "./MarkCompletedButton";
 import { NodeDocumentation, WorkflowStep } from "@prisma/client";
 import { JsonValue } from "@prisma/client/runtime/library";
-import { identifyService } from "@/utils/functions/identifyService";
+import {  identifyService, } from "@/utils/functions/identifyService";
 
 interface OrderedWorkflowStep {
   id: string;
@@ -169,7 +169,7 @@ export default function WorkflowStepsViewer({
 
   // Helper function to extract guide identifiers from a step
   const extractGuideIdentifiers = (step: OrderedWorkflowStep | undefined) => {
-    console.log(step, "in extractGuideIdentifiers");
+
 
     // Add null check for step
     if (!step) {
@@ -194,7 +194,12 @@ export default function WorkflowStepsViewer({
 
   // Now currentStep is safely checked before being passed to extractGuideIdentifiers
   const guideKey = extractGuideIdentifiers(currentStep);
+  console.log('guideKey:', guideKey)
+  const   sopa = identifyService(currentStep)
+  console.log('sopa:', sopa)
+
   const guideData = guideKey ? guideLookup?.[guideKey] : null;
+
 
   // Handle step expansion tracking
   const handleStepToggleExpanded = (stepId: string, isExpanded: boolean) => {

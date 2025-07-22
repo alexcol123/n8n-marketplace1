@@ -232,6 +232,8 @@ export default function UnifiedStepCard({
   const [nodeCopied, setNodeCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
 
+
+
   const nodeImage = guideData?.nodeImage || null;
 
   const theme = getTheme(step);
