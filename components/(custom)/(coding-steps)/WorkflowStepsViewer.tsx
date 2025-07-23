@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import MarkCompletedButton from "./MarkCompletedButton";
 import { NodeDocumentation, WorkflowStep } from "@prisma/client";
 import { JsonValue } from "@prisma/client/runtime/library";
-import {  identifyService, } from "@/utils/functions/identifyService";
+import { identifyService } from "@/utils/functions/identifyService";
 
 interface OrderedWorkflowStep {
   id: string;
@@ -131,11 +131,10 @@ export default function WorkflowStepsViewer({
         isDisconnected: false,
         isReturnStep: step.nodeId.includes("_return_") as boolean,
         originalApiStep: step,
-   
+
         connectionInfo: createDefaultConnectionInfo(),
       }));
   }, [workflowSteps]);
-
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -169,8 +168,6 @@ export default function WorkflowStepsViewer({
 
   // Helper function to extract guide identifiers from a step
   const extractGuideIdentifiers = (step: OrderedWorkflowStep | undefined) => {
-
-
     // Add null check for step
     if (!step) {
       return null;
@@ -194,12 +191,9 @@ export default function WorkflowStepsViewer({
 
   // Now currentStep is safely checked before being passed to extractGuideIdentifiers
   const guideKey = extractGuideIdentifiers(currentStep);
-  console.log('guideKey:', guideKey)
-  const   sopa = identifyService(currentStep)
-  console.log('sopa:', sopa)
+  console.log("guideKey:", guideKey);
 
   const guideData = guideKey ? guideLookup?.[guideKey] : null;
-
 
   // Handle step expansion tracking
   const handleStepToggleExpanded = (stepId: string, isExpanded: boolean) => {
@@ -301,10 +295,7 @@ export default function WorkflowStepsViewer({
                   </Badge>
 
                   {currentStep?.isReturnStep === true && (
-                    <Badge
-                      variant='default'
-                    
-                    >
+                    <Badge variant="default">
                       <ArrowLeft className="h-3 w-3 mr-1" />
                       Return Step
                     </Badge>
@@ -382,7 +373,7 @@ export default function WorkflowStepsViewer({
                 </div>
                 {!isOnCompletionStep && currentStep && (
                   <div className="text-xs text-muted-foreground mt-1">
-                    {currentStep.type}
+                    {currentStep.type || ""}
                   </div>
                 )}
               </div>

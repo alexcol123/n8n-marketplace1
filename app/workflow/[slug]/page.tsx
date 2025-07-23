@@ -54,13 +54,8 @@ const SingleWorkflowPage = async ({
     return notFound();
   }
 
-
-
   const workflow = result as WorkflowWithAuthor;
   if (!workflow) return <EmptyList />;
-
-
-
 
   const orderedSteps = workflow.workflowSteps
     ? [...workflow.workflowSteps]
@@ -69,7 +64,6 @@ const SingleWorkflowPage = async ({
   const workflowCharactersLength = JSON.stringify(
     workflow?.workFlowJson
   ).length;
-  
 
   const nodeCount = getNodeCountFunc(workflow.workFlowJson);
   const complexity = getWorkflowComplexityFunc(
@@ -92,8 +86,6 @@ const SingleWorkflowPage = async ({
 
   // 2. Fetch guides for this workflow (new)
   const guideLookup = await fetchWorkflowGuides(workflow.workflowSteps);
-
-
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
@@ -200,7 +192,7 @@ const SingleWorkflowPage = async ({
             <CardContent className="space-y-4">
               <div className="text-center p-4 bg-primary/5 rounded-lg border border-primary/10">
                 <div className="text-2xl font-bold text-primary">
-                  {nodeCount}
+                  {workflow.workflowSteps.length}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   Workflow Nodes

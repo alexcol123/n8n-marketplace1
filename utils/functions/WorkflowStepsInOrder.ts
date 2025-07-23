@@ -130,7 +130,7 @@ export function getWorkflowStepsInOrder(
       typeof node === "object" &&
       "type" in node &&
       typeof node.type === "string" &&
-      !node.type.includes("StickyNote")
+      !node.type.toLowerCase().includes("stickynote") // Single condition catches all
   );
 
   const nodeMap = new Map<string, WorkflowNode>(

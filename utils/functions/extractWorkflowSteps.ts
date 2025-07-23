@@ -17,13 +17,12 @@ async function updateNodeUsageStats(orderedSteps: OrderedWorkflowStep[]) {
       nodeType: string;
       count: number;
       isReturnStep?: boolean;
-      
     }
   >();
 
   for (const step of orderedSteps) {
     // Skip return steps and sticky notes - they're not real nodes
-    if (step.isReturnStep || step.type.includes("StickyNote")) {
+    if (step.isReturnStep || step.type.includes("stickyNote")) {
       continue;
     }
 
@@ -131,7 +130,12 @@ export async function extractAndSaveWorkflowSteps(
 
     // Filter out sticky notes and prepare the COMPLETE step data for the database
     const stepData = orderedSteps
-      .filter((step) => !step.type.includes("StickyNote"))
+      .filter(
+        (step) =>
+          !step.type.toLowerCase().includes("stickynote") &&
+          !step.type.includes("StickyNote") &&
+          step.type !== "n8n-nodes-base.stickyNote"
+      )
       .map((step, index) => ({
         workflowId,
         stepNumber: index + 1, // Sequential numbering
@@ -160,7 +164,10 @@ export async function extractAndSaveWorkflowSteps(
         isDependency: step.isDependency || false,
       }));
 
-
+    console.log(
+      "stepData:--==  ============================================================================================================================================================================================================================  ========================"
+    );
+    console.log(stepData);
 
     // Save complete step data to WorkflowStep table
     await db.workflowStep.createMany({
