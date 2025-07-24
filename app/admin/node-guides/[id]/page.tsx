@@ -11,51 +11,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { NodeUsageStats } from "@prisma/client";
 
-// Types for the links
-interface Link {
-  title: string;
-  url: string;
-}
-
-interface TroubleshootingItem {
-  issue: string;
-  solution: string;
-}
+// Import the jsonHelpers
+import { 
+  parseCredentialsLinks, 
+  parseHelpLinks, 
+  parseVideoLinks, 
+  parseTroubleshooting,
+  type LinkArray,
+  type TroubleshootingArray 
+} from "@/utils/jsonHelpers";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
-
-// Type guards
-const isLink = (item: unknown): item is Link => {
-  return (
-    item !== null &&
-    typeof item === 'object' &&
-    'title' in item &&
-    'url' in item &&
-    typeof (item as Record<string, unknown>).title === 'string' &&
-    typeof (item as Record<string, unknown>).url === 'string'
-  );
-};
-
-const isValidLinksArray = (links: unknown): links is Link[] => {
-  return Array.isArray(links) && links.every(isLink);
-};
-
-const isTroubleshootingItem = (item: unknown): item is TroubleshootingItem => {
-  return (
-    item !== null &&
-    typeof item === 'object' &&
-    'issue' in item &&
-    'solution' in item &&
-    typeof (item as Record<string, unknown>).issue === 'string' &&
-    typeof (item as Record<string, unknown>).solution === 'string'
-  );
-};
-
-const isValidTroubleshootingArray = (items: unknown): items is TroubleshootingItem[] => {
-  return Array.isArray(items) && items.every(isTroubleshootingItem);
-};
 
 export default async function ViewNodeGuidePage({ params }: PageProps) {
   // Await the params Promise
@@ -66,7 +34,13 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
     notFound();
   }
 
-  console.log("Guide data:", guide);
+  
+
+  // Parse JSON fields using the jsonHelpers - much cleaner!
+  const credentialsLinks = parseCredentialsLinks(guide.credentialsLinks);
+  const helpLinks = parseHelpLinks(guide.helpLinks);
+  const videoLinks = parseVideoLinks(guide.videoLinks);
+  const troubleshooting = parseTroubleshooting(guide.troubleshooting);
 
   // Helper function to get badge color based on host identifier
   function getHostBadgeColor(hostIdentifier: string | null) {
@@ -76,9 +50,9 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
     return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-700"; // HTTP request
   }
 
-  // Helper function to render links
-  const renderLinks = (links: Link[] | null, icon: React.ReactNode, title: string, variant: 'default' | 'secondary' = 'default') => {
-    if (!links || !Array.isArray(links) || links.length === 0) {
+  // Helper function to render links - now with proper typing
+  const renderLinks = (links: LinkArray | null, icon: React.ReactNode, title: string, variant: 'default' | 'secondary' = 'default') => {
+    if (!links || links.length === 0) {
       return null;
     }
 
@@ -109,9 +83,9 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
     );
   };
 
-  // Helper function to render troubleshooting
-  const renderTroubleshooting = (troubleshooting: TroubleshootingItem[] | null) => {
-    if (!troubleshooting || !Array.isArray(troubleshooting) || troubleshooting.length === 0) {
+  // Helper function to render troubleshooting - now with proper typing
+  const renderTroubleshooting = (troubleshooting: TroubleshootingArray | null) => {
+    if (!troubleshooting || troubleshooting.length === 0) {
       return null;
     }
 
@@ -245,7 +219,7 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
           )}
 
           {/* Credentials Section */}
-          {(guide.credentialGuide || guide.credentialVideo || guide.credentialsLinks) && (
+          {(guide.credentialGuide || guide.credentialVideo || credentialsLinks) && (
             <Card className="border-orange-200 bg-orange-50/50 dark:border-orange-800/50 dark:bg-orange-950/20 shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-orange-800 dark:text-orange-200">
@@ -291,15 +265,15 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
                   </div>
                 )}
 
-                {/* Credentials Links - FIXED WITH TYPE GUARD */}
-                {isValidLinksArray(guide.credentialsLinks) && (
+                {/* Credentials Links - Now using parsed data */}
+                {credentialsLinks && (
                   <div className="space-y-3">
                     <h4 className="font-semibold text-orange-800 dark:text-orange-200 flex items-center gap-2">
                       <ExternalLink className="h-4 w-4" />
                       Get Your Credentials
                     </h4>
                     <div className="grid gap-2">
-                      {guide.credentialsLinks.map((link, index) => (
+                      {credentialsLinks.map((link, index) => (
                         <Button 
                           key={index} 
                           variant="outline"
@@ -339,8 +313,8 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
             </Card>
           )}
 
-          {/* Help Links - FIXED WITH TYPE GUARD */}
-          {isValidLinksArray(guide.helpLinks) && (
+          {/* Help Links - Now using parsed data */}
+          {helpLinks && (
             <Card className="border-slate-200 bg-white/50 dark:border-slate-800/50 dark:bg-slate-950/10 shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
@@ -350,7 +324,7 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
               </CardHeader>
               <CardContent>
                 {renderLinks(
-                  guide.helpLinks,
+                  helpLinks,
                   <ExternalLink className="h-4 w-4" />,
                   "Documentation & Guides",
                   "secondary"
@@ -359,8 +333,8 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
             </Card>
           )}
 
-          {/* Video Links - FIXED WITH TYPE GUARD */}
-          {isValidLinksArray(guide.videoLinks) && (
+          {/* Video Links - Now using parsed data */}
+          {videoLinks && (
             <Card className="border-slate-200 bg-white/50 dark:border-slate-800/50 dark:bg-slate-950/10 shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
@@ -370,7 +344,7 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
               </CardHeader>
               <CardContent>
                 {renderLinks(
-                  guide.videoLinks,
+                  videoLinks,
                   <Video className="h-4 w-4" />,
                   "Tutorial Videos",
                   "secondary"
@@ -379,8 +353,8 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
             </Card>
           )}
 
-          {/* Troubleshooting - FIXED WITH TYPE GUARD */}
-          {isValidTroubleshootingArray(guide.troubleshooting) && (
+          {/* Troubleshooting - Now using parsed data */}
+          {troubleshooting && (
             <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-800/50 dark:bg-amber-950/20 shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
@@ -389,13 +363,13 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {renderTroubleshooting(guide.troubleshooting)}
+                {renderTroubleshooting(troubleshooting)}
               </CardContent>
             </Card>
           )}
 
           {/* Usage Stats */}
-          {guide.usageStats && guide.usageStats.length > 0 && (
+     {guide.usageStats && guide.usageStats.length > 0 && (
             <Card className="border-slate-200 bg-white/50 dark:border-slate-800/50 dark:bg-slate-950/10 shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="text-slate-800 dark:text-slate-200">Usage Statistics</CardTitle>

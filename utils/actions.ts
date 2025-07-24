@@ -16,7 +16,12 @@ import { revalidatePath } from "next/cache";
 import { deleteImage, uploadImage } from "./supabase";
 
 import slug from "slug";
-import { CategoryType, IssueStatus, NodeDocumentation, Priority } from "@prisma/client";
+import {
+  CategoryType,
+  IssueStatus,
+  Priority,
+  WorkflowStep,
+} from "@prisma/client";
 import { getDateTime } from "./functions/getDateTime";
 
 import { CompletionCountData, CompletionWithUserData } from "./types";
@@ -394,7 +399,6 @@ export const createWorkflowAction = async (
       console.error("Error parsing workflow JSON:", error);
     }
 
-
     // Extract videoUrl from the form data
     const videoUrl = rawData.videoUrl ? rawData.videoUrl.toString() : null;
 
@@ -424,7 +428,7 @@ export const createWorkflowAction = async (
         workflow.id,
         workFlowJson
       );
-      console.log(stepExtractionResult)
+      console.log(stepExtractionResult);
       console.log(
         `Successfully extracted ${stepExtractionResult.stepsCreated} workflow steps with full node data`
       );
@@ -493,11 +497,11 @@ export const fetchSingleWorkflow = async (slug: string) => {
       // User is not logged in, continue without user
       console.log("User not logged in, continuing as public user");
     }
-//  studio
-//creating-and-sharing-customized-cartoon-content-author-henry-munoz-date-072125-910am
-//automated-cartoon-video-creation-and-sharing-author-henry-munoz-date-072125-907am
+    //  studio
+    //creating-and-sharing-customized-cartoon-content-author-henry-munoz-date-072125-910am
+    //automated-cartoon-video-creation-and-sharing-author-henry-munoz-date-072125-907am
 
-    console.log(slug)
+    console.log(slug);
     const workflow = await db.workflow.findUnique({
       where: { slug },
       include: {
@@ -2642,9 +2646,12 @@ export const updateWorkflowStepFormAction = async (
 
 // Fetch setup guides for a specific workflow's steps
 
-export const fetchWorkflowGuides = async (workflowSteps) => {
+export const fetchWorkflowGuides = async (workflowSteps: WorkflowStep[]) => {
   try {
-    const serviceMap = new Map<string, any>();
+    const serviceMap = new Map<
+      string,
+      { serviceName: string; hostIdentifier: string | null }
+    >();
 
     for (const step of workflowSteps) {
       // Skip return steps and non-HTTP nodes
@@ -2668,7 +2675,12 @@ export const fetchWorkflowGuides = async (workflowSteps) => {
       }
     }
 
-    const serviceConditions = Array.from(serviceMap.values());
+    const serviceConditions = Array.from(serviceMap.values()).map(
+      (service) => ({
+        serviceName: service.serviceName,
+        hostIdentifier: service.hostIdentifier,
+      })
+    );
 
     const guides = await db.nodeDocumentation.findMany({
       where: {
@@ -2676,10 +2688,24 @@ export const fetchWorkflowGuides = async (workflowSteps) => {
       },
     });
 
-    //    return `${serviceName}|${hostIdentifier}`;
-
     // Build the guides map
-    const guidesMap: Record<string, any> = {};
+    const guidesMap: Record<
+      string,
+      {
+        serviceName: string;
+        hostIdentifier: string | null;
+        title: string | null;
+        description: string | null;
+        credentialGuide: string | null;
+        credentialVideo: string | null;
+        credentialsLinks: unknown;
+        setupInstructions: string | null;
+        helpLinks: unknown;
+        nodeImage: string | null;
+        videoLinks: unknown;
+        troubleshooting: string | null;
+      }
+    > = {};
 
     for (const guide of guides) {
       const guideKey = guide.hostIdentifier
@@ -2689,39 +2715,39 @@ export const fetchWorkflowGuides = async (workflowSteps) => {
       guidesMap[guideKey] = {
         serviceName: guide.serviceName,
         hostIdentifier: guide.hostIdentifier,
-        title: guide.title,
-        description: guide.description,
-        credentialGuide: guide.credentialGuide,
-        credentialVideo: guide.credentialVideo,
+        title: typeof guide.title === "string" ? guide.title : null,
+        description:
+          typeof guide.description === "string" ? guide.description : null,
+        credentialGuide:
+          typeof guide.credentialGuide === "string"
+            ? guide.credentialGuide
+            : null,
+        credentialVideo:
+          typeof guide.credentialVideo === "string"
+            ? guide.credentialVideo
+            : null,
         credentialsLinks: guide.credentialsLinks,
-        setupInstructions: guide.setupInstructions,
+        setupInstructions:
+          typeof guide.setupInstructions === "string"
+            ? guide.setupInstructions
+            : null,
         helpLinks: guide.helpLinks,
-        nodeImage: guide.nodeImage,
+        nodeImage: typeof guide.nodeImage === "string" ? guide.nodeImage : null,
         videoLinks: guide.videoLinks,
-        troubleshooting: guide.troubleshooting,
+        troubleshooting:
+          typeof guide.troubleshooting === "string"
+            ? guide.troubleshooting
+            : null,
       };
     }
 
     return guidesMap;
   } catch (error) {
     console.log(error);
+    return {};
   }
-
-  return;
 };
 
-//  node-guides ==============>>>
-// utils/actions.ts - Updated actions for Node Guides
-// utils/actions.ts - Updated actions for Node Guides
-// Updated actions to handle new credential fields
-
-// Get all node usage stats ordered by most used
-
-// Get usage stats that need guides (using needsGuide boolean)
-
-// utils/actions.ts - Complete updated actions with credential fields
-
-// Get all node usage stats ordered by most used
 export const fetchNodeUsageStats = async () => {
   try {
     const stats = await db.nodeUsageStats.findMany({
@@ -2803,7 +2829,8 @@ export const createNodeSetupGuideAction = async (
       } catch (error) {
         console.error("Error uploading node image:", error);
         return {
-          message: "Invalid image file. Please ensure it's under 1MB and is a valid image format.",
+          message:
+            "Invalid image file. Please ensure it's under 1MB and is a valid image format.",
           success: false,
         };
       }
@@ -2918,96 +2945,21 @@ export const createNodeSetupGuideAction = async (
   }
 };
 
-// Add these actions to your utils/actions.ts file
-
-// Add this to your utils/actions.ts file
-
-// export const updateNodeGuideImageAction = async (
-//   prevState: Record<string, unknown>,
-//   formData: FormData
-// ): Promise<{ message: string; success?: boolean; imageUrl?: string; stepId?: string }> => {
-//   try {
-//     const guideId = formData.get("stepId") as string; // Note: ImageInputContainer sends this as "stepId"
-//     const image = formData.get("image") as File;
-
-//     if (!guideId) {
-//       return { message: "Guide ID is required" };
-//     }
-
-//     if (!image || image.size === 0) {
-//       return { message: "Image file is required" };
-//     }
-
-//     const isAdmin = await isAdminUser();
-//     if (!isAdmin) {
-//       return { message: "Access denied. Admin privileges required." };
-//     }
-
-//     // Validate the image
-//     const validatedFields = validateWithZodSchema(imageSchema, { image });
-
-//     // Get the current guide to retrieve the old image URL
-//     const currentGuide = await db.nodeDocumentation.findUnique({
-//       where: { id: guideId },
-//       select: { nodeImage: true },
-//     });
-
-//     if (!currentGuide) {
-//       return { message: "Guide not found" };
-//     }
-
-//     // Upload the new image
-//     const fullPath = await uploadImage(validatedFields.image);
-
-//     // Update the guide with the new image
-//     await db.nodeDocumentation.update({
-//       where: { id: guideId },
-//       data: { nodeImage: fullPath },
-//     });
-
-//     // Delete the old image from storage (if it exists and is a Supabase URL)
-//     if (
-//       currentGuide.nodeImage &&
-//       currentGuide.nodeImage.includes("supabase.co")
-//     ) {
-//       try {
-//         await deleteImage(currentGuide.nodeImage);
-//       } catch (deleteError) {
-//         console.error("Failed to delete old node image:", deleteError);
-//         // Don't fail the entire operation if image deletion fails
-//       }
-//     }
-
-//     // Revalidate the relevant pages
-//     revalidatePath("/admin/node-guides");
-//     revalidatePath(`/admin/node-guides/${guideId}`);
-//     revalidatePath(`/admin/node-guides/${guideId}/edit`);
-
-//     return {
-//       message: "Node image updated successfully",
-//       success: true,
-//       imageUrl: fullPath,
-//       stepId: guideId,
-//     };
-//   } catch (error) {
-//     console.error("Error updating node guide image:", error);
-//     return {
-//       message: error instanceof Error ? error.message : "Failed to update node image",
-//     };
-//   }
-// };
 export const updateNodeGuideImageAction = async (
   prevState: Record<string, unknown>,
   formData: FormData
-): Promise<{ message: string; success?: boolean; imageUrl?: string; stepId?: string }> => {
-
-
+): Promise<{
+  message: string;
+  success?: boolean;
+  imageUrl?: string;
+  stepId?: string;
+}> => {
   try {
     const guideId = formData.get("stepId") as string; // Note: ImageInputContainer sends this as "stepId"
     const image = formData.get("image") as File;
 
-    console.log('Guide ID:', guideId);
-    console.log('Image file:', image?.name, image?.size);
+    console.log("Guide ID:", guideId);
+    console.log("Image file:", image?.name, image?.size);
 
     if (!guideId) {
       return { message: "Guide ID is required" };
@@ -3035,12 +2987,12 @@ export const updateNodeGuideImageAction = async (
       return { message: "Guide not found" };
     }
 
-    console.log('Current guide found, uploading new image...');
+    console.log("Current guide found, uploading new image...");
 
     // Upload the new image
     const fullPath = await uploadImage(validatedFields.image);
 
-    console.log('Image uploaded to:', fullPath);
+    console.log("Image uploaded to:", fullPath);
 
     // Update the guide with the new image
     await db.nodeDocumentation.update({
@@ -3048,7 +3000,7 @@ export const updateNodeGuideImageAction = async (
       data: { nodeImage: fullPath },
     });
 
-    console.log('Database updated successfully');
+    console.log("Database updated successfully");
 
     // Delete the old image from storage (if it exists and is a Supabase URL)
     if (
@@ -3056,9 +3008,9 @@ export const updateNodeGuideImageAction = async (
       currentGuide.nodeImage.includes("supabase.co")
     ) {
       try {
-        console.log('Deleting old image:', currentGuide.nodeImage);
+        console.log("Deleting old image:", currentGuide.nodeImage);
         await deleteImage(currentGuide.nodeImage);
-        console.log('Old image deleted successfully');
+        console.log("Old image deleted successfully");
       } catch (deleteError) {
         console.error("Failed to delete old node image:", deleteError);
         // Don't fail the entire operation if image deletion fails
@@ -3066,10 +3018,10 @@ export const updateNodeGuideImageAction = async (
     }
 
     // Revalidate the relevant pages
-  
+
     // revalidatePath(`/admin/node-guides/${guideId}/edit`);
 
-    console.log('Paths revalidated, returning success');
+    console.log("Paths revalidated, returning success");
 
     return {
       message: "Node image updated successfully",
@@ -3080,13 +3032,15 @@ export const updateNodeGuideImageAction = async (
   } catch (error) {
     console.error("Error updating node guide image:", error);
     return {
-      message: error instanceof Error ? error.message : "Failed to update node image",
+      message:
+        error instanceof Error ? error.message : "Failed to update node image",
     };
   }
 };
 
-
 // Update an existing setup guide
+import { Prisma } from "@prisma/client"; // Add this import at the top
+
 export const updateNodeSetupGuideAction = async (
   guideId: string,
   prevState: Record<string, unknown>,
@@ -3112,16 +3066,15 @@ export const updateNodeSetupGuideAction = async (
     }
 
     // Handle node image update (optional)
-    let nodeImagePath: string | null | undefined = undefined; // undefined means no change
+    let nodeImagePath: string | null | undefined = undefined;
     const nodeImage = formData.get("image") as File;
-    
+
     if (nodeImage && nodeImage.size > 0) {
       try {
         const validatedNodeImage = validateWithZodSchema(imageSchema, {
           image: nodeImage,
         });
-        
-        // Get current guide to retrieve old image for deletion
+
         const currentGuide = await db.nodeDocumentation.findUnique({
           where: { id: guideId },
           select: { nodeImage: true },
@@ -3134,10 +3087,8 @@ export const updateNodeSetupGuideAction = async (
           };
         }
 
-        // Upload new image
         nodeImagePath = await uploadImage(validatedNodeImage.image);
-        
-        // Delete old image if it exists and is a Supabase URL
+
         if (
           currentGuide.nodeImage &&
           currentGuide.nodeImage.includes("supabase.co")
@@ -3146,20 +3097,20 @@ export const updateNodeSetupGuideAction = async (
             await deleteImage(currentGuide.nodeImage);
           } catch (deleteError) {
             console.error("Failed to delete old node image:", deleteError);
-            // Don't fail the entire operation if image deletion fails
           }
         }
       } catch (error) {
         console.error("Error uploading node image:", error);
         return {
-          message: "Invalid image file. Please ensure it's under 1MB and is a valid image format.",
+          message:
+            "Invalid image file. Please ensure it's under 1MB and is a valid image format.",
           success: false,
         };
       }
     }
 
-    // Parse optional JSON fields
-    let helpLinks = null;
+    // Parse optional JSON fields with Prisma-compatible types
+    let helpLinks: Prisma.InputJsonValue | undefined = undefined;
     if (rawData.helpLinks && typeof rawData.helpLinks === "string") {
       try {
         helpLinks = JSON.parse(rawData.helpLinks as string);
@@ -3172,7 +3123,7 @@ export const updateNodeSetupGuideAction = async (
       }
     }
 
-    let videoLinks = null;
+    let videoLinks: Prisma.InputJsonValue | undefined = undefined;
     if (rawData.videoLinks && typeof rawData.videoLinks === "string") {
       try {
         videoLinks = JSON.parse(rawData.videoLinks as string);
@@ -3185,7 +3136,7 @@ export const updateNodeSetupGuideAction = async (
       }
     }
 
-    let troubleshooting = null;
+    let troubleshooting: Prisma.InputJsonValue | undefined = undefined;
     if (
       rawData.troubleshooting &&
       typeof rawData.troubleshooting === "string"
@@ -3201,8 +3152,7 @@ export const updateNodeSetupGuideAction = async (
       }
     }
 
-    // Parse credentialsLinks JSON field
-    let credentialsLinks = null;
+    let credentialsLinks: Prisma.InputJsonValue | undefined = undefined;
     if (
       rawData.credentialsLinks &&
       typeof rawData.credentialsLinks === "string"
@@ -3218,28 +3168,20 @@ export const updateNodeSetupGuideAction = async (
       }
     }
 
-    // Prepare update data - only include nodeImage if it was actually uploaded
-    const updateData = {
+    // Prepare update data
+    const updateData: Prisma.NodeDocumentationUpdateInput = {
       title,
       description: (rawData.description as string) || null,
-      // Credential fields
       credentialGuide: (rawData.credentialGuide as string) || null,
       credentialVideo: (rawData.credentialVideo as string) || null,
-      credentialsLinks,
-      // General fields
       setupInstructions: (rawData.setupInstructions as string) || null,
-      helpLinks,
-      videoLinks,
-      troubleshooting,
-    
+      ...(credentialsLinks !== undefined && { credentialsLinks }),
+      ...(helpLinks !== undefined && { helpLinks }),
+      ...(videoLinks !== undefined && { videoLinks }),
+      ...(troubleshooting !== undefined && { troubleshooting }),
+      ...(nodeImagePath !== undefined && { nodeImage: nodeImagePath }),
     };
 
-    // Only update nodeImage if a new image was uploaded
-    if (nodeImagePath !== undefined) {
-      updateData.nodeImage = nodeImagePath;
-    }
-
-    // Update the documentation guide
     await db.nodeDocumentation.update({
       where: { id: guideId },
       data: updateData,
@@ -3343,11 +3285,13 @@ export const deleteNodeSetupGuideAction = async (
 //   }
 // };
 
-
-export const getNodeSetupGuide = async (guideId: string): Promise<NodeDocumentation | null> => {
+export const getNodeSetupGuide = async (guideId: string) => {
   try {
     const documentation = await db.nodeDocumentation.findUnique({
       where: { id: guideId },
+      include: {
+        usageStats: true, // ✅ This is included
+      },
     });
 
     return documentation; // Return the raw Prisma object

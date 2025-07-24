@@ -228,7 +228,7 @@ const EditWorkflowSteps = async ({
             <div className="p-4">
               <WorkflowStepsViewer
                 workflowSteps={orderedSteps}
-                workflowJson={workflow.workFlowJson}
+         
                 workflowId={workflow.id}
                 showStats={true}
                 canEditSteps={canEditSteps}

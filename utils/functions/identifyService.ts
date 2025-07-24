@@ -1,29 +1,18 @@
 // utils/functions/identifyService.ts
-import  nodeTypeToServiceName  from './nodeTypeToServiceName';
 
-interface WorkflowStep {
-  id: string;
-  name: string;
-  type: string;
-  nodeType?:string;
-  parameters?: any;
-  credentials?: any;
-  typeVersion?: number;
-  position?: [number, number];
-}
+import { ServiceInfo, WorkflowStepLike } from '../types';
+import nodeTypeToServiceName from './nodeTypeToServiceName';
 
-interface ServiceInfo {
-  serviceName: string;
-  hostIdentifier: string | null; // Change from string? to string | null
-  nodeType: string;
-}
+// Use a more flexible interface that matches both OrderedWorkflowStep and WorkflowStep
+
 
 /**
  * Identify service information from a workflow step
  * Handles both direct nodes and HTTP requests
  */
-export function identifyService(step: WorkflowStep): ServiceInfo {
-  const nodeType = step.type || step.nodeType;
+export function identifyService(step: WorkflowStepLike): ServiceInfo {
+  // Handle both .type and .nodeType properties - nodeType is primary
+  const nodeType = step.nodeType || step.type || '';
   
   // For HTTP requests, try to extract service from URL
   if (nodeType === 'n8n-nodes-base.httpRequest') {
@@ -32,7 +21,7 @@ export function identifyService(step: WorkflowStep): ServiceInfo {
     
     return {
       serviceName,
-      hostIdentifier: hostIdentifier || null, // Explicit null
+      hostIdentifier: hostIdentifier || null,
       nodeType
     };
   }
@@ -42,7 +31,7 @@ export function identifyService(step: WorkflowStep): ServiceInfo {
   
   return {
     serviceName,
-    hostIdentifier: null, // Explicit null for direct nodes
+    hostIdentifier: null,
     nodeType
   };
 }
@@ -50,10 +39,11 @@ export function identifyService(step: WorkflowStep): ServiceInfo {
 /**
  * Helper: Extract host from HTTP step parameters
  */
-function extractHostFromHttpStep(step: WorkflowStep): string | undefined {
+function extractHostFromHttpStep(step: WorkflowStepLike): string | null {
   try {
-    const url = step.parameters?.url;
-    if (!url || typeof url !== 'string') return undefined;
+    const parameters = step?.parameters as { url?: unknown } | undefined;
+    const url = parameters?.url;
+    if (!url || typeof url !== 'string') return null;
     
     // Handle n8n template expressions - remove leading = if present
     let cleanUrl = url;
@@ -73,9 +63,9 @@ function extractHostFromHttpStep(step: WorkflowStep): string | undefined {
       return hostnameMatch[1];
     }
     
-    return undefined;
+    return null;
   } catch {
-    return undefined;
+    return null;
   }
 }
 
@@ -85,8 +75,6 @@ function extractHostFromHttpStep(step: WorkflowStep): string | undefined {
  * api.hedra.com -> hedra
  * googleapis.com -> google-apis
  */
-
-
 function extractServiceFromHost(hostname: string): string {
   // Remove common prefixes
   const serviceName = hostname
@@ -103,4 +91,3 @@ function extractServiceFromHost(hostname: string): string {
   const parts = serviceName.split('.');
   return parts[parts.length - 1] || serviceName;
 }
-

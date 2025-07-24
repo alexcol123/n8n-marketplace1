@@ -64,7 +64,6 @@ const SingleWorkflowPage = async ({
     workflow?.workFlowJson
   ).length;
 
-
   const complexity = getWorkflowComplexityFunc(
     workflow.workFlowJson,
     workflowCharactersLength
@@ -315,7 +314,7 @@ const SingleWorkflowPage = async ({
           <section className="mb-16">
             <WorkflowStepsViewer
               workflowSteps={orderedSteps}
-              workflowJson={workflow.workFlowJson}
+              // workflowJson={workflow.workFlowJson}
               workflowId={workflow.id}
               showStats={true}
               canEditSteps={false}

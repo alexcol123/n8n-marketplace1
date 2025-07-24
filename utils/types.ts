@@ -53,3 +53,24 @@ export type CompletionCountData = {
     userId: number;
   };
 };
+
+
+
+
+export type WorkflowStepLike = {
+  id: string;
+  name?: string; // Make optional since Prisma WorkflowStep doesn't have this
+  type?: string; // Make optional since Prisma WorkflowStep doesn't have this
+  nodeType?: string; // This is what Prisma WorkflowStep actually has
+  parameters?: unknown; // Use unknown to match JsonValue
+  credentials?: unknown;
+
+  typeVersion?: number;
+  position?: unknown; // Use unknown to match JsonValue
+  [key: string]: unknown; // Allow additional properties
+};
+export type ServiceInfo = {
+ serviceName: string;
+ hostIdentifier: string | null;
+ nodeType: string;
+};

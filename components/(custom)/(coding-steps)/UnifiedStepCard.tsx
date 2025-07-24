@@ -36,6 +36,20 @@ import NodeDetailsSection from "../(UnifiedStepCardParts)/NodeDetailsSection";
 import NodeDocumentationSection from "../(UnifiedStepCardParts)/NodeDocumentationSection";
 import { NodeDocumentation } from "@prisma/client";
 
+interface AIMessage {
+  role?: string;
+  type?: string;
+  content?: string;
+  text?: string;
+  message?: string;
+}
+
+interface NestedPrompt {
+  path: string;
+  content: string;
+  type: "system" | "user" | "text";
+}
+
 // Simplified theme configuration
 const CATEGORY_THEMES = {
   http: {
@@ -232,15 +246,13 @@ export default function UnifiedStepCard({
   const [nodeCopied, setNodeCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
 
-
-
   const nodeImage = guideData?.nodeImage || null;
 
   const theme = getTheme(step);
   const hasParameters =
     step.parameters && Object.keys(step.parameters).length > 0;
   const parameterCount = hasParameters
-    ? Object.keys(step.parameters).length
+    ? Object.keys(step.parameters ?? {}).length
     : 0;
   const IconComponent = theme.icon;
 
@@ -287,23 +299,53 @@ export default function UnifiedStepCard({
   const isAINode = () => getNodeCategory(step.type) === "ai";
   const isCodeNode = () => getNodeCategory(step.type) === "code";
 
-  // Simplified AI prompt extraction
-  const getAIPrompts = () => {
+
+
+
+
+  // Then your getAIPrompts function becomes:
+  const getAIPrompts = (): {
+    system: string;
+    user: string;
+    text: string;
+    messages: AIMessage[];
+    nestedPrompts: NestedPrompt[];
+  } | null => {
     if (!isAINode() || !step.parameters) return null;
-    const prompts = { system: "", user: "", text: "", messages: [] };
+
+    const prompts = {
+      system: "",
+      user: "",
+      text: "",
+      messages: [] as AIMessage[],
+      nestedPrompts: [] as NestedPrompt[],
+    };
 
     // Basic parameter extraction
     const systemKeys = ["systemMessage", "system", "instructions"];
     const userKeys = ["prompt", "userMessage", "input", "text"];
 
     systemKeys.forEach((key) => {
-      if (step.parameters?.[key]) prompts.system = String(step.parameters[key]);
+      if (step.parameters?.[key]) {
+        prompts.system = String(step.parameters[key]);
+      }
     });
 
     userKeys.forEach((key) => {
       if (step.parameters?.[key]) {
-        if (key === "text") prompts.text = String(step.parameters[key]);
-        else prompts.user = String(step.parameters[key]);
+        if (key === "text") {
+          prompts.text = String(step.parameters[key]);
+        } else {
+          prompts.user = String(step.parameters[key]);
+        }
+      }
+    });
+
+    // Handle messages array if it exists
+    const messagesKeys = ["messages", "conversation", "chat_history"];
+    messagesKeys.forEach((key) => {
+      if (step.parameters?.[key] && Array.isArray(step.parameters[key])) {
+        prompts.messages = step.parameters[key] as AIMessage[];
       }
     });
 
@@ -392,7 +434,7 @@ export default function UnifiedStepCard({
             <div className="relative flex-shrink-0">
               <div
                 className={cn(
-                  "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 bg-white/80 dark:bg-slate-800/80 shadow-lg border-2 border-white/60 dark:border-slate-700/60 hover:scale-110 shadow-xl"
+                  "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 bg-white/80 dark:bg-slate-800/80  border-2 border-white/60 dark:border-slate-700/60 hover:scale-110 shadow-xl"
                 )}
               >
                 <IconComponent className={cn("w-7 h-7", theme.iconColor)} />

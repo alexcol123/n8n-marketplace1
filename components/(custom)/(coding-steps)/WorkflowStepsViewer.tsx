@@ -23,6 +23,7 @@ import MarkCompletedButton from "./MarkCompletedButton";
 import { NodeDocumentation, WorkflowStep } from "@prisma/client";
 import { JsonValue } from "@prisma/client/runtime/library";
 import { identifyService } from "@/utils/functions/identifyService";
+import { WorkflowStepLike } from "@/utils/types";
 
 interface OrderedWorkflowStep {
   id: string;
@@ -50,18 +51,22 @@ interface OrderedWorkflowStep {
 }
 
 interface SetupGuideData {
-  guide: {
-    id: string;
-    guideTitle: string;
-    guideVideoUrl?: string | null;
-    helpText?: string | null;
-    helpLinks?: Record<string, string> | null;
-    credentialNameHint?: string | null;
-    // Add other properties as needed
-  };
-  usageCount: number;
-  lastUsedAt: Date | string;
+  serviceName: string;
+  hostIdentifier: string | null;
+  title: string | null;
+  description: string | null;
+  credentialGuide: string | null;
+  credentialVideo: string | null;
+  credentialsLinks: unknown;
+  setupInstructions: string | null;
+  helpLinks: unknown;
+  videoLinks: unknown;
+  troubleshooting: string | null;
+  // Add these fields to satisfy your existing usage
+  usageCount?: number;
+  lastUsedAt?: Date | string;
 }
+
 
 interface WorkflowStepsViewerProps {
   workflowId: string;
@@ -70,6 +75,9 @@ interface WorkflowStepsViewerProps {
   workflowSteps: WorkflowStep[];
   canEditSteps?: boolean;
   guideLookup?: Record<string, SetupGuideData>;
+  guide?: string; // Make optional
+  usageCount?: number; // Make optional
+  lastUsedAt?: Date;
 }
 
 const createDefaultConnectionInfo = (): ConnectionInfo => ({
@@ -167,7 +175,7 @@ export default function WorkflowStepsViewer({
       : 0;
 
   // Helper function to extract guide identifiers from a step
-  const extractGuideIdentifiers = (step: OrderedWorkflowStep | undefined) => {
+  const extractGuideIdentifiers = (step: WorkflowStepLike | undefined) => {
     // Add null check for step
     if (!step) {
       return null;
