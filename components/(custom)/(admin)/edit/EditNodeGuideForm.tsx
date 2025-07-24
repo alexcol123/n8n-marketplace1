@@ -1,72 +1,87 @@
 // components/(custom)/(node-guides)/EditNodeGuideForm.tsx
 "use client";
 
-import { updateNodeSetupGuideAction,  } from "@/utils/actions";
+import { updateNodeSetupGuideAction } from "@/utils/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, BookOpen, Save, Plus, Trash2, Key, Video, AlertCircle, ExternalLink } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  Save,
+  Plus,
+  Trash2,
+  Key,
+  Video,
+  AlertCircle,
+} from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
+// Import the JSON helpers
+import { 
 
-// import NodeImageUpload from "@/components/(custom)/(node-guides)/NodeImageUpload"; // For debugging
+  type LinkArray,
+  type TroubleshootingArray
+} from "@/utils/jsonHelpers";
 
+// Updated interface - now matches what we get from the page component
 interface EditNodeGuideFormProps {
   guide: {
     id: string;
     serviceName: string;
-    hostIdentifier?: string;
+    hostIdentifier?: string | null;
     title: string;
-    description?: string;
-    credentialGuide?: string;
-    credentialVideo?: string;
-    credentialsLinks?: Array<{ title: string; url: string }>;
-    setupInstructions?: string;
-    helpLinks?: Array<{ title: string; url: string }>;
-    videoLinks?: Array<{ title: string; url: string }>;
-    troubleshooting?: Array<{ issue: string; solution: string }>;
-    nodeImage?: string;
+    description?: string | null;
+    credentialGuide?: string | null;
+    credentialVideo?: string | null;
+    credentialsLinks?: LinkArray | null;        // Now properly typed
+    setupInstructions?: string | null;
+    helpLinks?: LinkArray | null;               // Now properly typed
+    videoLinks?: LinkArray | null;              // Now properly typed
+    troubleshooting?: TroubleshootingArray | null; // Now properly typed
+    nodeImage?: string | null;
   };
 }
 
 export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Initialize form data with existing guide data
+
+  // Initialize form data with existing guide data, converting null to empty string
   const [formData, setFormData] = useState({
-    title: guide.title || '',
-    description: guide.description || '',
-    credentialGuide: guide.credentialGuide || '',
-    credentialVideo: guide.credentialVideo || '',
-    setupInstructions: guide.setupInstructions || '',
+    title: guide.title || "",
+    description: guide.description || "",
+    credentialGuide: guide.credentialGuide || "",
+    credentialVideo: guide.credentialVideo || "",
+    setupInstructions: guide.setupInstructions || "",
   });
 
-  // Initialize JSON fields with existing data or defaults
+  // ✅ CLEANER: Use the helper functions with proper fallbacks
+  // No more manual triple safety checks - the helpers handle all edge cases!
   const [credentialsLinks, setCredentialsLinks] = useState(
-    guide.credentialsLinks && guide.credentialsLinks.length > 0 
-      ? guide.credentialsLinks 
-      : [{ title: '', url: '' }]
+    guide.credentialsLinks && guide.credentialsLinks.length > 0
+      ? guide.credentialsLinks
+      : [{ title: "", url: "" }]
   );
-  
+
   const [helpLinks, setHelpLinks] = useState(
-    guide.helpLinks && guide.helpLinks.length > 0 
-      ? guide.helpLinks 
-      : [{ title: '', url: '' }]
+    guide.helpLinks && guide.helpLinks.length > 0
+      ? guide.helpLinks  
+      : [{ title: "", url: "" }]
   );
-  
+
   const [videoLinks, setVideoLinks] = useState(
-    guide.videoLinks && guide.videoLinks.length > 0 
-      ? guide.videoLinks 
-      : [{ title: '', url: '' }]
+    guide.videoLinks && guide.videoLinks.length > 0
+      ? guide.videoLinks
+      : [{ title: "", url: "" }]
   );
-  
+
   const [troubleshootingItems, setTroubleshootingItems] = useState(
-    guide.troubleshooting && guide.troubleshooting.length > 0 
-      ? guide.troubleshooting 
-      : [{ issue: '', solution: '' }]
+    guide.troubleshooting && guide.troubleshooting.length > 0
+      ? guide.troubleshooting
+      : [{ issue: "", solution: "" }]
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,7 +90,7 @@ export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
 
     try {
       const formDataObj = new FormData();
-      
+
       // Add basic form fields
       Object.entries(formData).forEach(([key, value]) => {
         if (value) {
@@ -84,106 +99,140 @@ export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
       });
 
       // Add JSON fields only if they have content
-      const validCredentialsLinks = credentialsLinks.filter(link => link.title.trim() || link.url.trim());
+      const validCredentialsLinks = credentialsLinks.filter(
+        (link) => link.title.trim() || link.url.trim()
+      );
       if (validCredentialsLinks.length > 0) {
-        formDataObj.append('credentialsLinks', JSON.stringify(validCredentialsLinks));
+        formDataObj.append(
+          "credentialsLinks",
+          JSON.stringify(validCredentialsLinks)
+        );
       }
 
-      const validHelpLinks = helpLinks.filter(link => link.title.trim() || link.url.trim());
+      const validHelpLinks = helpLinks.filter(
+        (link) => link.title.trim() || link.url.trim()
+      );
       if (validHelpLinks.length > 0) {
-        formDataObj.append('helpLinks', JSON.stringify(validHelpLinks));
+        formDataObj.append("helpLinks", JSON.stringify(validHelpLinks));
       }
 
-      const validVideoLinks = videoLinks.filter(link => link.title.trim() || link.url.trim());
+      const validVideoLinks = videoLinks.filter(
+        (link) => link.title.trim() || link.url.trim()
+      );
       if (validVideoLinks.length > 0) {
-        formDataObj.append('videoLinks', JSON.stringify(validVideoLinks));
+        formDataObj.append("videoLinks", JSON.stringify(validVideoLinks));
       }
 
-      const validTroubleshooting = troubleshootingItems.filter(item => item.issue.trim() || item.solution.trim());
+      const validTroubleshooting = troubleshootingItems.filter(
+        (item) => item.issue.trim() || item.solution.trim()
+      );
       if (validTroubleshooting.length > 0) {
-        formDataObj.append('troubleshooting', JSON.stringify(validTroubleshooting));
+        formDataObj.append(
+          "troubleshooting",
+          JSON.stringify(validTroubleshooting)
+        );
       }
 
       // Call the update action with guide ID
-      const result = await updateNodeSetupGuideAction(guide.id, {}, formDataObj);
-      
+      const result = await updateNodeSetupGuideAction(
+        guide.id,
+        {},
+        formDataObj
+      );
+
       if (result.success) {
         toast.success(result.message);
         // Redirect back to the guides list
-        window.location.href = '/admin/node-guides';
+        window.location.href = "/admin/node-guides";
       } else {
         toast.error(result.message);
       }
     } catch (error) {
-      console.error('Error updating guide:', error);
-      toast.error('Failed to update guide');
+      console.error("Error updating guide:", error);
+      toast.error("Failed to update guide");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   // Credentials Links functions
   const addCredentialsLink = () => {
-    setCredentialsLinks(prev => [...prev, { title: '', url: '' }]);
+    setCredentialsLinks((prev) => [...prev, { title: "", url: "" }]);
   };
 
   const removeCredentialsLink = (index: number) => {
-    setCredentialsLinks(prev => prev.filter((_, i) => i !== index));
+    setCredentialsLinks((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const updateCredentialsLink = (index: number, field: 'title' | 'url', value: string) => {
-    setCredentialsLinks(prev => prev.map((link, i) => 
-      i === index ? { ...link, [field]: value } : link
-    ));
+  const updateCredentialsLink = (
+    index: number,
+    field: "title" | "url",
+    value: string
+  ) => {
+    setCredentialsLinks((prev) =>
+      prev.map((link, i) => (i === index ? { ...link, [field]: value } : link))
+    );
   };
 
   // Help Links functions
   const addHelpLink = () => {
-    setHelpLinks(prev => [...prev, { title: '', url: '' }]);
+    setHelpLinks((prev) => [...prev, { title: "", url: "" }]);
   };
 
   const removeHelpLink = (index: number) => {
-    setHelpLinks(prev => prev.filter((_, i) => i !== index));
+    setHelpLinks((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const updateHelpLink = (index: number, field: 'title' | 'url', value: string) => {
-    setHelpLinks(prev => prev.map((link, i) => 
-      i === index ? { ...link, [field]: value } : link
-    ));
+  const updateHelpLink = (
+    index: number,
+    field: "title" | "url",
+    value: string
+  ) => {
+    setHelpLinks((prev) =>
+      prev.map((link, i) => (i === index ? { ...link, [field]: value } : link))
+    );
   };
 
   // Video Links functions
   const addVideoLink = () => {
-    setVideoLinks(prev => [...prev, { title: '', url: '' }]);
+    setVideoLinks((prev) => [...prev, { title: "", url: "" }]);
   };
 
   const removeVideoLink = (index: number) => {
-    setVideoLinks(prev => prev.filter((_, i) => i !== index));
+    setVideoLinks((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const updateVideoLink = (index: number, field: 'title' | 'url', value: string) => {
-    setVideoLinks(prev => prev.map((link, i) => 
-      i === index ? { ...link, [field]: value } : link
-    ));
+  const updateVideoLink = (
+    index: number,
+    field: "title" | "url",
+    value: string
+  ) => {
+    setVideoLinks((prev) =>
+      prev.map((link, i) => (i === index ? { ...link, [field]: value } : link))
+    );
   };
 
   // Troubleshooting functions
   const addTroubleshootingItem = () => {
-    setTroubleshootingItems(prev => [...prev, { issue: '', solution: '' }]);
+    setTroubleshootingItems((prev) => [...prev, { issue: "", solution: "" }]);
   };
 
   const removeTroubleshootingItem = (index: number) => {
-    setTroubleshootingItems(prev => prev.filter((_, i) => i !== index));
+    setTroubleshootingItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const updateTroubleshootingItem = (index: number, field: 'issue' | 'solution', value: string) => {
-    setTroubleshootingItems(prev => prev.map((item, i) => 
-      i === index ? { ...item, [field]: value } : item
-    ));
+  const updateTroubleshootingItem = (
+    index: number,
+    field: "issue" | "solution",
+    value: string
+  ) => {
+    setTroubleshootingItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
   };
 
   return (
@@ -217,13 +266,21 @@ export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
                 <div className="mt-3 border-l-4 border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 pl-6 py-4">
                   <div className="space-y-2">
                     <div className="text-base">
-                      <span className="text-blue-600 dark:text-blue-400 font-medium">Service: </span>
-                      <span className="font-semibold text-blue-800 dark:text-blue-200">{guide.serviceName}</span>
+                      <span className="text-blue-600 dark:text-blue-400 font-medium">
+                        Service:{" "}
+                      </span>
+                      <span className="font-semibold text-blue-800 dark:text-blue-200">
+                        {guide.serviceName}
+                      </span>
                     </div>
                     {guide.hostIdentifier && (
                       <div className="text-base">
-                        <span className="text-blue-600 dark:text-blue-400 font-medium">Host: </span>
-                        <span className="font-mono text-blue-700 dark:text-blue-300">{guide.hostIdentifier}</span>
+                        <span className="text-blue-600 dark:text-blue-400 font-medium">
+                          Host:{" "}
+                        </span>
+                        <span className="font-mono text-blue-700 dark:text-blue-300">
+                          {guide.hostIdentifier}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -231,38 +288,28 @@ export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                <div>
-                  <Label htmlFor="title" className="mb-2 block">Guide Title</Label>
+                  <Label htmlFor="title" className="mb-2 block">
+                    Guide Title
+                  </Label>
                   <Input
                     id="title"
                     value={formData.title}
-                    onChange={(e) => handleChange('title', e.target.value)}
+                    onChange={(e) => handleChange("title", e.target.value)}
                     placeholder="e.g., How to setup OpenAI credentials"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="description" className="mb-2 block">Description</Label>
+                  <Label htmlFor="description" className="mb-2 block">
+                    Description
+                  </Label>
                   <Textarea
                     id="description"
                     value={formData.description}
-                    onChange={(e) => handleChange('description', e.target.value)}
-                    placeholder="Brief description of this credential setup guide"
-                    rows={3}
-                  />
-                </div>Change('title', e.target.value)}
-                    placeholder="e.g., How to setup OpenAI credentials"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="description" className="mb-2 block">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => handleChange('description', e.target.value)}
+                    onChange={(e) =>
+                      handleChange("description", e.target.value)
+                    }
                     placeholder="Brief description of this credential setup guide"
                     rows={3}
                   />
@@ -270,18 +317,7 @@ export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
               </CardContent>
             </Card>
 
-            {/* Node Image */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  Node Image
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-     
-              </CardContent>
-            </Card>
+  
 
             {/* Credential Setup */}
             <Card>
@@ -293,25 +329,34 @@ export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <Label htmlFor="credentialGuide" className="mb-2 block">Credential Setup Guide</Label>
+                  <Label htmlFor="credentialGuide" className="mb-2 block">
+                    Credential Setup Guide
+                  </Label>
                   <Textarea
                     id="credentialGuide"
                     value={formData.credentialGuide}
-                    onChange={(e) => handleChange('credentialGuide', e.target.value)}
+                    onChange={(e) =>
+                      handleChange("credentialGuide", e.target.value)
+                    }
                     placeholder="Step-by-step instructions for obtaining and setting up credentials..."
                     rows={8}
                   />
                   <p className="text-sm text-muted-foreground mt-2">
-                    Detailed instructions on how to get API keys, tokens, or other credentials
+                    Detailed instructions on how to get API keys, tokens, or
+                    other credentials
                   </p>
                 </div>
 
                 <div>
-                  <Label htmlFor="credentialVideo" className="mb-2 block">Credential Setup Video (YouTube URL)</Label>
+                  <Label htmlFor="credentialVideo" className="mb-2 block">
+                    Credential Setup Video (YouTube URL)
+                  </Label>
                   <Input
                     id="credentialVideo"
                     value={formData.credentialVideo}
-                    onChange={(e) => handleChange('credentialVideo', e.target.value)}
+                    onChange={(e) =>
+                      handleChange("credentialVideo", e.target.value)
+                    }
                     placeholder="https://www.youtube.com/watch?v=..."
                     type="url"
                   />
@@ -325,20 +370,35 @@ export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
                   <Label className="mb-2 block">Useful Credential Links</Label>
                   <div className="space-y-4">
                     {credentialsLinks.map((link, index) => (
-                      <div key={index} className="space-y-2 p-4 border rounded-lg">
+                      <div
+                        key={index}
+                        className="space-y-2 p-4 border rounded-lg"
+                      >
                         <div className="flex gap-4">
                           <div className="flex-1">
                             <Input
                               placeholder="Link title (e.g., API Dashboard)"
                               value={link.title}
-                              onChange={(e) => updateCredentialsLink(index, 'title', e.target.value)}
+                              onChange={(e) =>
+                                updateCredentialsLink(
+                                  index,
+                                  "title",
+                                  e.target.value
+                                )
+                              }
                             />
                           </div>
                           <div className="flex-1">
                             <Input
                               placeholder="URL"
                               value={link.url}
-                              onChange={(e) => updateCredentialsLink(index, 'url', e.target.value)}
+                              onChange={(e) =>
+                                updateCredentialsLink(
+                                  index,
+                                  "url",
+                                  e.target.value
+                                )
+                              }
                               type="url"
                             />
                           </div>
@@ -381,11 +441,15 @@ export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <Label htmlFor="setupInstructions" className="mb-2 block">General Setup Instructions</Label>
+                  <Label htmlFor="setupInstructions" className="mb-2 block">
+                    General Setup Instructions
+                  </Label>
                   <Textarea
                     id="setupInstructions"
                     value={formData.setupInstructions}
-                    onChange={(e) => handleChange('setupInstructions', e.target.value)}
+                    onChange={(e) =>
+                      handleChange("setupInstructions", e.target.value)
+                    }
                     placeholder="Additional setup instructions, configuration tips, etc..."
                     rows={6}
                   />
@@ -396,23 +460,32 @@ export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
 
                 {/* Help Links */}
                 <div>
-                  <Label className="mb-2 block">Help & Documentation Links</Label>
+                  <Label className="mb-2 block">
+                    Help & Documentation Links
+                  </Label>
                   <div className="space-y-4">
                     {helpLinks.map((link, index) => (
-                      <div key={index} className="space-y-2 p-4 border rounded-lg">
+                      <div
+                        key={index}
+                        className="space-y-2 p-4 border rounded-lg"
+                      >
                         <div className="flex gap-4">
                           <div className="flex-1">
                             <Input
                               placeholder="Link title (e.g., API Documentation)"
                               value={link.title}
-                              onChange={(e) => updateHelpLink(index, 'title', e.target.value)}
+                              onChange={(e) =>
+                                updateHelpLink(index, "title", e.target.value)
+                              }
                             />
                           </div>
                           <div className="flex-1">
                             <Input
                               placeholder="URL"
                               value={link.url}
-                              onChange={(e) => updateHelpLink(index, 'url', e.target.value)}
+                              onChange={(e) =>
+                                updateHelpLink(index, "url", e.target.value)
+                              }
                               type="url"
                             />
                           </div>
@@ -442,26 +515,33 @@ export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
 
                 {/* Video Links */}
                 <div>
-                  <Label className="mb-2 block flex items-center gap-2">
+                  <Label className="mb-2 flex items-center gap-2">
                     <Video className="h-4 w-4" />
                     Tutorial Videos
                   </Label>
                   <div className="space-y-4">
                     {videoLinks.map((link, index) => (
-                      <div key={index} className="space-y-2 p-4 border rounded-lg">
+                      <div
+                        key={index}
+                        className="space-y-2 p-4 border rounded-lg"
+                      >
                         <div className="flex gap-4">
                           <div className="flex-1">
                             <Input
                               placeholder="Video title (e.g., Setup Tutorial)"
                               value={link.title}
-                              onChange={(e) => updateVideoLink(index, 'title', e.target.value)}
+                              onChange={(e) =>
+                                updateVideoLink(index, "title", e.target.value)
+                              }
                             />
                           </div>
                           <div className="flex-1">
                             <Input
                               placeholder="YouTube URL"
                               value={link.url}
-                              onChange={(e) => updateVideoLink(index, 'url', e.target.value)}
+                              onChange={(e) =>
+                                updateVideoLink(index, "url", e.target.value)
+                              }
                               type="url"
                             />
                           </div>
@@ -503,13 +583,22 @@ export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
                 <Label className="mb-2 block">Common Issues & Solutions</Label>
                 <div className="space-y-4">
                   {troubleshootingItems.map((item, index) => (
-                    <div key={index} className="p-4 border rounded-lg space-y-2">
+                    <div
+                      key={index}
+                      className="p-4 border rounded-lg space-y-2"
+                    >
                       <div className="flex gap-4">
                         <div className="flex-1">
                           <Input
                             placeholder="Issue title (e.g., 401 Unauthorized Error)"
                             value={item.issue}
-                            onChange={(e) => updateTroubleshootingItem(index, 'issue', e.target.value)}
+                            onChange={(e) =>
+                              updateTroubleshootingItem(
+                                index,
+                                "issue",
+                                e.target.value
+                              )
+                            }
                           />
                         </div>
                         <Button
@@ -525,7 +614,13 @@ export default function EditNodeGuideForm({ guide }: EditNodeGuideFormProps) {
                       <Textarea
                         placeholder="Solution steps and explanation..."
                         value={item.solution}
-                        onChange={(e) => updateTroubleshootingItem(index, 'solution', e.target.value)}
+                        onChange={(e) =>
+                          updateTroubleshootingItem(
+                            index,
+                            "solution",
+                            e.target.value
+                          )
+                        }
                         rows={3}
                       />
                     </div>

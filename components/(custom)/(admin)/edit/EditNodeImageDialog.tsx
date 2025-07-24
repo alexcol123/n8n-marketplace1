@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, ImageIcon, Loader2 } from "lucide-react";
 import { updateNodeGuideImageAction, getNodeSetupGuide } from "@/utils/actions";
 import ImageInputContainer from "@/components/(custom)/(dashboard)/Form/ImageInputContainer";
+import { NodeDocumentation } from "@prisma/client";
 
 interface EditNodeImageDialogProps {
   guide: {
@@ -22,12 +23,14 @@ interface EditNodeImageDialogProps {
   onImageUpdated?: (newImageUrl: string) => void;
 }
 
+type EditableNodeDocumentation = Omit<NodeDocumentation, 'createdAt' | 'updatedAt'>;
+
+
 export default function EditNodeImageDialog({
   guide: initialGuide,
-  onImageUpdated,
 }: EditNodeImageDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [fullGuide, setFullGuide] = useState<any>(null);
+  const [fullGuide, setFullGuide] = useState<EditableNodeDocumentation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

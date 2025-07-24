@@ -9,6 +9,7 @@ import Image from "next/image";
 import { ArrowLeft, Edit, BookOpen, Key, Video, ExternalLink, AlertTriangle, Play, CheckCircle2, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { NodeUsageStats } from "@prisma/client";
 
 // Types for the links
 interface Link {
@@ -24,6 +25,37 @@ interface TroubleshootingItem {
 interface PageProps {
   params: Promise<{ id: string }>;
 }
+
+// Type guards
+const isLink = (item: unknown): item is Link => {
+  return (
+    item !== null &&
+    typeof item === 'object' &&
+    'title' in item &&
+    'url' in item &&
+    typeof (item as Record<string, unknown>).title === 'string' &&
+    typeof (item as Record<string, unknown>).url === 'string'
+  );
+};
+
+const isValidLinksArray = (links: unknown): links is Link[] => {
+  return Array.isArray(links) && links.every(isLink);
+};
+
+const isTroubleshootingItem = (item: unknown): item is TroubleshootingItem => {
+  return (
+    item !== null &&
+    typeof item === 'object' &&
+    'issue' in item &&
+    'solution' in item &&
+    typeof (item as Record<string, unknown>).issue === 'string' &&
+    typeof (item as Record<string, unknown>).solution === 'string'
+  );
+};
+
+const isValidTroubleshootingArray = (items: unknown): items is TroubleshootingItem[] => {
+  return Array.isArray(items) && items.every(isTroubleshootingItem);
+};
 
 export default async function ViewNodeGuidePage({ params }: PageProps) {
   // Await the params Promise
@@ -259,15 +291,15 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
                   </div>
                 )}
 
-                {/* Credentials Links */}
-                {guide.credentialsLinks && (
+                {/* Credentials Links - FIXED WITH TYPE GUARD */}
+                {isValidLinksArray(guide.credentialsLinks) && (
                   <div className="space-y-3">
                     <h4 className="font-semibold text-orange-800 dark:text-orange-200 flex items-center gap-2">
                       <ExternalLink className="h-4 w-4" />
                       Get Your Credentials
                     </h4>
                     <div className="grid gap-2">
-                      {(guide.credentialsLinks as Link[]).map((link, index) => (
+                      {guide.credentialsLinks.map((link, index) => (
                         <Button 
                           key={index} 
                           variant="outline"
@@ -307,8 +339,8 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
             </Card>
           )}
 
-          {/* Help Links */}
-          {guide.helpLinks && (
+          {/* Help Links - FIXED WITH TYPE GUARD */}
+          {isValidLinksArray(guide.helpLinks) && (
             <Card className="border-slate-200 bg-white/50 dark:border-slate-800/50 dark:bg-slate-950/10 shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
@@ -318,7 +350,7 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
               </CardHeader>
               <CardContent>
                 {renderLinks(
-                  guide.helpLinks as Link[],
+                  guide.helpLinks,
                   <ExternalLink className="h-4 w-4" />,
                   "Documentation & Guides",
                   "secondary"
@@ -327,8 +359,8 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
             </Card>
           )}
 
-          {/* Video Links */}
-          {guide.videoLinks && (
+          {/* Video Links - FIXED WITH TYPE GUARD */}
+          {isValidLinksArray(guide.videoLinks) && (
             <Card className="border-slate-200 bg-white/50 dark:border-slate-800/50 dark:bg-slate-950/10 shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
@@ -338,7 +370,7 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
               </CardHeader>
               <CardContent>
                 {renderLinks(
-                  guide.videoLinks as Link[],
+                  guide.videoLinks,
                   <Video className="h-4 w-4" />,
                   "Tutorial Videos",
                   "secondary"
@@ -347,8 +379,8 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
             </Card>
           )}
 
-          {/* Troubleshooting */}
-          {guide.troubleshooting && (
+          {/* Troubleshooting - FIXED WITH TYPE GUARD */}
+          {isValidTroubleshootingArray(guide.troubleshooting) && (
             <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-800/50 dark:bg-amber-950/20 shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
@@ -357,7 +389,7 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {renderTroubleshooting(guide.troubleshooting as TroubleshootingItem[])}
+                {renderTroubleshooting(guide.troubleshooting)}
               </CardContent>
             </Card>
           )}
@@ -370,7 +402,7 @@ export default async function ViewNodeGuidePage({ params }: PageProps) {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {guide.usageStats.map((stat: any) => (
+                  {guide.usageStats.map((stat: NodeUsageStats) => (
                     <div key={stat.id} className="text-center p-4 bg-white/60 dark:bg-slate-950/20 border border-slate-200 dark:border-slate-800/50 rounded-lg">
                       <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                         {stat.usageCount}

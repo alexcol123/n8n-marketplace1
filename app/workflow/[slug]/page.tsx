@@ -34,7 +34,6 @@ import CreatorCard from "@/components/(custom)/(coding-steps)/CreatorCard";
 import getWorkflowComplexityFunc from "@/utils/functions/getWorkflowComplexityFunc";
 import getWorkflowComplexityColorFunc from "@/utils/functions/getWorkflowComplexityColorFunc";
 import formatDateFunc from "@/utils/functions/formmatDate";
-import getNodeCountFunc from "@/utils/functions/getNodeCountFunc";
 import readingTimeFunc from "@/utils/functions/readingTimeFunc";
 
 type WorkflowWithAuthor = Workflow & {
@@ -65,7 +64,7 @@ const SingleWorkflowPage = async ({
     workflow?.workFlowJson
   ).length;
 
-  const nodeCount = getNodeCountFunc(workflow.workFlowJson);
+
   const complexity = getWorkflowComplexityFunc(
     workflow.workFlowJson,
     workflowCharactersLength

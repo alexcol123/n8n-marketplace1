@@ -16,7 +16,7 @@ import { revalidatePath } from "next/cache";
 import { deleteImage, uploadImage } from "./supabase";
 
 import slug from "slug";
-import { CategoryType, IssueStatus, Priority } from "@prisma/client";
+import { CategoryType, IssueStatus, NodeDocumentation, Priority } from "@prisma/client";
 import { getDateTime } from "./functions/getDateTime";
 
 import { CompletionCountData, CompletionWithUserData } from "./types";
@@ -3000,11 +3000,7 @@ export const updateNodeGuideImageAction = async (
   prevState: Record<string, unknown>,
   formData: FormData
 ): Promise<{ message: string; success?: boolean; imageUrl?: string; stepId?: string }> => {
-  console.log('=== NODE GUIDE IMAGE UPDATE ACTION CALLED ===');
-  console.log('FormData entries:');
-  for (let [key, value] of formData.entries()) {
-    console.log(key, value);
-  }
+
 
   try {
     const guideId = formData.get("stepId") as string; // Note: ImageInputContainer sends this as "stepId"
@@ -3223,7 +3219,7 @@ export const updateNodeSetupGuideAction = async (
     }
 
     // Prepare update data - only include nodeImage if it was actually uploaded
-    const updateData: any = {
+    const updateData = {
       title,
       description: (rawData.description as string) || null,
       // Credential fields
@@ -3235,6 +3231,7 @@ export const updateNodeSetupGuideAction = async (
       helpLinks,
       videoLinks,
       troubleshooting,
+    
     };
 
     // Only update nodeImage if a new image was uploaded
@@ -3308,38 +3305,52 @@ export const deleteNodeSetupGuideAction = async (
 };
 
 // Get a specific setup guide
-export const getNodeSetupGuide = async (guideId: string) => {
+// export const getNodeSetupGuide = async (guideId: string) => {
+//   try {
+//     const documentation = await db.nodeDocumentation.findUnique({
+//       where: { id: guideId },
+//       include: {
+//         usageStats: true,
+//       },
+//     });
+
+//     if (!documentation) {
+//       return null;
+//     }
+
+//     // Transform to match expected format
+//     return {
+//       id: documentation.id,
+//       serviceName: documentation.serviceName,
+//       hostIdentifier: documentation.hostIdentifier,
+//       title: documentation.title,
+//       description: documentation.description,
+//       // Credential fields
+//       credentialGuide: documentation.credentialGuide,
+//       credentialVideo: documentation.credentialVideo,
+//       credentialsLinks: documentation.credentialsLinks,
+//       // General fields
+//       setupInstructions: documentation.setupInstructions,
+//       helpLinks: documentation.helpLinks,
+//       videoLinks: documentation.videoLinks,
+//       troubleshooting: documentation.troubleshooting,
+//       usageStats: documentation.usageStats,
+//       nodeImage: documentation.nodeImage,
+//     };
+//   } catch (error) {
+//     console.error("Error fetching setup guide:", error);
+//     return null;
+//   }
+// };
+
+
+export const getNodeSetupGuide = async (guideId: string): Promise<NodeDocumentation | null> => {
   try {
     const documentation = await db.nodeDocumentation.findUnique({
       where: { id: guideId },
-      include: {
-        usageStats: true,
-      },
     });
 
-    if (!documentation) {
-      return null;
-    }
-
-    // Transform to match expected format
-    return {
-      id: documentation.id,
-      serviceName: documentation.serviceName,
-      hostIdentifier: documentation.hostIdentifier,
-      title: documentation.title,
-      description: documentation.description,
-      // Credential fields
-      credentialGuide: documentation.credentialGuide,
-      credentialVideo: documentation.credentialVideo,
-      credentialsLinks: documentation.credentialsLinks,
-      // General fields
-      setupInstructions: documentation.setupInstructions,
-      helpLinks: documentation.helpLinks,
-      videoLinks: documentation.videoLinks,
-      troubleshooting: documentation.troubleshooting,
-      usageStats: documentation.usageStats,
-      nodeImage: documentation.nodeImage,
-    };
+    return documentation; // Return the raw Prisma object
   } catch (error) {
     console.error("Error fetching setup guide:", error);
     return null;
