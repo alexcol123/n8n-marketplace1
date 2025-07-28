@@ -88,12 +88,12 @@ model WorkflowStep {
   teachingExplanation String? // LLM-generated friendly explanation
   teachingTips        Json? // ["tip1", "tip2"] - Learning tips
   teachingKeyPoints   Json? // ["point1", "point2"] - Key concepts
-  troubleshooting     Json? // ["solution1", "solution2"] - Common fixes
+
 
   // --- NEW: Step audio ---
-  stepAudioUrl       String? // URL to this step's audio explanation
-  stepAudioGenerated Boolean @default(false) // Track if step audio was created
-  stepAudioScript    String? // Text that was narrated for this step
+  // stepAudioUrl       String? // URL to this step's audio explanation
+  // stepAudioGenerated Boolean @default(false) // Track if step audio was created
+  // stepAudioScript    String? // Text that was narrated for this step
 
   isCustomStep Boolean @default(false)
 
@@ -225,34 +225,26 @@ model NodeDocumentation {
 }
 
 // WorkflowTeachingGuide - Project-level content only
+
+
 model WorkflowTeachingGuide {
   id String @id @default(uuid())
 
   // --- Workflow linking ---
   workflowId String // Foreign key to Workflow.id
 
-  // --- Project-level content ---
-  title        String // "Learn AI Video Generation with n8n"
-  description  String? // "Build automated workflows that create AI videos"
-  difficulty   String? // "beginner" | "intermediate" | "advanced"
-  projectIntro String? // Welcome message for the overall project
-
-  // --- Student-friendly content ---
-  whatYoullBuild String? // "A workflow that turns text into AI videos automatically"
-  prerequisites  String[] // ["Basic n8n knowledge", "API key setup"]
+  // --- Essential teaching content (what students actually need) ---
+  title           String   // "Learn AI Video Generation with n8n"
+  description     String?  // "Build automated workflows that create AI videos"
+  projectIntro    String?  // Welcome message/overview for the overall project
+  whatYoullBuild  String?  // "A workflow that turns text into AI videos automatically"
 
   // --- Project-level audio ---
-  audioUrl       String? // URL to project intro audio
-  audioGenerated Boolean @default(false) // Track if project audio was created
-  audioScript    String? // Full script for project audio
+  // audioUrl       String? // URL to project intro audio
+  // audioGenerated Boolean @default(false) // Track if project audio was created
+  // audioScript    String? // Full script for project audio
 
-  // --- Learning metadata ---
-  estimatedMinutes Int? // 25
-  skillsLearned    String[] // ["API Integration", "Error Handling"]
 
-  // --- Generation tracking ---
-  isGenerated Boolean   @default(false)
-  generatedAt DateTime?
 
   // --- Standard fields ---
   createdAt DateTime @default(now())
@@ -264,6 +256,9 @@ model WorkflowTeachingGuide {
   // --- Constraints ---
   @@unique([workflowId])
 }
+
+
+
 
 enum IssueStatus {
   OPEN

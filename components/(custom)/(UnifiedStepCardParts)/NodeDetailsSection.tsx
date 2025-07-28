@@ -59,13 +59,8 @@ export default function NodeDetailsSection({
   getAIPrompts,
   formatAIPrompt,
 }: NodeDetailsSectionProps) {
-  const [showRawData, setShowRawData] = useState(false);
+  const [showRawData, setShowRawData] = useState(true);
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
-
-
-
-
-
 
   const handleCopy = async (text: string, key: string) => {
     try {
@@ -124,7 +119,7 @@ export default function NodeDetailsSection({
           const codeContent = getCodeContent();
           return (
             codeContent && (
-              <div>
+              <div className="mb-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-8 h-8 bg-emerald-600/20 rounded flex items-center justify-center">
                     <Code className="w-4 h-4 text-emerald-400" />
@@ -173,7 +168,7 @@ export default function NodeDetailsSection({
               prompts.text ||
               prompts.messages.length > 0 ||
               prompts.nestedPrompts.length > 0) && (
-              <div>
+              <div className="mb-6">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-8 h-8 bg-purple-600/20 rounded flex items-center justify-center">
                     <Brain className="w-4 h-4 text-purple-400" />
@@ -192,9 +187,6 @@ export default function NodeDetailsSection({
                         <div className="flex items-center gap-3">
                           <Settings className="w-4 h-4 text-neutral-400" />
                           <span className="text-neutral-200 font-medium text-sm">System</span>
-                          <span className="px-2 py-1 bg-neutral-700 text-neutral-300 rounded text-xs">
-                            {prompts.system.length.toLocaleString()} chars
-                          </span>
                         </div>
                         <CopyIconButton text={prompts.system} copyKey="system-prompt" />
                       </div>
@@ -215,9 +207,6 @@ export default function NodeDetailsSection({
                         <div className="flex items-center gap-3">
                           <User className="w-4 h-4 text-blue-400" />
                           <span className="text-blue-200 font-medium text-sm">User</span>
-                          <span className="px-2 py-1 bg-blue-800/40 text-blue-200 rounded text-xs">
-                            {prompts.user.length.toLocaleString()} chars
-                          </span>
                         </div>
                         <CopyIconButton 
                           text={prompts.user} 
@@ -242,9 +231,6 @@ export default function NodeDetailsSection({
                         <div className="flex items-center gap-3">
                           <FileText className="w-4 h-4 text-emerald-400" />
                           <span className="text-emerald-200 font-medium text-sm">Content</span>
-                          <span className="px-2 py-1 bg-emerald-800/40 text-emerald-200 rounded text-xs">
-                            {prompts.text.length.toLocaleString()} chars
-                          </span>
                         </div>
                         <CopyIconButton 
                           text={prompts.text} 
@@ -421,7 +407,7 @@ export default function NodeDetailsSection({
                 </div>
                 <ScrollArea className="h-48">
                   <pre className="p-4 text-neutral-200 text-sm font-mono leading-6">
-                    {JSON.stringify(isAINode() ? filteredParams : step.parameters, null, 2)}
+                    {JSON.stringify(isAINode() ?  step.parameters : step.parameters, null, 2)}
                   </pre>
                 </ScrollArea>
               </div>

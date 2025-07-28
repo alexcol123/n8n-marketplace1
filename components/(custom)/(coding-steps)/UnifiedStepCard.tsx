@@ -36,19 +36,13 @@ import NodeDetailsSection from "../(UnifiedStepCardParts)/NodeDetailsSection";
 import NodeDocumentationSection from "../(UnifiedStepCardParts)/NodeDocumentationSection";
 import { NodeDocumentation } from "@prisma/client";
 
-interface AIMessage {
-  role?: string;
-  type?: string;
-  content?: string;
-  text?: string;
-  message?: string;
-}
-
-interface NestedPrompt {
-  path: string;
-  content: string;
-  type: "system" | "user" | "text";
-}
+// Import the utility functions and types
+import { 
+  getAIPrompts, 
+  getCodeContent, 
+  isAINode, 
+  isCodeNode,
+} from "@/utils/functions/nodeContentUtils";
 
 // Simplified theme configuration
 const CATEGORY_THEMES = {
@@ -296,79 +290,11 @@ export default function UnifiedStepCard({
     }
   };
 
-  const isAINode = () => getNodeCategory(step.type) === "ai";
-  const isCodeNode = () => getNodeCategory(step.type) === "code";
-
-
-
-
-
-  // Then your getAIPrompts function becomes:
-  const getAIPrompts = (): {
-    system: string;
-    user: string;
-    text: string;
-    messages: AIMessage[];
-    nestedPrompts: NestedPrompt[];
-  } | null => {
-    if (!isAINode() || !step.parameters) return null;
-
-    const prompts = {
-      system: "",
-      user: "",
-      text: "",
-      messages: [] as AIMessage[],
-      nestedPrompts: [] as NestedPrompt[],
-    };
-
-    // Basic parameter extraction
-    const systemKeys = ["systemMessage", "system", "instructions"];
-    const userKeys = ["prompt", "userMessage", "input", "text"];
-
-    systemKeys.forEach((key) => {
-      if (step.parameters?.[key]) {
-        prompts.system = String(step.parameters[key]);
-      }
-    });
-
-    userKeys.forEach((key) => {
-      if (step.parameters?.[key]) {
-        if (key === "text") {
-          prompts.text = String(step.parameters[key]);
-        } else {
-          prompts.user = String(step.parameters[key]);
-        }
-      }
-    });
-
-    // Handle messages array if it exists
-    const messagesKeys = ["messages", "conversation", "chat_history"];
-    messagesKeys.forEach((key) => {
-      if (step.parameters?.[key] && Array.isArray(step.parameters[key])) {
-        prompts.messages = step.parameters[key] as AIMessage[];
-      }
-    });
-
-    return prompts;
-  };
-
-  const getCodeContent = () => {
-    if (!isCodeNode() || !step.parameters) return null;
-    const codeKeys = ["jsCode", "code", "script", "pythonCode"];
-
-    for (const key of codeKeys) {
-      if (step.parameters?.[key] && typeof step.parameters[key] === "string") {
-        return {
-          language: step.type.toLowerCase().includes("python")
-            ? "python"
-            : "javascript",
-          code: String(step.parameters[key]),
-          paramKey: key,
-        };
-      }
-    }
-    return null;
-  };
+  // Wrapper functions that call the utils with the step parameter
+  const isAINodeType = () => isAINode(step.type);
+  const isCodeNodeType = () => isCodeNode(step.type);
+  const getAIPromptsForStep = () => getAIPrompts(step);
+  const getCodeContentForStep = () => getCodeContent(step);
 
   const formatAIPrompt = (text: string) =>
     text?.replace(/\n\s*\n/g, "\n").trim() || "";
@@ -662,10 +588,10 @@ export default function UnifiedStepCard({
                 <TabsContent value="details" className="mt-0">
                   <NodeDetailsSection
                     step={step}
-                    isAINode={isAINode}
-                    isCodeNode={isCodeNode}
-                    getCodeContent={getCodeContent}
-                    getAIPrompts={getAIPrompts}
+                    isAINode={isAINodeType}
+                    isCodeNode={isCodeNodeType}
+                    getCodeContent={getCodeContentForStep}
+                    getAIPrompts={getAIPromptsForStep}
                     formatAIPrompt={formatAIPrompt}
                   />
                 </TabsContent>

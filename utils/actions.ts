@@ -336,121 +336,6 @@ export const updateProfileImageAction = async (
   }
 };
 
-export const createWorkflowAction = async (
-  prevState: Record<string, unknown>,
-  formData: FormData
-): Promise<{ message: string }> => {
-  try {
-    const user = await getAuthUser();
-
-    // Get form data
-    const rawData = Object.fromEntries(formData);
-    const workflowImageFile = formData.get("image") as File;
-    const creationImageFile = formData.get("creationImage") as File;
-
-    // Workflow image is required
-    if (!workflowImageFile || workflowImageFile.size === 0) {
-      return { message: "Workflow image file is required" };
-    }
-
-    const workflowCreatedAt = getDateTime();
-
-    // Validate the workflow data (REMOVED steps from validation)
-    const validatedFields = validateWithZodSchema(workflowSchema, {
-      title: rawData.title,
-      content: rawData.content,
-      category: rawData.category,
-      // REMOVED: steps: rawData.steps,
-      videoUrl: rawData.videoUrl || "",
-    });
-
-    // Validate and upload workflow image (required)
-    const validatedWorkflowImage = validateWithZodSchema(imageSchema, {
-      image: workflowImageFile,
-    });
-    const workflowImagePath = await uploadImage(validatedWorkflowImage.image);
-
-    // Handle creation image (optional)
-    let creationImagePath: string | null = null;
-    if (creationImageFile && creationImageFile.size > 0) {
-      try {
-        const validatedCreationImage = validateWithZodSchema(imageSchema, {
-          image: creationImageFile,
-        });
-        creationImagePath = await uploadImage(validatedCreationImage.image);
-      } catch (error) {
-        console.error("Error uploading creation image:", error);
-        // Don't fail the entire workflow creation if creation image upload fails
-      }
-    }
-
-    // Create slug
-    const slugContent = `${validatedFields.title} author ${user.firstName} ${user.lastName} date ${workflowCreatedAt}`;
-    const slugString = slug(slugContent, { lower: true });
-
-    // Process workflow JSON
-    let workFlowJson = {};
-    try {
-      const workFlowJsonString = rawData.workFlowJson as string;
-      if (workFlowJsonString?.trim() && workFlowJsonString !== "{}") {
-        workFlowJson = JSON.parse(workFlowJsonString);
-      }
-    } catch (error) {
-      console.error("Error parsing workflow JSON:", error);
-    }
-
-    // Extract videoUrl from the form data
-    const videoUrl = rawData.videoUrl ? rawData.videoUrl.toString() : null;
-
-    // Create the workflow data (REMOVED steps field)
-    const workflowData = {
-      title: validatedFields.title,
-      content: validatedFields.content,
-      slug: slugString,
-      viewCount: 0,
-      workflowImage: workflowImagePath,
-      creationImage: creationImagePath || null,
-      category: validatedFields.category,
-      authorId: user.id,
-      workFlowJson,
-      // REMOVED: steps, - no longer storing manual steps
-      videoUrl,
-    };
-
-    // CREATE WORKFLOW
-    // CREATE WORKFLOW
-    const workflow = await db.workflow.create({
-      data: workflowData,
-    });
-
-    try {
-      const stepExtractionResult = await extractAndSaveWorkflowSteps(
-        workflow.id,
-        workFlowJson
-      );
-      console.log(stepExtractionResult);
-      console.log(
-        `Successfully extracted ${stepExtractionResult.stepsCreated} workflow steps with full node data`
-      );
-    } catch (stepError) {
-      console.error("Error extracting workflow steps:", stepError);
-      // Don't fail the whole workflow creation if step extraction fails
-    }
-
-    // Revalidate the dashboard to show the new workflow
-    revalidatePath("/dashboard/wf");
-  } catch (error) {
-    console.error("Error creating workflow:", error);
-    return {
-      message:
-        error instanceof Error ? error.message : "An unknown error occurred",
-    };
-  }
-
-  // Move redirect to where the action is called, or handle it in the component
-  redirect("/dashboard/wf");
-};
-
 export const fetchWorkflows = async ({
   search = "",
   category,
@@ -3040,6 +2925,7 @@ export const updateNodeGuideImageAction = async (
 
 // Update an existing setup guide
 import { Prisma } from "@prisma/client"; // Add this import at the top
+import OpenAI from "openai";
 
 export const updateNodeSetupGuideAction = async (
   guideId: string,
@@ -3300,3 +3186,399 @@ export const getNodeSetupGuide = async (guideId: string) => {
     return null;
   }
 };
+
+// =======================================================================================>
+// =======================================================================================>
+// =======================================================================================>
+// =======================================================================================>
+// =======================================================================================>
+
+// Enhanced createWorkflowAction in utils/actions.ts
+
+// Enhanced createWorkflowAction in utils/actions.ts
+
+export const createWorkflowAction = async (
+  prevState: Record<string, unknown>,
+  formData: FormData
+): Promise<{ message: string }> => {
+  const user = await getAuthUser();
+  const rawData = Object.fromEntries(formData);
+  const workflowCreatedAt = getDateTime();
+  const workflowImageFile = formData.get("image") as File;
+  const creationImageFile = formData.get("creationImage") as File;
+
+  try {
+    // ... existing validation code ...
+    const validatedFields = validateWithZodSchema(workflowSchema, {
+      title: rawData.title,
+      content: rawData.content,
+      category: rawData.category,
+      videoUrl: rawData.videoUrl || "",
+    });
+
+    // ... existing image upload code ...
+    const validatedWorkflowImage = validateWithZodSchema(imageSchema, {
+      image: workflowImageFile,
+    });
+    const workflowImagePath = await uploadImage(validatedWorkflowImage.image);
+
+    // Handle creation image (optional)
+    let creationImagePath: string | null = null;
+    if (creationImageFile && creationImageFile.size > 0) {
+      try {
+        const validatedCreationImage = validateWithZodSchema(imageSchema, {
+          image: creationImageFile,
+        });
+        creationImagePath = await uploadImage(validatedCreationImage.image);
+      } catch (error) {
+        console.error("Error uploading creation image:", error);
+        // Don't fail the entire workflow creation if creation image upload fails
+      }
+    }
+
+    // Create slug
+    const slugContent = `${validatedFields.title} author ${user.firstName} ${user.lastName} date ${workflowCreatedAt}`;
+    const slugString = slug(slugContent, { lower: true });
+
+    // Process workflow JSON
+    let workFlowJson = {};
+    try {
+      const workFlowJsonString = rawData.workFlowJson as string;
+      if (workFlowJsonString?.trim() && workFlowJsonString !== "{}") {
+        workFlowJson = JSON.parse(workFlowJsonString);
+      }
+    } catch (error) {
+      console.error("Error parsing workflow JSON:", error);
+    }
+
+    // Create the workflow data
+    const workflowData = {
+      title: validatedFields.title,
+      content: validatedFields.content,
+      slug: slugString,
+      viewCount: 0,
+      workflowImage: workflowImagePath,
+      creationImage: creationImagePath || null,
+      category: validatedFields.category,
+      authorId: user.id,
+      workFlowJson,
+      videoUrl: rawData.videoUrl ? rawData.videoUrl.toString() : null,
+    };
+
+    // CREATE WORKFLOW
+    const createdWorkflow = await db.workflow.create({
+      data: workflowData,
+    });
+
+    // ======= NEW: GENERATE TEACHING CONTENT =======
+
+    // 1. Extract workflow steps from JSON
+    try {
+      await extractAndSaveWorkflowSteps(createdWorkflow.id, workFlowJson);
+    } catch (error) {
+      console.error("Error extracting workflow steps:", error);
+    }
+
+    // 2. Generate workflow teaching guide
+    try {
+      await generateWorkflowTeachingGuide(
+        createdWorkflow.id,
+        workFlowJson,
+        validatedFields.title
+      );
+    } catch (error) {
+      console.error("Error generating workflow teaching guide:", error);
+    }
+
+    // 3. Generate teaching content for each step
+    try {
+      await generateStepsTeachingContent(createdWorkflow.id);
+    } catch (error) {
+      console.error("Error generating steps teaching content:", error);
+    }
+
+    // Revalidate the dashboard to show the new workflow
+    revalidatePath("/dashboard/wf");
+  } catch (error) {
+    console.error("Error creating workflow:", error);
+    return {
+      message:
+        error instanceof Error ? error.message : "An unknown error occurred",
+    };
+  }
+
+  redirect("/dashboard/wf");
+};
+
+// ======= NEW HELPER FUNCTIONS =======
+
+async function generateWorkflowTeachingGuide(
+  workflowId: string,
+  workflowJson: any,
+  originalTitle: string
+) {
+  try {
+    const teachingContent = await generateTeachingGuideWithLLM(
+      workflowJson,
+      originalTitle
+    );
+
+    await db.workflowTeachingGuide.create({
+      data: {
+        workflowId,
+        title: teachingContent.title,
+        description: teachingContent.description,
+        projectIntro: teachingContent.projectIntro,
+        whatYoullBuild: teachingContent.whatYoullBuild,
+      },
+    });
+
+    console.log(`✅ Teaching guide generated for workflow ${workflowId}`);
+  } catch (error) {
+    console.error("❌ Failed to generate workflow teaching guide:", error);
+    throw error;
+  }
+}
+
+async function generateStepsTeachingContent(workflowId: string) {
+  try {
+    const workflowSteps = await db.workflowStep.findMany({
+      where: { workflowId },
+      orderBy: { stepNumber: "asc" },
+    });
+
+    let cumulativeContext = "";
+
+    for (const step of workflowSteps) {
+      try {
+        const teachingContent = await generateStepTeachingContentWithLLM(
+          step,
+          cumulativeContext
+        );
+
+        await db.workflowStep.update({
+          where: { id: step.id },
+          data: {
+            teachingExplanation: teachingContent.explanation,
+            teachingTips: teachingContent.tips,
+            teachingKeyPoints: teachingContent.keyPoints,
+          },
+        });
+
+        cumulativeContext = teachingContent.summaryForNext || "";
+
+        console.log(
+          `✅ Teaching content generated for step ${step.stepNumber}: ${step.stepTitle}`
+        );
+      } catch (stepError) {
+        console.error(
+          `❌ Failed to generate teaching content for step ${step.id}:`,
+          stepError
+        );
+      }
+    }
+
+    console.log(
+      `✅ Teaching content generated for ${workflowSteps.length} steps with progressive context`
+    );
+  } catch (error) {
+    console.error("❌ Failed to generate steps teaching content:", error);
+    throw error;
+  }
+}
+
+async function generateTeachingGuideWithLLM(
+  workflowJson: any,
+  originalTitle: string
+) {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+
+  const nodeTypes = [];
+  const nodeNames = [];
+
+  if (workflowJson.nodes) {
+    workflowJson.nodes.forEach((node: any) => {
+      if (node.type && !node.type.includes("StickyNote")) {
+        nodeTypes.push(node.type);
+        nodeNames.push(node.name || "Unnamed Node");
+      }
+    });
+  }
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert n8n workflow educator. Create engaging, beginner-friendly educational content that focuses on learning outcomes. Always respond with valid JSON only.",
+        },
+        {
+          role: "user",
+          content: `Analyze this n8n workflow and create educational content for students.
+
+WORKFLOW INFO:
+- Title: ${originalTitle}
+- Node Types: ${nodeTypes.join(", ")}
+- Node Names: ${nodeNames.join(", ")}
+- Total Nodes: ${nodeTypes.length}
+
+Generate educational content in this EXACT JSON format:
+{
+  "title": "Student-friendly tutorial title (e.g., 'Learn to Create AI Videos with n8n')",
+  "description": "Brief description of what students will learn (1-2 sentences)",
+  "projectIntro": "Friendly welcome message explaining what this workflow does and why it's useful (2-3 sentences)",
+  "whatYoullBuild": "Clear description of the end result (e.g., 'A workflow that automatically turns text into AI-generated videos')"
+}
+
+Make it beginner-friendly and focus on what students will achieve, not technical details.
+RESPOND ONLY WITH VALID JSON.`,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
+    });
+
+    const responseText = completion.choices[0]?.message?.content?.trim();
+
+    if (!responseText) {
+      throw new Error("No response from OpenAI");
+    }
+
+    const cleanedResponse = responseText
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
+      .trim();
+    const teachingContent = JSON.parse(cleanedResponse);
+
+    if (!teachingContent.title || !teachingContent.description) {
+      throw new Error("Invalid response format from OpenAI");
+    }
+
+    return {
+      title: teachingContent.title,
+      description: teachingContent.description,
+      projectIntro: teachingContent.projectIntro,
+      whatYoullBuild: teachingContent.whatYoullBuild,
+    };
+  } catch (error) {
+    console.error("Error generating teaching guide with OpenAI:", error);
+
+    return {
+      title: `Learn ${originalTitle}`,
+      description: "Master this n8n workflow through step-by-step guidance.",
+      projectIntro:
+        "This workflow will teach you how to build powerful automations using n8n. Follow along to understand each component and how they work together.",
+      whatYoullBuild:
+        "A complete workflow that automates tasks and connects different services.",
+    };
+  }
+}
+
+async function generateStepTeachingContentWithLLM(
+  step: any,
+  previousContext: string = ""
+) {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert n8n workflow educator. Create practical, beginner-friendly teaching content for individual workflow steps. Consider the cumulative context from previous steps to create connected, flow-aware explanations. Always respond with valid JSON only.",
+        },
+        {
+          role: "user",
+          content: `Create educational content for this n8n workflow step:
+
+CURRENT STEP:
+- Step ${step.stepNumber}: ${step.stepTitle}
+- Node Type: ${step.nodeType}
+- Step Description: ${step.stepDescription || "No description"}
+- Parameters: ${JSON.stringify(step.parameters).substring(0, 400)}
+
+PREVIOUS WORKFLOW CONTEXT:
+${previousContext || "This is the first step - no previous context"}
+
+Generate teaching content AND a summary for the next step in this EXACT JSON format:
+{
+  "explanation": "Friendly explanation of what this step does, considering what happened in previous steps (2-3 sentences)",
+  "tips": ["Practical tip 1", "Practical tip 2", "Practical tip 3"],
+  "keyPoints": ["Key concept 1", "Key concept 2"],
+  "summaryForNext": "Brief summary of what has happened in Steps 1-${
+    step.stepNumber
+  } to provide context for the next step (1-2 sentences)"
+}
+
+Focus on:
+- How this step builds on or uses results from previous steps
+- What data/results this step produces for the next step
+- Simple explanations for beginners
+- Keep summaryForNext concise but informative
+
+RESPOND ONLY WITH VALID JSON.`,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 900,
+    });
+
+    const responseText = completion.choices[0]?.message?.content?.trim();
+
+    if (!responseText) {
+      throw new Error("No response from OpenAI");
+    }
+
+    const cleanedResponse = responseText
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
+      .trim();
+    const teachingContent = JSON.parse(cleanedResponse);
+
+    if (
+      !teachingContent.explanation ||
+      !Array.isArray(teachingContent.tips) ||
+      !Array.isArray(teachingContent.keyPoints)
+    ) {
+      throw new Error("Invalid response format from OpenAI");
+    }
+
+    return {
+      explanation: teachingContent.explanation,
+      tips: teachingContent.tips,
+      keyPoints: teachingContent.keyPoints,
+      summaryForNext: teachingContent.summaryForNext || "",
+    };
+  } catch (error) {
+    console.error("Error generating step teaching content with OpenAI:", error);
+
+    const fallbackSummary = previousContext
+      ? `${previousContext} → Step ${step.stepNumber}: ${step.stepTitle} configured`
+      : `Step ${step.stepNumber}: ${step.stepTitle} configured`;
+
+    return {
+      explanation: `This ${step.nodeType.replace(
+        "n8n-nodes-base.",
+        ""
+      )} node performs a specific function in your workflow.`,
+      tips: [
+        "Check the node configuration carefully",
+        "Test this step individually if you encounter issues",
+        "Review the documentation for advanced options",
+      ],
+      keyPoints: [
+        "Understanding this node's purpose in the workflow",
+        "Proper configuration is essential for success",
+      ],
+      summaryForNext: fallbackSummary,
+    };
+  }
+}
