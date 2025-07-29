@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 
-import { fetchSingleWorkflow, fetchWorkflowGuides } from "@/utils/actions";
+import { fetchSingleWorkflow, fetchWorkflowGuides, fetchWorkflowTeachingGuide } from "@/utils/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +55,10 @@ const SingleWorkflowPage = async ({
 
   const workflow = result as WorkflowWithAuthor;
   if (!workflow) return <EmptyList />;
+
+
+  const workflowTeachingGuide = await  fetchWorkflowTeachingGuide(workflow.id);
+  console.log("Workflow Teaching Guide:", workflowTeachingGuide);
 
   const orderedSteps = workflow.workflowSteps
     ? [...workflow.workflowSteps]

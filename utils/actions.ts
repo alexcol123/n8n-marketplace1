@@ -3310,7 +3310,6 @@ export const createWorkflowAction = async (
   redirect("/dashboard/wf");
 };
 
-// ======= NEW HELPER FUNCTIONS =======
 
 async function generateWorkflowTeachingGuide(
   workflowId: string,
@@ -3330,6 +3329,7 @@ async function generateWorkflowTeachingGuide(
         description: teachingContent.description,
         projectIntro: teachingContent.projectIntro,
         whatYoullBuild: teachingContent.whatYoullBuild,
+        possibleMonetization: teachingContent.possibleMonetization, // NEW: Add monetization field
       },
     });
 
@@ -3359,6 +3359,7 @@ async function generateStepsTeachingContent(workflowId: string) {
         await db.workflowStep.update({
           where: { id: step.id },
           data: {
+            teachingSummary: teachingContent.summary, // NEW: Add teaching summary
             teachingExplanation: teachingContent.explanation,
             teachingTips: teachingContent.tips,
             teachingKeyPoints: teachingContent.keyPoints,
@@ -3414,7 +3415,7 @@ async function generateTeachingGuideWithLLM(
         {
           role: "system",
           content:
-            "You are an expert n8n workflow educator. Create engaging, beginner-friendly educational content that focuses on learning outcomes. Always respond with valid JSON only.",
+            "You are an expert n8n workflow educator with the entrepreneurial vision of Steve Jobs. Create engaging, beginner-friendly educational content that focuses on learning outcomes AND concrete business opportunities with specific pricing. Always respond with valid JSON only.",
         },
         {
           role: "user",
@@ -3431,15 +3432,24 @@ Generate educational content in this EXACT JSON format:
   "title": "Student-friendly tutorial title (e.g., 'Learn to Create AI Videos with n8n')",
   "description": "Brief description of what students will learn (1-2 sentences)",
   "projectIntro": "Friendly welcome message explaining what this workflow does and why it's useful (2-3 sentences)",
-  "whatYoullBuild": "Clear description of the end result (e.g., 'A workflow that automatically turns text into AI-generated videos')"
+  "whatYoullBuild": "Clear description of the end result (e.g., 'A workflow that automatically turns text into AI-generated videos')",
+  "possibleMonetization": "Think like Steve Jobs - provide SPECIFIC pricing and revenue examples with exact dollar amounts. Include subscription tiers (e.g., '$29/month for 20 videos'), one-time service prices (e.g., '$79 per custom video'), and realistic monthly revenue projections (e.g., 'With 100 customers = $2,900/month'). Make it tangible and motivating (2-3 sentences)"
 }
+
+For possibleMonetization, be very specific about:
+- Exact subscription prices ($19 per month, $49 per month, $199 per month)
+- Per-service pricing ($79 per video, $299 per package)
+- Customer volume examples (50 customers, 100 customers, 500 customers)
+- Monthly revenue calculations ($1,450 per month, $5,800 per month)
+- Different pricing tiers (Starter, Pro, Enterprise)
+- Focus on achievable numbers that motivate students
 
 Make it beginner-friendly and focus on what students will achieve, not technical details.
 RESPOND ONLY WITH VALID JSON.`,
         },
       ],
       temperature: 0.7,
-      max_tokens: 1000,
+      max_tokens: 1200,
     });
 
     const responseText = completion.choices[0]?.message?.content?.trim();
@@ -3463,6 +3473,9 @@ RESPOND ONLY WITH VALID JSON.`,
       description: teachingContent.description,
       projectIntro: teachingContent.projectIntro,
       whatYoullBuild: teachingContent.whatYoullBuild,
+      possibleMonetization:
+        teachingContent.possibleMonetization ||
+        "Launch a SaaS platform charging $29/month for 20 automated workflows, or offer custom automation services at $199 per project. With just 100 subscribers, you'd earn $2,900/month in recurring revenue.",
     };
   } catch (error) {
     console.error("Error generating teaching guide with OpenAI:", error);
@@ -3474,6 +3487,8 @@ RESPOND ONLY WITH VALID JSON.`,
         "This workflow will teach you how to build powerful automations using n8n. Follow along to understand each component and how they work together.",
       whatYoullBuild:
         "A complete workflow that automates tasks and connects different services.",
+      possibleMonetization:
+        "Create a subscription service charging $39/month for access to this automation, or offer it as a custom solution for $299 per setup. With 75 monthly subscribers, you'd generate $2,925/month in recurring revenue.",
     };
   }
 }
@@ -3510,6 +3525,7 @@ ${previousContext || "This is the first step - no previous context"}
 
 Generate teaching content AND a summary for the next step in this EXACT JSON format:
 {
+  "summary": "Brief 5-7 word action summary for experienced users (e.g., 'Upload image to Google Drive')",
   "explanation": "Friendly explanation of what this step does, considering what happened in previous steps (2-3 sentences)",
   "tips": ["Practical tip 1", "Practical tip 2", "Practical tip 3"],
   "keyPoints": ["Key concept 1", "Key concept 2"],
@@ -3523,12 +3539,13 @@ Focus on:
 - What data/results this step produces for the next step
 - Simple explanations for beginners
 - Keep summaryForNext concise but informative
+- Make the summary field very concise and action-oriented
 
 RESPOND ONLY WITH VALID JSON.`,
         },
       ],
       temperature: 0.7,
-      max_tokens: 900,
+      max_tokens: 1000,
     });
 
     const responseText = completion.choices[0]?.message?.content?.trim();
@@ -3544,6 +3561,7 @@ RESPOND ONLY WITH VALID JSON.`,
     const teachingContent = JSON.parse(cleanedResponse);
 
     if (
+      !teachingContent.summary ||
       !teachingContent.explanation ||
       !Array.isArray(teachingContent.tips) ||
       !Array.isArray(teachingContent.keyPoints)
@@ -3552,6 +3570,7 @@ RESPOND ONLY WITH VALID JSON.`,
     }
 
     return {
+      summary: teachingContent.summary,
       explanation: teachingContent.explanation,
       tips: teachingContent.tips,
       keyPoints: teachingContent.keyPoints,
@@ -3564,7 +3583,16 @@ RESPOND ONLY WITH VALID JSON.`,
       ? `${previousContext} → Step ${step.stepNumber}: ${step.stepTitle} configured`
       : `Step ${step.stepNumber}: ${step.stepTitle} configured`;
 
+    // Generate a simple summary from the step title and node type
+    const fallbackQuickSummary =
+      step.stepTitle ||
+      step.nodeType
+        .replace("n8n-nodes-base.", "")
+        .replace(/([A-Z])/g, " $1")
+        .trim();
+
     return {
+      summary: fallbackQuickSummary,
       explanation: `This ${step.nodeType.replace(
         "n8n-nodes-base.",
         ""
@@ -3582,3 +3610,231 @@ RESPOND ONLY WITH VALID JSON.`,
     };
   }
 }
+
+
+
+
+// workflow guides 
+
+// New action in utils/actions.ts
+
+export const fetchWorkflowTeachingGuide = async (workflowId: string) => {
+  try {
+    const user = await getAuthUser();
+
+    // First verify the user has access to this workflow
+    const workflow = await db.workflow.findUnique({
+      where: { id: workflowId },
+      select: {
+        id: true,
+        authorId: true,
+        title: true,
+        slug: true,
+      },
+    });
+
+    if (!workflow) {
+      throw new Error("Workflow not found");
+    }
+
+    // Check if user is creator or admin
+    const canAccess = await isCreatorOrAdmin(workflow.id);
+    if (!canAccess) {
+      throw new Error("You don't have permission to access this workflow");
+    }
+
+    // Fetch the WorkflowTeachingGuide
+    const teachingGuide = await db.workflowTeachingGuide.findUnique({
+      where: { workflowId },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        projectIntro: true,
+        whatYoullBuild: true,
+        possibleMonetization: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Fetch WorkflowSteps with only the teaching fields (in order)
+    const workflowSteps = await db.workflowStep.findMany({
+      where: { workflowId },
+      select: {
+        id: true,
+        stepNumber: true,
+        stepTitle: true,
+        teachingSummary: true,
+        teachingExplanation: true,
+        teachingTips: true,
+        teachingKeyPoints: true,
+      },
+      orderBy: { stepNumber: "asc" },
+    });
+
+    return {
+      success: true,
+      data: {
+        workflow: {
+          id: workflow.id,
+          title: workflow.title,
+          slug: workflow.slug,
+        },
+        teachingGuide,
+        workflowSteps,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching workflow teaching guide:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to fetch teaching guide",
+    };
+  }
+};
+
+// Alternative version if you want to fetch by slug instead of ID
+export const fetchWorkflowTeachingGuideBySlug = async (slug: string) => {
+  try {
+    const user = await getAuthUser();
+
+    // Find workflow by slug first
+    const workflow = await db.workflow.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        authorId: true,
+        title: true,
+        slug: true,
+      },
+    });
+
+    if (!workflow) {
+      throw new Error("Workflow not found");
+    }
+
+    // Check if user is creator or admin
+    const canAccess = await isCreatorOrAdmin(workflow.id);
+    if (!canAccess) {
+      throw new Error("You don't have permission to access this workflow");
+    }
+
+    // Fetch the WorkflowTeachingGuide
+    const teachingGuide = await db.workflowTeachingGuide.findUnique({
+      where: { workflowId: workflow.id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        projectIntro: true,
+        whatYoullBuild: true,
+        possibleMonetization: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Fetch WorkflowSteps with only the teaching fields (in order)
+    const workflowSteps = await db.workflowStep.findMany({
+      where: { workflowId: workflow.id },
+      select: {
+        id: true,
+        stepNumber: true,
+        stepTitle: true,
+        teachingSummary: true,
+        teachingExplanation: true,
+        teachingTips: true,
+        teachingKeyPoints: true,
+      },
+      orderBy: { stepNumber: "asc" },
+    });
+
+    return {
+      success: true,
+      data: {
+        workflow: {
+          id: workflow.id,
+          title: workflow.title,
+          slug: workflow.slug,
+        },
+        teachingGuide,
+        workflowSteps,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching workflow teaching guide by slug:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to fetch teaching guide",
+    };
+  }
+};
+
+// Public version (no auth check) for viewing published workflows
+export const fetchPublicWorkflowTeachingGuide = async (slug: string) => {
+  try {
+    // Find workflow by slug
+    const workflow = await db.workflow.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+      },
+    });
+
+    if (!workflow) {
+      throw new Error("Workflow not found");
+    }
+
+    // Fetch the WorkflowTeachingGuide
+    const teachingGuide = await db.workflowTeachingGuide.findUnique({
+      where: { workflowId: workflow.id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        projectIntro: true,
+        whatYoullBuild: true,
+        possibleMonetization: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Fetch WorkflowSteps with only the teaching fields (in order)
+    const workflowSteps = await db.workflowStep.findMany({
+      where: { workflowId: workflow.id },
+      select: {
+        id: true,
+        stepNumber: true,
+        stepTitle: true,
+        teachingSummary: true,
+        teachingExplanation: true,
+        teachingTips: true,
+        teachingKeyPoints: true,
+      },
+      orderBy: { stepNumber: "asc" },
+    });
+
+    return {
+      success: true,
+      data: {
+        workflow: {
+          id: workflow.id,
+          title: workflow.title,
+          slug: workflow.slug,
+        },
+        teachingGuide,
+        workflowSteps,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching public workflow teaching guide:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to fetch teaching guide",
+    };
+  }
+};
