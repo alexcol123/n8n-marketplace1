@@ -29,6 +29,14 @@ import { CompletionCountData, CompletionWithUserData } from "./types";
 import { identifyService } from "./functions/identifyService";
 import { extractAndSaveWorkflowSteps } from "./functions/extractWorkflowSteps";
 
+import { Prisma } from "@prisma/client"; // Add this import at the top
+import OpenAI from "openai";
+import { detectWorkflowTools } from "./functions/detectWorkflowTool";
+import {
+  stepTeachingSchema,
+  teachingGuideSchema,
+} from "./workflowTeachGuideSchemas";
+
 const getAuthUser = async () => {
   const user = await currentUser();
 
@@ -2924,8 +2932,6 @@ export const updateNodeGuideImageAction = async (
 };
 
 // Update an existing setup guide
-import { Prisma } from "@prisma/client"; // Add this import at the top
-import OpenAI from "openai";
 
 export const updateNodeSetupGuideAction = async (
   guideId: string,
@@ -3279,7 +3285,14 @@ export const createWorkflowAction = async (
       console.error("Error extracting workflow steps:", error);
     }
 
-    // 2. Generate workflow teaching guide
+    // 2. Generate teaching content for each step
+    try {
+      await generateStepsTeachingContent(createdWorkflow.id);
+    } catch (error) {
+      console.error("Error generating steps teaching content:", error);
+    }
+
+    // 3. Generate workflow teaching guide
     try {
       await generateWorkflowTeachingGuide(
         createdWorkflow.id,
@@ -3290,15 +3303,7 @@ export const createWorkflowAction = async (
       console.error("Error generating workflow teaching guide:", error);
     }
 
-    // 3. Generate teaching content for each step
-    try {
-      await generateStepsTeachingContent(createdWorkflow.id);
-    } catch (error) {
-      console.error("Error generating steps teaching content:", error);
-    }
-
     // Revalidate the dashboard to show the new workflow
-    revalidatePath("/dashboard/wf");
   } catch (error) {
     console.error("Error creating workflow:", error);
     return {
@@ -3306,10 +3311,9 @@ export const createWorkflowAction = async (
         error instanceof Error ? error.message : "An unknown error occurred",
     };
   }
-
+  revalidatePath("/dashboard/wf");
   redirect("/dashboard/wf");
 };
-
 
 async function generateWorkflowTeachingGuide(
   workflowId: string,
@@ -3317,9 +3321,25 @@ async function generateWorkflowTeachingGuide(
   originalTitle: string
 ) {
   try {
+    // NEW: Fetch the generated step teaching content
+    const workflowSteps = await db.workflowStep.findMany({
+      where: { workflowId },
+      select: {
+        stepNumber: true,
+        stepTitle: true,
+        nodeType: true,
+        parameters: true,
+        teachingSummary: true,
+        teachingExplanation: true,
+        teachingKeyPoints: true,
+      },
+      orderBy: { stepNumber: "asc" },
+    });
+
     const teachingContent = await generateTeachingGuideWithLLM(
       workflowJson,
-      originalTitle
+      originalTitle,
+      workflowSteps // NEW: Pass the step data
     );
 
     await db.workflowTeachingGuide.create({
@@ -3329,11 +3349,10 @@ async function generateWorkflowTeachingGuide(
         description: teachingContent.description,
         projectIntro: teachingContent.projectIntro,
         whatYoullBuild: teachingContent.whatYoullBuild,
-        possibleMonetization: teachingContent.possibleMonetization, // NEW: Add monetization field
+        possibleMonetization: teachingContent.possibleMonetization,
+        toolsUsed: teachingContent.toolsUsed, // NEW: Add tools used
       },
     });
-
-    console.log(`✅ Teaching guide generated for workflow ${workflowId}`);
   } catch (error) {
     console.error("❌ Failed to generate workflow teaching guide:", error);
     throw error;
@@ -3388,107 +3407,128 @@ async function generateStepsTeachingContent(workflowId: string) {
   }
 }
 
+// Define the exact schema for guaranteed structure
+
 async function generateTeachingGuideWithLLM(
   workflowJson: any,
-  originalTitle: string
+  originalTitle: string,
+  workflowSteps: any[] = []
 ) {
+  // Validation: Handle empty or undefined steps
+  if (!workflowSteps || workflowSteps.length === 0) {
+    console.warn(
+      "generateTeachingGuideWithLLM received empty or no steps. Using fallback."
+    );
+
+    return {
+      title: `🚀 Master ${originalTitle}`,
+      projectIntro:
+        "This workflow will teach you how to build powerful automations using n8n. Follow along to understand each component and how they work together to create something truly valuable.",
+      whatYoullBuild:
+        "• A complete workflow that automates tasks and connects different services\n• Professional automation skills ready to be monetized\n• Experience with cutting-edge automation tools",
+      possibleMonetization:
+        "BUSINESS OPPORTUNITY: Start by offering custom automation services at $89 per project - help businesses automate their repetitive tasks. Once you've helped 10-15 clients, create a simple monthly service: $49/month to maintain and improve their automations. With just 40 monthly clients, that's $1,960 coming in regularly - enough to replace most day jobs.",
+      toolsUsed: [],
+    };
+  }
+
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const nodeTypes = [];
-  const nodeNames = [];
-
-  if (workflowJson.nodes) {
-    workflowJson.nodes.forEach((node: any) => {
-      if (node.type && !node.type.includes("StickyNote")) {
-        nodeTypes.push(node.type);
-        nodeNames.push(node.name || "Unnamed Node");
-      }
-    });
-  }
+  // Prepare step summaries for the LLM
+  const stepSummaries = workflowSteps.map((step) => ({
+    stepNumber: step.stepNumber,
+    title: step.stepTitle,
+    nodeType: step.nodeType,
+    summary: step.teachingSummary,
+    explanation: step.teachingExplanation,
+    keyPoints: step.teachingKeyPoints,
+    url: step.parameters?.url || null,
+  }));
 
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+
+      // THE UPGRADE: Use json_schema for guaranteed structure
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "workflow_teaching_guide",
+          schema: teachingGuideSchema,
+        },
+      },
+
       messages: [
         {
           role: "system",
           content:
-            "You are an expert n8n workflow educator with the entrepreneurial vision of Steve Jobs. Create engaging, beginner-friendly educational content that focuses on learning outcomes AND concrete business opportunities with specific pricing. Always respond with valid JSON only.",
+            "You are an n8n workflow educator with the product vision of Steve Jobs and the startup wisdom of Paul Graham, but you explain everything in accessible, everyday language. Create practical, beginner-friendly teaching content that builds confidence and shows real-world value. Focus on making each step feel valuable and achievable, whether someone is automating their first task or building their next business. Your response MUST conform to the provided JSON schema.",
         },
         {
           role: "user",
-          content: `Analyze this n8n workflow and create educational content for students.
+          content: `Analyze this n8n workflow and create educational content based on the provided JSON schema.
 
 WORKFLOW INFO:
 - Title: ${originalTitle}
-- Node Types: ${nodeTypes.join(", ")}
-- Node Names: ${nodeNames.join(", ")}
-- Total Nodes: ${nodeTypes.length}
+- Total Steps: ${stepSummaries.length}
 
-Generate educational content in this EXACT JSON format:
-{
-  "title": "Student-friendly tutorial title (e.g., 'Learn to Create AI Videos with n8n')",
-  "description": "Brief description of what students will learn (1-2 sentences)",
-  "projectIntro": "Friendly welcome message explaining what this workflow does and why it's useful (2-3 sentences)",
-  "whatYoullBuild": "Clear description of the end result (e.g., 'A workflow that automatically turns text into AI-generated videos')",
-  "possibleMonetization": "Think like Steve Jobs - provide SPECIFIC pricing and revenue examples with exact dollar amounts. Include subscription tiers (e.g., '$29/month for 20 videos'), one-time service prices (e.g., '$79 per custom video'), and realistic monthly revenue projections (e.g., 'With 100 customers = $2,900/month'). Make it tangible and motivating (2-3 sentences)"
-}
+DETAILED STEP INFORMATION:
+${stepSummaries
+  .map(
+    (step) => `
+Step ${step.stepNumber}: ${step.title}
+- Node Type: ${step.nodeType}
+- Summary: ${step.summary || "No summary available"}
+- URL (if HTTP): ${step.url || "N/A"}
+- Key Points: ${
+      Array.isArray(step.keyPoints) ? step.keyPoints.join(", ") : "N/A"
+    }
+`
+  )
+  .join("\n")}
 
-For possibleMonetization, be very specific about:
-- Exact subscription prices ($19 per month, $49 per month, $199 per month)
-- Per-service pricing ($79 per video, $299 per package)
-- Customer volume examples (50 customers, 100 customers, 500 customers)
-- Monthly revenue calculations ($1,450 per month, $5,800 per month)
-- Different pricing tiers (Starter, Pro, Enterprise)
-- Focus on achievable numbers that motivate students
+FORMATTING REQUIREMENTS:
+- title: Use power words, emojis, outcome-focused, under 60 characters
+- projectIntro: Start with "Imagine..." and ellipsis, show transformation, under 150 words
+- whatYoullBuild: Use • bullets with \\n line breaks, bold **Tool Names**, 4-6 outcomes
+- possibleMonetization: Include specific pricing and revenue examples
+- toolsUsed: Array of "Tool Name - Description" strings
 
-Make it beginner-friendly and focus on what students will achieve, not technical details.
-RESPOND ONLY WITH VALID JSON.`,
+Make it feel professional and exciting - they're building a business system, not just learning a tutorial.`,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 1200,
+      temperature: 0.8,
+      max_tokens: 1400,
     });
 
-    const responseText = completion.choices[0]?.message?.content?.trim();
+    const responseText = completion.choices[0]?.message?.content;
 
     if (!responseText) {
       throw new Error("No response from OpenAI");
     }
 
-    const cleanedResponse = responseText
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
-    const teachingContent = JSON.parse(cleanedResponse);
+    // No cleaning needed! Schema guarantees valid JSON
+    const teachingContent = JSON.parse(responseText);
 
-    if (!teachingContent.title || !teachingContent.description) {
-      throw new Error("Invalid response format from OpenAI");
-    }
-
-    return {
-      title: teachingContent.title,
-      description: teachingContent.description,
-      projectIntro: teachingContent.projectIntro,
-      whatYoullBuild: teachingContent.whatYoullBuild,
-      possibleMonetization:
-        teachingContent.possibleMonetization ||
-        "Launch a SaaS platform charging $29/month for 20 automated workflows, or offer custom automation services at $199 per project. With just 100 subscribers, you'd earn $2,900/month in recurring revenue.",
-    };
+    // No validation needed! Schema guarantees all required fields exist
+    return teachingContent;
   } catch (error) {
     console.error("Error generating teaching guide with OpenAI:", error);
 
+    // Fallback with basic tool detection
+    const fallbackTools = detectWorkflowTools(workflowSteps);
+
     return {
-      title: `Learn ${originalTitle}`,
-      description: "Master this n8n workflow through step-by-step guidance.",
+      title: `Master ${originalTitle}`,
       projectIntro:
-        "This workflow will teach you how to build powerful automations using n8n. Follow along to understand each component and how they work together.",
+        "This workflow will teach you how to build powerful automations using n8n. Follow along to understand each component and how they work together to create something truly valuable.",
       whatYoullBuild:
-        "A complete workflow that automates tasks and connects different services.",
+        "• A complete workflow that automates tasks and connects different services\n• Professional automation skills ready to be monetized\n• Experience with cutting-edge automation tools and APIs",
       possibleMonetization:
-        "Create a subscription service charging $39/month for access to this automation, or offer it as a custom solution for $299 per setup. With 75 monthly subscribers, you'd generate $2,925/month in recurring revenue.",
+        "BUSINESS OPPORTUNITY: Start by offering custom automation services at $89 per project - help businesses automate their repetitive tasks. Once you've helped 10-15 clients, create a simple monthly service: $49/month to maintain and improve their automations. With just 40 monthly clients, that's $1,960 coming in regularly - enough to replace most day jobs.",
+      toolsUsed: fallbackTools,
     };
   }
 }
@@ -3504,15 +3544,25 @@ async function generateStepTeachingContentWithLLM(
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+
+      // THE UPGRADE: Use json_schema for guaranteed structure
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "step_teaching_content",
+          schema: stepTeachingSchema,
+        },
+      },
+
       messages: [
         {
           role: "system",
           content:
-            "You are an expert n8n workflow educator. Create practical, beginner-friendly teaching content for individual workflow steps. Consider the cumulative context from previous steps to create connected, flow-aware explanations. Always respond with valid JSON only.",
+            "You are an expert n8n workflow educator with a gift for making complex automation concepts simple and exciting. Create practical, beginner-friendly teaching content that builds confidence and shows real-world value. Focus on the 'why' behind each step, not just the 'what'. Your response MUST conform to the provided JSON schema.",
         },
         {
           role: "user",
-          content: `Create educational content for this n8n workflow step:
+          content: `Create educational content for this n8n workflow step based on the provided JSON schema.
 
 CURRENT STEP:
 - Step ${step.stepNumber}: ${step.stepTitle}
@@ -3523,59 +3573,31 @@ CURRENT STEP:
 PREVIOUS WORKFLOW CONTEXT:
 ${previousContext || "This is the first step - no previous context"}
 
-Generate teaching content AND a summary for the next step in this EXACT JSON format:
-{
-  "summary": "Brief 5-7 word action summary for experienced users (e.g., 'Upload image to Google Drive')",
-  "explanation": "Friendly explanation of what this step does, considering what happened in previous steps (2-3 sentences)",
-  "tips": ["Practical tip 1", "Practical tip 2", "Practical tip 3"],
-  "keyPoints": ["Key concept 1", "Key concept 2"],
-  "summaryForNext": "Brief summary of what has happened in Steps 1-${
-    step.stepNumber
-  } to provide context for the next step (1-2 sentences)"
-}
+REQUIREMENTS:
+- summary: Use action verbs, focus on outcome (5-7 words)
+- explanation: What does this do? Why is it important? How does it fit? (2-3 sentences)
+- tips: Exactly 3 practical, actionable tips that save time and prevent frustration
+- keyPoints: Exactly 2 core learning objectives or concepts
+- summaryForNext: Show progression and data flow, not just a list of completed steps (1-2 sentences)
 
-Focus on:
-- How this step builds on or uses results from previous steps
-- What data/results this step produces for the next step
-- Simple explanations for beginners
-- Keep summaryForNext concise but informative
-- Make the summary field very concise and action-oriented
-
-RESPOND ONLY WITH VALID JSON.`,
+Make it encouraging and show how each step builds toward something valuable.`,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 1000,
+      temperature: 0.75,
+      max_tokens: 1200,
     });
 
-    const responseText = completion.choices[0]?.message?.content?.trim();
+    const responseText = completion.choices[0]?.message?.content;
 
     if (!responseText) {
       throw new Error("No response from OpenAI");
     }
 
-    const cleanedResponse = responseText
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
-    const teachingContent = JSON.parse(cleanedResponse);
+    // No cleaning needed! Schema guarantees valid JSON
+    const teachingContent = JSON.parse(responseText);
 
-    if (
-      !teachingContent.summary ||
-      !teachingContent.explanation ||
-      !Array.isArray(teachingContent.tips) ||
-      !Array.isArray(teachingContent.keyPoints)
-    ) {
-      throw new Error("Invalid response format from OpenAI");
-    }
-
-    return {
-      summary: teachingContent.summary,
-      explanation: teachingContent.explanation,
-      tips: teachingContent.tips,
-      keyPoints: teachingContent.keyPoints,
-      summaryForNext: teachingContent.summaryForNext || "",
-    };
+    // No validation needed! Schema guarantees all required fields exist with correct types
+    return teachingContent;
   } catch (error) {
     console.error("Error generating step teaching content with OpenAI:", error);
 
@@ -3583,45 +3605,44 @@ RESPOND ONLY WITH VALID JSON.`,
       ? `${previousContext} → Step ${step.stepNumber}: ${step.stepTitle} configured`
       : `Step ${step.stepNumber}: ${step.stepTitle} configured`;
 
-    // Generate a simple summary from the step title and node type
-    const fallbackQuickSummary =
-      step.stepTitle ||
-      step.nodeType
-        .replace("n8n-nodes-base.", "")
-        .replace(/([A-Z])/g, " $1")
-        .trim();
+    // Enhanced fallback summary with action words
+    const fallbackQuickSummary = step.stepTitle
+      ? `Configure ${step.stepTitle}`
+      : step.nodeType
+          .replace("n8n-nodes-base.", "")
+          .replace(/([A-Z])/g, " $1")
+          .trim();
 
     return {
       summary: fallbackQuickSummary,
-      explanation: `This ${step.nodeType.replace(
+      explanation: `This step configures the ${step.nodeType.replace(
         "n8n-nodes-base.",
         ""
-      )} node performs a specific function in your workflow.`,
+      )} node to perform its specific function in your workflow. It processes data from previous steps and prepares it for the next stage of automation.`,
       tips: [
-        "Check the node configuration carefully",
+        "Double-check all required fields are filled correctly",
         "Test this step individually if you encounter issues",
-        "Review the documentation for advanced options",
+        "Keep your API keys secure and never share them publicly",
       ],
       keyPoints: [
-        "Understanding this node's purpose in the workflow",
-        "Proper configuration is essential for success",
+        "Each step builds on the previous one's output",
+        "Proper configuration is essential for workflow success",
       ],
       summaryForNext: fallbackSummary,
     };
   }
 }
 
+// =======================================================================================>
+// =======================================================================================>
+// =======================================================================================>
+// =======================================================================================>
+// workflow guides
 
-
-
-// workflow guides 
-
-// New action in utils/actions.ts
+// Fetch Teaching guides ,
 
 export const fetchWorkflowTeachingGuide = async (workflowId: string) => {
   try {
-    const user = await getAuthUser();
-
     // First verify the user has access to this workflow
     const workflow = await db.workflow.findUnique({
       where: { id: workflowId },
@@ -3653,6 +3674,7 @@ export const fetchWorkflowTeachingGuide = async (workflowId: string) => {
         projectIntro: true,
         whatYoullBuild: true,
         possibleMonetization: true,
+        toolsUsed: true, // NEW: Add tools used
         createdAt: true,
         updatedAt: true,
       },
@@ -3689,7 +3711,10 @@ export const fetchWorkflowTeachingGuide = async (workflowId: string) => {
     console.error("Error fetching workflow teaching guide:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch teaching guide",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch teaching guide",
     };
   }
 };
@@ -3766,7 +3791,10 @@ export const fetchWorkflowTeachingGuideBySlug = async (slug: string) => {
     console.error("Error fetching workflow teaching guide by slug:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch teaching guide",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch teaching guide",
     };
   }
 };
@@ -3834,7 +3862,10 @@ export const fetchPublicWorkflowTeachingGuide = async (slug: string) => {
     console.error("Error fetching public workflow teaching guide:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch teaching guide",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch teaching guide",
     };
   }
 };

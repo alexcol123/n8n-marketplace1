@@ -1,6 +1,6 @@
 // # // to push to db   npx prisma db push && npx prisma generate
 // # // to open studio npx prisma studio
-// clear cache rm -rf .next
+// clear cache = rm -rf .next
 
 datasource db {
   provider  = "postgresql"
@@ -234,10 +234,10 @@ model WorkflowTeachingGuide {
 
   // --- Essential teaching content (what students actually need) ---
   title                String // "Learn AI Video Generation with n8n"
-  description          String? // "Build automated workflows that create AI videos"
   projectIntro         String? // Welcome message/overview for the overall project
   whatYoullBuild       String? // "A workflow that turns text into AI videos automatically"
   possibleMonetization String? // NEW: Add monetization field
+  toolsUsed Json? // ["ElevenLabs - Voice generation", "Hedra - Video creation", "OpenAI - Image editing"]
 
   // --- Project-level audio ---
   // audioUrl       String? // URL to project intro audio
