@@ -3416,18 +3416,16 @@ async function generateTeachingGuideWithLLM(
 ) {
   // Validation: Handle empty or undefined steps
   if (!workflowSteps || workflowSteps.length === 0) {
-    console.warn(
-      "generateTeachingGuideWithLLM received empty or no steps. Using fallback."
-    );
-
+    console.warn("generateTeachingGuideWithLLM received empty or no steps. Using fallback.");
+    
     return {
-      title: `🚀 Master ${originalTitle}`,
+      title: `💰 Get Results Fast - Master ${originalTitle}`,
       projectIntro:
         "This workflow will teach you how to build powerful automations using n8n. Follow along to understand each component and how they work together to create something truly valuable.",
       whatYoullBuild:
         "• A complete workflow that automates tasks and connects different services\n• Professional automation skills ready to be monetized\n• Experience with cutting-edge automation tools",
       possibleMonetization:
-        "BUSINESS OPPORTUNITY: Start by offering custom automation services at $89 per project - help businesses automate their repetitive tasks. Once you've helped 10-15 clients, create a simple monthly service: $49/month to maintain and improve their automations. With just 40 monthly clients, that's $1,960 coming in regularly - enough to replace most day jobs.",
+        "🚀 BUSINESS OPPORTUNITY: Launch your own automation agency! Charge clients $149 per custom workflow or build a SaaS platform at $79/month. With just 50 subscribers, you'll generate $3,950/month in recurring revenue - that's nearly $50K annually!",
       toolsUsed: [],
     };
   }
@@ -3450,21 +3448,21 @@ async function generateTeachingGuideWithLLM(
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-
+      
       // THE UPGRADE: Use json_schema for guaranteed structure
       response_format: {
         type: "json_schema",
         json_schema: {
           name: "workflow_teaching_guide",
-          schema: teachingGuideSchema,
-        },
+          schema: teachingGuideSchema
+        }
       },
 
       messages: [
         {
           role: "system",
           content:
-            "You are an n8n workflow educator with the product vision of Steve Jobs and the startup wisdom of Paul Graham, but you explain everything in accessible, everyday language. Create practical, beginner-friendly teaching content that builds confidence and shows real-world value. Focus on making each step feel valuable and achievable, whether someone is automating their first task or building their next business. Your response MUST conform to the provided JSON schema.",
+            "You are an expert n8n workflow educator with the entrepreneurial vision of Steve Jobs and the business acumen of Gary Vaynerchuk. Create engaging, beginner-friendly educational content that focuses on learning outcomes AND concrete business opportunities. Your response MUST conform to the provided JSON schema.",
         },
         {
           role: "user",
@@ -3490,13 +3488,13 @@ Step ${step.stepNumber}: ${step.title}
   .join("\n")}
 
 FORMATTING REQUIREMENTS:
-- title: Use power words, emojis, outcome-focused, under 60 characters
+- title: Create problem-focused, outcome-driven titles under 60 characters. Use formulas like "OUTCOME + TIME FRAME + PAIN RELIEF" (e.g., "Get Paid in Days, Not Months") or "STOP/NEVER + PROBLEM" (e.g., "Never Miss Another Payment"). Focus on the business result, not the technical process. Include relevant emojis.
 - projectIntro: Start with "Imagine..." and ellipsis, show transformation, under 150 words
 - whatYoullBuild: Use • bullets with \\n line breaks, bold **Tool Names**, 4-6 outcomes
-- possibleMonetization: Include specific pricing and revenue examples
+- possibleMonetization: Include specific pricing and revenue examples using the new business opportunity structure
 - toolsUsed: Array of "Tool Name - Description" strings
 
-Make it feel professional and exciting - they're building a business system, not just learning a tutorial.`,
+Focus on the business problem being solved and the outcome achieved, not the technical implementation. Make them think "I NEED this" not "That's nice."`,
         },
       ],
       temperature: 0.8,
@@ -3514,6 +3512,7 @@ Make it feel professional and exciting - they're building a business system, not
 
     // No validation needed! Schema guarantees all required fields exist
     return teachingContent;
+
   } catch (error) {
     console.error("Error generating teaching guide with OpenAI:", error);
 
@@ -3521,13 +3520,13 @@ Make it feel professional and exciting - they're building a business system, not
     const fallbackTools = detectWorkflowTools(workflowSteps);
 
     return {
-      title: `Master ${originalTitle}`,
+      title: `🚀 Master ${originalTitle}`,
       projectIntro:
         "This workflow will teach you how to build powerful automations using n8n. Follow along to understand each component and how they work together to create something truly valuable.",
       whatYoullBuild:
         "• A complete workflow that automates tasks and connects different services\n• Professional automation skills ready to be monetized\n• Experience with cutting-edge automation tools and APIs",
       possibleMonetization:
-        "BUSINESS OPPORTUNITY: Start by offering custom automation services at $89 per project - help businesses automate their repetitive tasks. Once you've helped 10-15 clients, create a simple monthly service: $49/month to maintain and improve their automations. With just 40 monthly clients, that's $1,960 coming in regularly - enough to replace most day jobs.",
+        "🚀 BUSINESS OPPORTUNITY: Launch your own automation agency! Charge clients $149 per custom workflow or build a SaaS platform at $79/month. With just 50 subscribers, you'll generate $3,950/month in recurring revenue - that's nearly $50K annually!",
       toolsUsed: fallbackTools,
     };
   }

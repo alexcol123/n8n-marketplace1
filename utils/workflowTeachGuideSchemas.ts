@@ -3,7 +3,7 @@ export const teachingGuideSchema = {
   properties: {
     title: {
       type: "string",
-      description: "An exciting, outcome-focused title using power words like 'Build', 'Create', 'Master' with relevant emojis, under 60 characters. Focus on what they'll build, not what they'll learn."
+      description: "Create a problem-focused, outcome-driven title under 60 characters using formulas like 'OUTCOME + TIME FRAME + PAIN RELIEF' (e.g., 'Get Paid in Days, Not Months') or 'STOP/NEVER + PROBLEM' (e.g., 'Never Miss Another Payment'). Focus on the business result and emotional impact, not technical features. Include relevant emojis."
     },
     projectIntro: {
       type: "string", 
@@ -28,7 +28,6 @@ export const teachingGuideSchema = {
   },
   required: ["title", "projectIntro", "whatYoullBuild", "possibleMonetization", "toolsUsed"]
 };
-
 
 export   const stepTeachingSchema = {
   type: "object",
