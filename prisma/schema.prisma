@@ -225,28 +225,27 @@ model NodeDocumentation {
 }
 
 // WorkflowTeachingGuide - Project-level content only
-
 model WorkflowTeachingGuide {
   id String @id @default(uuid())
 
   // --- Workflow linking ---
   workflowId String // Foreign key to Workflow.id
 
-  // --- Essential teaching content (what students actually need) ---
-  title                String // "Learn AI Video Generation with n8n"
-  projectIntro         String? // Welcome message/overview for the overall project
-  whatYoullBuild       String? // "A workflow that turns text into AI videos automatically"
-  possibleMonetization String? // NEW: Add monetization field
-  toolsUsed Json? // ["ElevenLabs - Voice generation", "Hedra - Video creation", "OpenAI - Image editing"]
-
-  // --- Project-level audio ---
-  // audioUrl       String? // URL to project intro audio
-  // audioGenerated Boolean @default(false) // Track if project audio was created
-  // audioScript    String? // Full script for project audio
-
+  // --- Essential teaching content (ALL REQUIRED) ---
+  title                String // Required: "💰 Get Paid in Days, Not Weeks"
+  description          String // Required: Brief business-focused description 
+  projectIntro         String // Required: Paul Graham style pain-first introduction
+  idealFor             String // Required: "🎯 Freelancers & Consultants..."
+  timeToValue          String // Required: "⚡ **1 hour** to build vs..."
+  howItWorks           String // Required: "✅ Automatically generates invoices..."
+  realCostOfNotHaving  String // Required: Paul Graham style hidden costs
+  whatYoullBuild       String // Required: Technical outcomes with **bold tools**
+  possibleMonetization String // Required: Business opportunity description
+  toolsUsed            String[] // Required: Array of tool descriptions
+  requiredApiServices  Json? // ["OpenAI", "ElevenLabs", "Hedra", "Google Drive"]
   // --- Standard fields ---
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   // --- Relations ---
   workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)

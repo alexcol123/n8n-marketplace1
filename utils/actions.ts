@@ -36,6 +36,7 @@ import {
   stepTeachingSchema,
   teachingGuideSchema,
 } from "./workflowTeachGuideSchemas";
+import { extractRequiredApiServices } from "./functions/extractRequiredApiServices";
 
 const getAuthUser = async () => {
   const user = await currentUser();
@@ -3311,7 +3312,8 @@ export const createWorkflowAction = async (
         error instanceof Error ? error.message : "An unknown error occurred",
     };
   }
-  revalidatePath("/dashboard/wf");
+
+  // revalidatePath("/dashboard/wf");
   redirect("/dashboard/wf");
 };
 
@@ -3321,7 +3323,7 @@ async function generateWorkflowTeachingGuide(
   originalTitle: string
 ) {
   try {
-    // NEW: Fetch the generated step teaching content
+    // Fetch the generated step teaching content
     const workflowSteps = await db.workflowStep.findMany({
       where: { workflowId },
       select: {
@@ -3336,10 +3338,14 @@ async function generateWorkflowTeachingGuide(
       orderBy: { stepNumber: "asc" },
     });
 
+    // Extract API services before sending to LLM
+
+
     const teachingContent = await generateTeachingGuideWithLLM(
       workflowJson,
       originalTitle,
-      workflowSteps // NEW: Pass the step data
+      workflowSteps,
+
     );
 
     await db.workflowTeachingGuide.create({
@@ -3348,16 +3354,233 @@ async function generateWorkflowTeachingGuide(
         title: teachingContent.title,
         description: teachingContent.description,
         projectIntro: teachingContent.projectIntro,
+        idealFor: teachingContent.idealFor,
+        timeToValue: teachingContent.timeToValue,
+        howItWorks: teachingContent.howItWorks,
+        realCostOfNotHaving: teachingContent.realCostOfNotHaving,
         whatYoullBuild: teachingContent.whatYoullBuild,
         possibleMonetization: teachingContent.possibleMonetization,
-        toolsUsed: teachingContent.toolsUsed, // NEW: Add tools used
+        toolsUsed: teachingContent.toolsUsed,
+        requiredApiServices: teachingContent.requiredApiServices,
       },
     });
+
+    console.log(`✅ Teaching guide generated for workflow ${workflowId}`);
   } catch (error) {
     console.error("❌ Failed to generate workflow teaching guide:", error);
     throw error;
   }
 }
+
+
+async function generateTeachingGuideWithLLM(
+  workflowJson: any,
+  originalTitle: string,
+  workflowSteps: any[] = []
+) {
+  // Validation: Handle empty or undefined steps
+  if (!workflowSteps || workflowSteps.length === 0) {
+    console.warn(
+      "generateTeachingGuideWithLLM received empty or no steps. Using fallback."
+    );
+
+    const fallbackTools = detectWorkflowTools(workflowSteps);
+
+    return {
+      title: `💰 Get Results Fast - Master ${originalTitle}`,
+      description:
+        "Build powerful automation that saves time and increases efficiency for any business.",
+      projectIntro:
+        "Most businesses waste countless hours on repetitive tasks that could be automated. This workflow shows you how to reclaim that time and focus on what truly matters. Whether you're a small business owner looking to streamline operations or an entrepreneur ready to scale efficiently, this automation transforms daily chaos into systematic success.",
+      idealFor:
+        "🎯 Small Business Owners 🎯 Freelancers & Consultants 🎯 Operations Managers",
+      timeToValue:
+        "⚡ **2 hours** to build vs. **10+ hours** spent every week on manual, repetitive tasks that drain your energy and focus.",
+      howItWorks:
+        "✅ Automatically detects when tasks need to be processed ✅ Connects your existing tools without complex setup ✅ Runs in the background while you focus on growth ✅ Provides clear notifications when actions are completed",
+      realCostOfNotHaving:
+        "What you're really losing isn't just time - it's your competitive edge. Every hour spent on manual work is an hour not spent serving customers or growing your business. This inefficiency signals to competitors that you're stuck in operational quicksand while they're scaling systematically.",
+      whatYoullBuild:
+        "• A complete workflow that automates tasks and connects different services\n• Professional automation skills ready to be monetized\n• Experience with cutting-edge automation tools and APIs\n• A systematic approach to identifying automation opportunities",
+      possibleMonetization:
+        "🚀 BUSINESS OPPORTUNITY: Every small business around you is drowning in manual tasks and would pay handsomely to escape. Charge $497 to set up this exact automation for local businesses, or offer 'Done-For-You Automation' at $197/month per client. With just 25 business clients, you're earning $4,925/month solving real operational pain while they focus on growth.",
+      toolsUsed:
+        fallbackTools.length > 0
+          ? fallbackTools
+          : [
+              "n8n - Powerful workflow automation platform that connects any service",
+              "Webhooks - Instant triggers that start automations when events happen",
+              "HTTP Requests - Universal connector for any web service or API",
+            ],
+      requiredApiServices: [], // Empty fallback
+    };
+  }
+
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+
+  // Extract raw API services from workflowJson
+  const rawApiServices = extractRequiredApiServices(workflowJson);
+
+  // Prepare step summaries for the LLM
+  const stepSummaries = workflowSteps.map((step) => ({
+    stepNumber: step.stepNumber,
+    title: step.stepTitle,
+    nodeType: step.nodeType,
+    summary: step.teachingSummary,
+    explanation: step.teachingExplanation,
+    keyPoints: step.teachingKeyPoints,
+    url: step.parameters?.url || null,
+  }));
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "workflow_teaching_guide",
+          schema: {
+            ...teachingGuideSchema,
+            properties: {
+              ...teachingGuideSchema.properties,
+              requiredApiServices: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    description: { type: "string" }
+                  },
+                  required: ["name", "description"]
+                }
+              }
+            },
+            required: [...teachingGuideSchema.required, "requiredApiServices"]
+          }
+        },
+      },
+
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are Paul Graham teaching automation to business owners. Write with his distinctive style: start with the hidden pain, show what's really at stake, then reveal the solution. Focus on business transformation, not technical features. Make them feel the urgency of NOT having this automation. Your response MUST conform to the provided JSON schema and include ALL required fields.",
+        },
+        {
+          role: "user",
+          content: `Analyze this n8n workflow and create Paul Graham-style educational content.
+
+WORKFLOW INFO:
+- Title: ${originalTitle}
+- Total Steps: ${stepSummaries.length}
+- Required API Services: ${rawApiServices.join(", ")}
+
+DETAILED STEP INFORMATION:
+${stepSummaries
+  .map(
+    (step) => `
+Step ${step.stepNumber}: ${step.title}
+- Node Type: ${step.nodeType}
+- Summary: ${step.summary || "No summary available"}
+- URL (if HTTP): ${step.url || "N/A"}
+- Key Points: ${
+      Array.isArray(step.keyPoints) ? step.keyPoints.join(", ") : "N/A"
+    }
+`
+  )
+  .join("\n")}
+
+PAUL GRAHAM STYLE REQUIREMENTS:
+- title: Problem-focused, under 60 characters. "💰 Get Paid in Days, Not Weeks" style. Focus on business outcome + emotional impact.
+- description: One crisp sentence about the business transformation, not the technology.
+- projectIntro: Start with the pain. What are people REALLY losing by doing this manually? Make it feel costly and urgent.
+- idealFor: Three specific audiences using "🎯 [Audience] 🎯 [Audience] 🎯 [Audience]" format.
+- timeToValue: "⚡ **X time** to build vs. **Y time** wasted every week on [specific manual tasks]"
+- howItWorks: 3-4 "✅ Automatically..." bullets showing what happens without human intervention.
+- realCostOfNotHaving: Pure Paul Graham. What's the REAL cost? Opportunity cost, competitive disadvantage, reputation damage.
+- whatYoullBuild: Technical outcomes with **bold tool names**, 4-6 bullets using •
+- possibleMonetization: Focus on selling TO businesses who need this. Specific pricing for setup + monthly service. Calculate realistic revenue.
+- toolsUsed: Array of "Tool Name - What it does for the business outcome" (not technical specs)
+- requiredApiServices: For each service in [${rawApiServices.join(", ")}], provide:
+  [{"name": "openai", "description": "AI text generation"}, {"name": "elevenlabs", "description": "voice synthesis"}]
+  Keep descriptions to 2-4 words explaining what the service does.
+
+Make every section feel urgent and valuable. They should think "I'm hemorrhaging money without this" not "that's a nice feature."`,
+        },
+      ],
+      temperature: 0.8,
+      max_tokens: 2000,
+    });
+
+    const responseText = completion.choices[0]?.message?.content;
+
+    if (!responseText) {
+      throw new Error("No response from OpenAI");
+    }
+
+    const teachingContent = JSON.parse(responseText);
+
+    // Validate that all required fields exist (fail fast if LLM didn't follow schema)
+    const requiredFields = [
+      "title",
+      "description",
+      "projectIntro",
+      "idealFor",
+      "timeToValue",
+      "howItWorks",
+      "realCostOfNotHaving",
+      "whatYoullBuild",
+      "possibleMonetization",
+      "toolsUsed",
+      "requiredApiServices",
+    ];
+
+    for (const field of requiredFields) {
+      if (!teachingContent[field]) {
+        throw new Error(`Missing required field: ${field}`);
+      }
+    }
+
+    return teachingContent;
+  } catch (error) {
+    console.error("Error generating teaching guide with OpenAI:", error);
+
+    // Enhanced fallback with ALL required fields including empty API services
+    const fallbackTools = detectWorkflowTools(workflowSteps);
+
+    return {
+      title: `💰 Stop Wasting Time - Automate ${originalTitle}`,
+      description: `Transform manual ${originalTitle.toLowerCase()} into a hands-free automation that works while you sleep.`,
+      projectIntro: `Every minute spent on manual ${originalTitle.toLowerCase()} is a minute stolen from growing your business. While you're buried in repetitive tasks, competitors are scaling systematically with automation. This workflow shows you how to reclaim those lost hours and transform operational chaos into predictable results.`,
+      idealFor:
+        "🎯 Business Owners 🎯 Freelancers & Consultants 🎯 Operations Teams",
+      timeToValue:
+        "⚡ **2 hours** to build vs. **8+ hours** wasted every week on manual processes that drain your focus and energy.",
+      howItWorks:
+        "✅ Automatically triggers when specific events occur ✅ Processes tasks without human intervention ✅ Connects your existing tools seamlessly ✅ Provides notifications when work is completed",
+      realCostOfNotHaving:
+        "What you're really losing isn't just time - it's your competitive advantage. Every hour spent on manual work is an hour not spent on strategy, customer acquisition, or innovation. This operational inefficiency signals to the market that you're stuck in the weeds while smarter competitors are scaling systematically.",
+      whatYoullBuild:
+        "• A complete workflow that automates repetitive tasks automatically\n• Professional automation skills that create immediate business value\n• Experience with enterprise-grade automation tools\n• A systematic approach to identifying automation opportunities\n• Hands-free processes that work 24/7 without supervision",
+      possibleMonetization:
+        "🚀 BUSINESS OPPORTUNITY: Every business in your area is bleeding money on manual processes and would pay premium rates to escape this operational quicksand. Charge $397 to implement this automation for local companies, or offer 'Done-For-You Process Automation' at $147/month per client. With just 30 business clients, you're generating $4,410/month in recurring revenue helping them reclaim their time and sanity.",
+      toolsUsed:
+        fallbackTools.length > 0
+          ? fallbackTools
+          : [
+              "n8n - Enterprise automation platform that connects any business system",
+              "Webhooks - Instant triggers that start workflows when events happen",
+              "HTTP Requests - Universal connector for any web service or database",
+              "Data Processing - Smart logic that handles complex business rules automatically",
+            ],
+      requiredApiServices: [], // Empty fallback - let LLM handle it
+    };
+  }
+}
+
 
 async function generateStepsTeachingContent(workflowId: string) {
   try {
@@ -3407,131 +3630,6 @@ async function generateStepsTeachingContent(workflowId: string) {
   }
 }
 
-// Define the exact schema for guaranteed structure
-
-async function generateTeachingGuideWithLLM(
-  workflowJson: any,
-  originalTitle: string,
-  workflowSteps: any[] = []
-) {
-  // Validation: Handle empty or undefined steps
-  if (!workflowSteps || workflowSteps.length === 0) {
-    console.warn("generateTeachingGuideWithLLM received empty or no steps. Using fallback.");
-    
-    return {
-      title: `💰 Get Results Fast - Master ${originalTitle}`,
-      projectIntro:
-        "This workflow will teach you how to build powerful automations using n8n. Follow along to understand each component and how they work together to create something truly valuable.",
-      whatYoullBuild:
-        "• A complete workflow that automates tasks and connects different services\n• Professional automation skills ready to be monetized\n• Experience with cutting-edge automation tools",
-      possibleMonetization:
-        "🚀 BUSINESS OPPORTUNITY: Launch your own automation agency! Charge clients $149 per custom workflow or build a SaaS platform at $79/month. With just 50 subscribers, you'll generate $3,950/month in recurring revenue - that's nearly $50K annually!",
-      toolsUsed: [],
-    };
-  }
-
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-
-  // Prepare step summaries for the LLM
-  const stepSummaries = workflowSteps.map((step) => ({
-    stepNumber: step.stepNumber,
-    title: step.stepTitle,
-    nodeType: step.nodeType,
-    summary: step.teachingSummary,
-    explanation: step.teachingExplanation,
-    keyPoints: step.teachingKeyPoints,
-    url: step.parameters?.url || null,
-  }));
-
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      
-      // THE UPGRADE: Use json_schema for guaranteed structure
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "workflow_teaching_guide",
-          schema: teachingGuideSchema
-        }
-      },
-
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an expert n8n workflow educator with the entrepreneurial vision of Steve Jobs and the business acumen of Gary Vaynerchuk. Create engaging, beginner-friendly educational content that focuses on learning outcomes AND concrete business opportunities. Your response MUST conform to the provided JSON schema.",
-        },
-        {
-          role: "user",
-          content: `Analyze this n8n workflow and create educational content based on the provided JSON schema.
-
-WORKFLOW INFO:
-- Title: ${originalTitle}
-- Total Steps: ${stepSummaries.length}
-
-DETAILED STEP INFORMATION:
-${stepSummaries
-  .map(
-    (step) => `
-Step ${step.stepNumber}: ${step.title}
-- Node Type: ${step.nodeType}
-- Summary: ${step.summary || "No summary available"}
-- URL (if HTTP): ${step.url || "N/A"}
-- Key Points: ${
-      Array.isArray(step.keyPoints) ? step.keyPoints.join(", ") : "N/A"
-    }
-`
-  )
-  .join("\n")}
-
-FORMATTING REQUIREMENTS:
-- title: Create problem-focused, outcome-driven titles under 60 characters. Use formulas like "OUTCOME + TIME FRAME + PAIN RELIEF" (e.g., "Get Paid in Days, Not Months") or "STOP/NEVER + PROBLEM" (e.g., "Never Miss Another Payment"). Focus on the business result, not the technical process. Include relevant emojis.
-- projectIntro: Start with "Imagine..." and ellipsis, show transformation, under 150 words
-- whatYoullBuild: Use • bullets with \\n line breaks, bold **Tool Names**, 4-6 outcomes
-- possibleMonetization: Include specific pricing and revenue examples using the new business opportunity structure
-- toolsUsed: Array of "Tool Name - Description" strings
-
-Focus on the business problem being solved and the outcome achieved, not the technical implementation. Make them think "I NEED this" not "That's nice."`,
-        },
-      ],
-      temperature: 0.8,
-      max_tokens: 1400,
-    });
-
-    const responseText = completion.choices[0]?.message?.content;
-
-    if (!responseText) {
-      throw new Error("No response from OpenAI");
-    }
-
-    // No cleaning needed! Schema guarantees valid JSON
-    const teachingContent = JSON.parse(responseText);
-
-    // No validation needed! Schema guarantees all required fields exist
-    return teachingContent;
-
-  } catch (error) {
-    console.error("Error generating teaching guide with OpenAI:", error);
-
-    // Fallback with basic tool detection
-    const fallbackTools = detectWorkflowTools(workflowSteps);
-
-    return {
-      title: `🚀 Master ${originalTitle}`,
-      projectIntro:
-        "This workflow will teach you how to build powerful automations using n8n. Follow along to understand each component and how they work together to create something truly valuable.",
-      whatYoullBuild:
-        "• A complete workflow that automates tasks and connects different services\n• Professional automation skills ready to be monetized\n• Experience with cutting-edge automation tools and APIs",
-      possibleMonetization:
-        "🚀 BUSINESS OPPORTUNITY: Launch your own automation agency! Charge clients $149 per custom workflow or build a SaaS platform at $79/month. With just 50 subscribers, you'll generate $3,950/month in recurring revenue - that's nearly $50K annually!",
-      toolsUsed: fallbackTools,
-    };
-  }
-}
-
 async function generateStepTeachingContentWithLLM(
   step: any,
   previousContext: string = ""
@@ -3544,7 +3642,6 @@ async function generateStepTeachingContentWithLLM(
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
 
-      // THE UPGRADE: Use json_schema for guaranteed structure
       response_format: {
         type: "json_schema",
         json_schema: {
@@ -3557,11 +3654,11 @@ async function generateStepTeachingContentWithLLM(
         {
           role: "system",
           content:
-            "You are an expert n8n workflow educator with a gift for making complex automation concepts simple and exciting. Create practical, beginner-friendly teaching content that builds confidence and shows real-world value. Focus on the 'why' behind each step, not just the 'what'. Your response MUST conform to the provided JSON schema.",
+            "You are a practical automation mentor. Create direct, actionable teaching content that explains exactly what each step does, why it's needed, and how it fits into a bigger system. Use the WHAT -> WHY -> BIG PICTURE structure for explanations. Be concrete and jargon-free. Your response MUST conform to the provided JSON schema.",
         },
         {
           role: "user",
-          content: `Create educational content for this n8n workflow step based on the provided JSON schema.
+          content: `Create practical mentor-style educational content for this automation step.
 
 CURRENT STEP:
 - Step ${step.stepNumber}: ${step.stepTitle}
@@ -3570,16 +3667,19 @@ CURRENT STEP:
 - Parameters: ${JSON.stringify(step.parameters).substring(0, 400)}
 
 PREVIOUS WORKFLOW CONTEXT:
-${previousContext || "This is the first step - no previous context"}
+${previousContext || "This is the foundation of your automation system"}
 
-REQUIREMENTS:
-- summary: Use action verbs, focus on outcome (5-7 words)
-- explanation: What does this do? Why is it important? How does it fit? (2-3 sentences)
-- tips: Exactly 3 practical, actionable tips that save time and prevent frustration
-- keyPoints: Exactly 2 core learning objectives or concepts
-- summaryForNext: Show progression and data flow, not just a list of completed steps (1-2 sentences)
+PRACTICAL MENTOR STYLE REQUIREMENTS:
+- summary: Direct 3-5 word action description. "Verb + Noun" format like a to-do item. "Upload photo to Google Drive" not "Creates file storage system"
+- explanation: MUST follow this exact 3-sentence structure:
+  1) WHAT: "This step [does exactly what technically]..."
+  2) WHY: "We do this to/so that [immediate workflow reason]..."  
+  3) BIG PICTURE: "This creates/demonstrates [systems principle], which is [why it matters for automation]..."
+- tips: 3 practical, actionable tips that prevent real problems
+- keyPoints: 2 concrete learning concepts
+- summaryForNext: How this step's output enables the next capability
 
-Make it encouraging and show how each step builds toward something valuable.`,
+Be direct and practical. Students should understand exactly what's happening and why.`,
         },
       ],
       temperature: 0.75,
@@ -3592,46 +3692,26 @@ Make it encouraging and show how each step builds toward something valuable.`,
       throw new Error("No response from OpenAI");
     }
 
-    // No cleaning needed! Schema guarantees valid JSON
     const teachingContent = JSON.parse(responseText);
-
-    // No validation needed! Schema guarantees all required fields exist with correct types
     return teachingContent;
   } catch (error) {
-    console.error("Error generating step teaching content with OpenAI:", error);
+    console.error(
+      "❌ LLM Failed for step",
+      step.stepNumber,
+      ":",
+      error.message
+    );
 
-    const fallbackSummary = previousContext
-      ? `${previousContext} → Step ${step.stepNumber}: ${step.stepTitle} configured`
-      : `Step ${step.stepNumber}: ${step.stepTitle} configured`;
-
-    // Enhanced fallback summary with action words
-    const fallbackQuickSummary = step.stepTitle
-      ? `Configure ${step.stepTitle}`
-      : step.nodeType
-          .replace("n8n-nodes-base.", "")
-          .replace(/([A-Z])/g, " $1")
-          .trim();
-
+    // Return empty strings so you can easily identify failed LLM generations
     return {
-      summary: fallbackQuickSummary,
-      explanation: `This step configures the ${step.nodeType.replace(
-        "n8n-nodes-base.",
-        ""
-      )} node to perform its specific function in your workflow. It processes data from previous steps and prepares it for the next stage of automation.`,
-      tips: [
-        "Double-check all required fields are filled correctly",
-        "Test this step individually if you encounter issues",
-        "Keep your API keys secure and never share them publicly",
-      ],
-      keyPoints: [
-        "Each step builds on the previous one's output",
-        "Proper configuration is essential for workflow success",
-      ],
-      summaryForNext: fallbackSummary,
+      summary: "",
+      explanation: "",
+      tips: ["", "", ""],
+      keyPoints: ["", ""],
+      summaryForNext: "",
     };
   }
 }
-
 // =======================================================================================>
 // =======================================================================================>
 // =======================================================================================>
@@ -3663,7 +3743,7 @@ export const fetchWorkflowTeachingGuide = async (workflowId: string) => {
       throw new Error("You don't have permission to access this workflow");
     }
 
-    // Fetch the WorkflowTeachingGuide
+    // Fetch the WorkflowTeachingGuide with ALL Paul Graham fields
     const teachingGuide = await db.workflowTeachingGuide.findUnique({
       where: { workflowId },
       select: {
@@ -3671,9 +3751,13 @@ export const fetchWorkflowTeachingGuide = async (workflowId: string) => {
         title: true,
         description: true,
         projectIntro: true,
+        idealFor: true,
+        timeToValue: true,
+        howItWorks: true,
+        realCostOfNotHaving: true,
         whatYoullBuild: true,
         possibleMonetization: true,
-        toolsUsed: true, // NEW: Add tools used
+        toolsUsed: true, // NEW: Updated to String[]
         createdAt: true,
         updatedAt: true,
       },
@@ -3744,16 +3828,21 @@ export const fetchWorkflowTeachingGuideBySlug = async (slug: string) => {
       throw new Error("You don't have permission to access this workflow");
     }
 
-    // Fetch the WorkflowTeachingGuide
+    // Fetch the WorkflowTeachingGuide with ALL Paul Graham fields
     const teachingGuide = await db.workflowTeachingGuide.findUnique({
       where: { workflowId: workflow.id },
       select: {
         id: true,
         title: true,
-        description: true,
+        description: true, // NEW: Paul Graham field
         projectIntro: true,
+        idealFor: true, // NEW: Paul Graham field
+        timeToValue: true, // NEW: Paul Graham field
+        howItWorks: true, // NEW: Paul Graham field
+        realCostOfNotHaving: true, // NEW: Paul Graham field
         whatYoullBuild: true,
         possibleMonetization: true,
+        toolsUsed: true, // NEW: Updated to String[]
         createdAt: true,
         updatedAt: true,
       },
@@ -3815,16 +3904,21 @@ export const fetchPublicWorkflowTeachingGuide = async (slug: string) => {
       throw new Error("Workflow not found");
     }
 
-    // Fetch the WorkflowTeachingGuide
+    // Fetch the WorkflowTeachingGuide with ALL Paul Graham fields
     const teachingGuide = await db.workflowTeachingGuide.findUnique({
       where: { workflowId: workflow.id },
       select: {
         id: true,
         title: true,
-        description: true,
+        description: true, // NEW: Paul Graham field
         projectIntro: true,
+        idealFor: true, // NEW: Paul Graham field
+        timeToValue: true, // NEW: Paul Graham field
+        howItWorks: true, // NEW: Paul Graham field
+        realCostOfNotHaving: true, // NEW: Paul Graham field
         whatYoullBuild: true,
         possibleMonetization: true,
+        toolsUsed: true, // NEW: Updated to String[]
         createdAt: true,
         updatedAt: true,
       },
