@@ -67,7 +67,6 @@ interface SetupGuideData {
   lastUsedAt?: Date | string;
 }
 
-
 interface WorkflowStepsViewerProps {
   workflowId: string;
   className?: string;

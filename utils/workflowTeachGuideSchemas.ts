@@ -56,19 +56,6 @@ export const teachingGuideSchema = {
       description:
         "List of tools and services the student will master, described in everyday business language",
     },
-    requiredApiServices: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          name: { type: "string" },
-          description: { type: "string" },
-        },
-        required: ["name", "description"],
-      },
-      description:
-        "Array of API services needed for this workflow. For each service, provide the service name and a 2-4 word description of what it does (e.g., 'AI text generation', 'voice synthesis', 'video creation').",
-    },
   },
   required: [
     "title",
@@ -81,7 +68,6 @@ export const teachingGuideSchema = {
     "whatYoullBuild",
     "possibleMonetization",
     "toolsUsed",
-    "requiredApiServices",
   ],
 };
 

@@ -7,7 +7,6 @@ import {
   FaBullhorn,
   FaInfinity,
   FaUsers,
-
 } from "react-icons/fa";
 import {
   IoShieldSharp,
@@ -21,7 +20,6 @@ import { GiMoneyStack } from "react-icons/gi";
 import type { IconType } from "react-icons"; // Import IconType for better typing
 import {
   ArrowBigLeft,
-
   CloudDownload,
   LayoutDashboard,
   List,
@@ -31,8 +29,8 @@ import {
   AlertCircle,
   AlarmClockCheckIcon,
   BookOpen,
+  Briefcase,
 } from "lucide-react";
-
 
 export type NavItem = {
   name: string;
@@ -45,6 +43,7 @@ export const navigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "My Workflows", href: "/dashboard/wf", icon: List },
   { name: "My Profile", href: "/dashboard/profile", icon: User },
+  { name: "Portfolio", href: "/dashboard/portfolio", icon: Briefcase },
   { name: "My Downloads", href: "/dashboard/mydownloads", icon: CloudDownload },
   {
     name: "My Tutorial Completions",
@@ -56,7 +55,6 @@ export const navigation: NavItem[] = [
     href: "/dashboard/wf/create",
     icon: PlusCircle,
   },
-
 ];
 
 export const adminNavigation: NavItem[] = [
@@ -70,9 +68,14 @@ export const adminNavigation: NavItem[] = [
     href: "/admin/issues",
     icon: AlertCircle,
   },
-    {
+  {
     name: "API Setup Guides", // 🆕 NEW: API Guides
     href: "/admin/node-guides",
+    icon: BookOpen,
+  },
+  {
+    name: "Websites", // 🆕 NEW: API Guides
+    href: "/admin/websites",
     icon: BookOpen,
   },
 ];

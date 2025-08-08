@@ -1,29 +1,77 @@
 import { identifyService } from "./identifyService";
 
 export function extractRequiredApiServices(workflowJson) {
+
+  // Safety check - return empty array if no valid workflowJson
+  if (!workflowJson || typeof workflowJson !== "object") {
+    console.log(
+      "⚠️ workflowJson is undefined/null/invalid, returning empty array"
+    );
+    return [];
+  }
+
   const services = new Set();
-  
+
+  // Define n8n built-in nodes that don't require external APIs
+  const builtInNodes = [
+    "wait",
+    "if",
+    "code",
+    "merge",
+    "set",
+    "filter",
+    "sort",
+    "switch",
+    "split-in-batches",
+    "item-lists",
+    "aggregate",
+    "convert-to-file",
+    "no-op",
+    "stop-and-error",
+    "form-trigger",
+    "manual-trigger",
+    "cron-trigger",
+    "interval-trigger",
+    "webhook",
+    "respond-to-webhook",
+    "http-request",
+    "edit-image",
+    "xml",
+    "html",
+    "markdown",
+    "crypto",
+    "date-time",
+    "rss",
+  ];
+
+  // Also check if nodes exists and is an array
   if (workflowJson.nodes && Array.isArray(workflowJson.nodes)) {
-    workflowJson.nodes.forEach(node => {
-      // Skip sticky notes
-      if (node.type && !node.type.includes('stickyNote')) {
-        
-        // Create a step-like object for identifyService
+    workflowJson.nodes.forEach((node) => {
+      // Skip sticky notes and built-in nodes
+      if (node.type && !node.type.includes("stickyNote")) {
         const stepLike = {
           nodeType: node.type,
           type: node.type,
-          parameters: node.parameters || {}
+          parameters: node.parameters || {},
         };
-        
+
         const serviceInfo = identifyService(stepLike);
-        
-        // Add raw service name to set (no display conversion)
-        if (serviceInfo.serviceName && serviceInfo.serviceName !== 'unknown') {
+
+        // Only add external API services (skip built-in n8n nodes)
+        if (
+          serviceInfo.serviceName &&
+          serviceInfo.serviceName !== "unknown" &&
+          !builtInNodes.includes(serviceInfo.serviceName)
+        ) {
           services.add(serviceInfo.serviceName);
         }
       }
     });
+  } else {
+    console.log(
+      "⚠️ workflowJson.nodes is not a valid array, returning empty array"
+    );
   }
-  
-  return Array.from(services); // Returns ["openai", "hedra", "elevenlabs", "google-drive"]
+
+  return Array.from(services);
 }

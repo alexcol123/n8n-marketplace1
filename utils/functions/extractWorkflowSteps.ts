@@ -164,10 +164,8 @@ export async function extractAndSaveWorkflowSteps(
         isDependency: step.isDependency || false,
       }));
 
-    console.log(
-      "stepData:--==  ============================================================================================================================================================================================================================  ========================"
-    );
-    console.log(stepData);
+
+
 
     // Save complete step data to WorkflowStep table
     await db.workflowStep.createMany({

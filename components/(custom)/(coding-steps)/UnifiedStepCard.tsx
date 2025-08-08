@@ -26,6 +26,7 @@ import {
   BookOpen,
   Edit,
   ArrowLeft,
+
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -37,12 +38,13 @@ import NodeDocumentationSection from "../(UnifiedStepCardParts)/NodeDocumentatio
 import { NodeDocumentation } from "@prisma/client";
 
 // Import the utility functions and types
-import { 
-  getAIPrompts, 
-  getCodeContent, 
-  isAINode, 
+import {
+  getAIPrompts,
+  getCodeContent,
+  isAINode,
   isCodeNode,
 } from "@/utils/functions/nodeContentUtils";
+import WorkflowStepTeaching, { WorkflowStepTeachingProps } from "../(UnifiedStepCardParts)/WorkflowStepTeaching";
 
 // Simplified theme configuration
 const CATEGORY_THEMES = {
@@ -241,6 +243,8 @@ export default function UnifiedStepCard({
   const [activeTab, setActiveTab] = useState("details");
 
   const nodeImage = guideData?.nodeImage || null;
+
+  console.log("step", step.originalApiStep);
 
   const theme = getTheme(step);
   const hasParameters =
@@ -444,9 +448,9 @@ export default function UnifiedStepCard({
 
                 {/* Return step indicator */}
                 {isReturnStep && (
-                  <div className="flex items-center gap-2 bg-black border-l-3 border-l-amber-600 px-3 py-2 rounded-r-lg shadow-lg">
+                  <div className="flex items-center gap-2 bg-primary border-l-3 border-l-green-700 px-3 py-2 rounded-r-lg shadow-lg">
                     <ArrowLeft className="w-3.5 h-3.5 text-white" />
-                    <span className="text-primary text-sm">Return Step</span>
+                    <span className=" text-sm font-semibold">Return to Step</span>
                   </div>
                 )}
 
@@ -513,6 +517,13 @@ export default function UnifiedStepCard({
                 </div>
               </div>
             </div>
+          </div>
+
+    
+
+          <div>
+        <WorkflowStepTeaching {...(step.originalApiStep as WorkflowStepTeachingProps)} />
+
           </div>
 
           {/* Expand button */}

@@ -3338,14 +3338,10 @@ async function generateWorkflowTeachingGuide(
       orderBy: { stepNumber: "asc" },
     });
 
-    // Extract API services before sending to LLM
-
-
     const teachingContent = await generateTeachingGuideWithLLM(
       workflowJson,
       originalTitle,
-      workflowSteps,
-
+      workflowSteps
     );
 
     await db.workflowTeachingGuide.create({
@@ -3361,7 +3357,6 @@ async function generateWorkflowTeachingGuide(
         whatYoullBuild: teachingContent.whatYoullBuild,
         possibleMonetization: teachingContent.possibleMonetization,
         toolsUsed: teachingContent.toolsUsed,
-        requiredApiServices: teachingContent.requiredApiServices,
       },
     });
 
@@ -3371,7 +3366,6 @@ async function generateWorkflowTeachingGuide(
     throw error;
   }
 }
-
 
 async function generateTeachingGuideWithLLM(
   workflowJson: any,
@@ -3412,16 +3406,12 @@ async function generateTeachingGuideWithLLM(
               "Webhooks - Instant triggers that start automations when events happen",
               "HTTP Requests - Universal connector for any web service or API",
             ],
-      requiredApiServices: [], // Empty fallback
     };
   }
 
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
-
-  // Extract raw API services from workflowJson
-  const rawApiServices = extractRequiredApiServices(workflowJson);
 
   // Prepare step summaries for the LLM
   const stepSummaries = workflowSteps.map((step) => ({
@@ -3442,24 +3432,7 @@ async function generateTeachingGuideWithLLM(
         type: "json_schema",
         json_schema: {
           name: "workflow_teaching_guide",
-          schema: {
-            ...teachingGuideSchema,
-            properties: {
-              ...teachingGuideSchema.properties,
-              requiredApiServices: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    name: { type: "string" },
-                    description: { type: "string" }
-                  },
-                  required: ["name", "description"]
-                }
-              }
-            },
-            required: [...teachingGuideSchema.required, "requiredApiServices"]
-          }
+          schema: teachingGuideSchema, // ✅ Use the updated schema directly
         },
       },
 
@@ -3476,7 +3449,6 @@ async function generateTeachingGuideWithLLM(
 WORKFLOW INFO:
 - Title: ${originalTitle}
 - Total Steps: ${stepSummaries.length}
-- Required API Services: ${rawApiServices.join(", ")}
 
 DETAILED STEP INFORMATION:
 ${stepSummaries
@@ -3504,9 +3476,6 @@ PAUL GRAHAM STYLE REQUIREMENTS:
 - whatYoullBuild: Technical outcomes with **bold tool names**, 4-6 bullets using •
 - possibleMonetization: Focus on selling TO businesses who need this. Specific pricing for setup + monthly service. Calculate realistic revenue.
 - toolsUsed: Array of "Tool Name - What it does for the business outcome" (not technical specs)
-- requiredApiServices: For each service in [${rawApiServices.join(", ")}], provide:
-  [{"name": "openai", "description": "AI text generation"}, {"name": "elevenlabs", "description": "voice synthesis"}]
-  Keep descriptions to 2-4 words explaining what the service does.
 
 Make every section feel urgent and valuable. They should think "I'm hemorrhaging money without this" not "that's a nice feature."`,
         },
@@ -3535,7 +3504,6 @@ Make every section feel urgent and valuable. They should think "I'm hemorrhaging
       "whatYoullBuild",
       "possibleMonetization",
       "toolsUsed",
-      "requiredApiServices",
     ];
 
     for (const field of requiredFields) {
@@ -3548,7 +3516,7 @@ Make every section feel urgent and valuable. They should think "I'm hemorrhaging
   } catch (error) {
     console.error("Error generating teaching guide with OpenAI:", error);
 
-    // Enhanced fallback with ALL required fields including empty API services
+    // Enhanced fallback with ALL required fields
     const fallbackTools = detectWorkflowTools(workflowSteps);
 
     return {
@@ -3576,11 +3544,9 @@ Make every section feel urgent and valuable. They should think "I'm hemorrhaging
               "HTTP Requests - Universal connector for any web service or database",
               "Data Processing - Smart logic that handles complex business rules automatically",
             ],
-      requiredApiServices: [], // Empty fallback - let LLM handle it
     };
   }
 }
-
 
 async function generateStepsTeachingContent(workflowId: string) {
   try {
@@ -3757,6 +3723,7 @@ export const fetchWorkflowTeachingGuide = async (workflowId: string) => {
         realCostOfNotHaving: true,
         whatYoullBuild: true,
         possibleMonetization: true,
+
         toolsUsed: true, // NEW: Updated to String[]
         createdAt: true,
         updatedAt: true,
@@ -3959,6 +3926,200 @@ export const fetchPublicWorkflowTeachingGuide = async (slug: string) => {
         error instanceof Error
           ? error.message
           : "Failed to fetch teaching guide",
+    };
+  }
+};
+
+// =======================================================================================>
+// =======================================================================================>
+// =======================================================================================>
+// =======================================================================================>
+
+// AvailableSite  actions ****,
+
+export const createSiteAction = async (siteData: {
+  siteName: string;
+  name: string;
+  description: string;
+  siteUrl: string;
+  requiredCredentials: string[];
+}) => {
+  try {
+    // Check if user is admin (you can implement this check)
+    // const user = await getAuthUser();
+    // if (!isAdmin(user)) throw new Error("Unauthorized");
+
+    const site = await db.availableSite.create({
+      data: {
+        siteName: siteData.siteName,
+        name: siteData.name,
+        description: siteData.description,
+        siteUrl: siteData.siteUrl,
+        requiredCredentials: siteData.requiredCredentials,
+        previewImage: "", // Empty for now
+        status: "ACTIVE",
+        sortOrder: 0,
+      },
+    });
+
+    return {
+      success: true,
+      message: "Site created successfully!",
+      site: site,
+    };
+  } catch (error) {
+    console.error("Error creating site:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to create site",
+    };
+  }
+};
+
+// Get all sites (for admin panel)
+export const getAllSitesAction = async () => {
+  try {
+    const sites = await db.availableSite.findMany({
+      orderBy: [{ status: "asc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
+    });
+
+    return {
+      success: true,
+      sites: sites,
+    };
+  } catch (error) {
+    console.error("Error fetching sites:", error);
+    return {
+      success: false,
+      sites: [],
+      message: "Failed to fetch sites",
+    };
+  }
+};
+
+// Update site status
+export const updateSiteStatusAction = async (
+  siteId: string,
+  status: "ACTIVE" | "DISABLED"
+) => {
+  try {
+    const site = await db.availableSite.update({
+      where: { id: siteId },
+      data: { status: status },
+    });
+
+    return {
+      success: true,
+      message: `Site ${status.toLowerCase()} successfully!`,
+      site: site,
+    };
+  } catch (error) {
+    console.error("Error updating site:", error);
+    return {
+      success: false,
+      message: "Failed to update site status",
+    };
+  }
+};
+
+// Delete site
+export const deleteSiteAction = async (siteId: string) => {
+  try {
+    await db.availableSite.delete({
+      where: { id: siteId },
+    });
+
+    return {
+      success: true,
+      message: "Site deleted successfully!",
+    };
+  } catch (error) {
+    console.error("Error deleting site:", error);
+    return {
+      success: false,
+      message: "Failed to delete site",
+    };
+  }
+};
+
+// =======================================================================================>
+// =======================================================================================>
+// =======================================================================================>
+// =======================================================================================>
+
+// UserSiteCredentials  actions ****,
+
+//Save user credentials for a specific site
+export const saveUserCredentialsAction = async (
+  siteName: string,
+  credentials: Record<string, string>
+) => {
+  try {
+    const user = await getAuthUser();
+
+    const userCredentials = await db.userSiteCredentials.upsert({
+      where: {
+        userId_siteName: {
+          userId: user.id,
+          siteName: siteName,
+        },
+      },
+      update: {
+        credentials: credentials,
+        isConfigured: true,
+        isActive: true,
+        updatedAt: new Date(),
+      },
+      create: {
+        userId: user.id,
+        siteName: siteName,
+        credentials: credentials,
+        isConfigured: true,
+        isActive: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: "Credentials saved successfully!",
+      userCredentials: userCredentials,
+    };
+  } catch (error) {
+    console.error("Error saving credentials:", error);
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to save credentials",
+    };
+  }
+};
+
+// Get user credentials for a specific site
+export const getUserCredentialsAction = async (siteName: string) => {
+  try {
+    const user = await getAuthUser();
+
+    const userCredentials = await db.userSiteCredentials.findUnique({
+      where: {
+        userId_siteName: {
+          userId: user.id,
+          siteName: siteName,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      credentials: userCredentials?.credentials || null,
+      isConfigured: userCredentials?.isConfigured || false,
+    };
+  } catch (error) {
+    console.error("Error getting credentials:", error);
+    return {
+      success: false,
+      credentials: null,
+      isConfigured: false,
+      message: "Failed to get credentials",
     };
   }
 };

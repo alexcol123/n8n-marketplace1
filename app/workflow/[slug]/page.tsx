@@ -1,6 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 
-import { fetchSingleWorkflow, fetchWorkflowGuides, fetchWorkflowTeachingGuide } from "@/utils/actions";
+import {
+  fetchSingleWorkflow,
+  fetchWorkflowGuides,
+  fetchWorkflowTeachingGuide,
+} from "@/utils/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +39,7 @@ import getWorkflowComplexityFunc from "@/utils/functions/getWorkflowComplexityFu
 import getWorkflowComplexityColorFunc from "@/utils/functions/getWorkflowComplexityColorFunc";
 import formatDateFunc from "@/utils/functions/formmatDate";
 import readingTimeFunc from "@/utils/functions/readingTimeFunc";
+import WorkflowTeachingGuideComponent from "@/components/(custom)/(slug)/WorkflowTeachingGuideComponent";
 
 type WorkflowWithAuthor = Workflow & {
   author: Profile;
@@ -56,9 +61,16 @@ const SingleWorkflowPage = async ({
   const workflow = result as WorkflowWithAuthor;
   if (!workflow) return <EmptyList />;
 
+  const workflowTeachingGuide = await fetchWorkflowTeachingGuide(workflow.id);
+  const teachingGuideData = workflowTeachingGuide.data?.teachingGuide;
 
-  const workflowTeachingGuide = await  fetchWorkflowTeachingGuide(workflow.id);
-  console.log("Workflow Teaching Guide:", workflowTeachingGuide);
+
+
+  // const servicesList = extractRequiredApiServices(workflow.workFlowJson);
+  // console.log("Required API Services:", servicesList);
+   console.log("Workflow Teaching Guide:", workflowTeachingGuide);
+  //console.log('extractRequiredApiServices', extractRequiredApiServices(workflow));
+  //console.log('workflow', workflow);
 
   const orderedSteps = workflow.workflowSteps
     ? [...workflow.workflowSteps]
@@ -337,6 +349,9 @@ const SingleWorkflowPage = async ({
           bio={workflow.author.bio ?? undefined}
           email={workflow.author.email}
         />
+
+        {/* Teaching guide main  */}
+        <WorkflowTeachingGuideComponent guide={teachingGuideData} />
       </div>
     </main>
   );

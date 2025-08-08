@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.18.0",
-    "@prisma/client": "^6.12.0",
+    "@prisma/client": "^6.13.0",
     "@prisma/extension-accelerate": "^1.3.0",
     "@radix-ui/react-avatar": "^1.1.7",
     "@radix-ui/react-dialog": "^1.1.13",
@@ -54,7 +54,7 @@
     "eslint-config-next": "15.3.1",
     "i": "^0.3.7",
     "npm": "^11.4.2",
-    "prisma": "^6.12.0",
+    "prisma": "^6.13.0",
     "tailwindcss": "^4",
     "tsx": "^4.19.3",
     "tw-animate-css": "^1.2.8",

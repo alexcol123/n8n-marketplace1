@@ -30,10 +30,11 @@ model Profile {
   updatedAt DateTime @updatedAt
 
   // Relations (existing only)
-  Workflow          Workflow[]           @relation("AuthoredWorkflows")
-  WorkflowDownloads WorkflowDownload[]
-  completions       WorkflowCompletion[]
-  reportedIssues    Issue[]              @relation("reportedIssues")
+  Workflow            Workflow[]            @relation("AuthoredWorkflows")
+  WorkflowDownloads   WorkflowDownload[]
+  completions         WorkflowCompletion[]
+  reportedIssues      Issue[]               @relation("reportedIssues")
+  UserSiteCredentials UserSiteCredentials[]
 }
 
 model Workflow {
@@ -242,16 +243,90 @@ model WorkflowTeachingGuide {
   whatYoullBuild       String // Required: Technical outcomes with **bold tools**
   possibleMonetization String // Required: Business opportunity description
   toolsUsed            String[] // Required: Array of tool descriptions
-  requiredApiServices  Json? // ["OpenAI", "ElevenLabs", "Hedra", "Google Drive"]
+
   // --- Standard fields ---
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // --- Relations ---
   workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
   // --- Constraints ---
   @@unique([workflowId])
+}
+
+model UserSiteCredentials {
+  id     String  @id @default(uuid())
+  userId String // Reference to Profile.clerkId
+  user   Profile @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+
+  // Site identification
+  siteName String // "chatbot", "video-generator", "form-builder", etc.
+
+  // Flexible credentials storage
+  credentials Json // All webhooks, API keys, settings for this site type
+
+  // Status tracking
+  isActive     Boolean @default(true)
+  isConfigured Boolean @default(false) // true when all required fields filled
+
+  // Usage tracking
+  lastUsed   DateTime?
+  usageCount Int       @default(0)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, siteName]) // One config per user per site type
+  @@index([userId])
+  @@index([siteName])
+  @@index([isActive, isConfigured])
+}
+
+model AvailableSite {
+  id String @id @default(uuid())
+
+  // Site identification
+  siteName String @unique // "chatbot", "video-generator" - matches folder name
+  siteUrl  String // "/dashboard/portfolio/chatbot"
+
+  // Display information
+  name         String // "AI Chatbot", "Video Generator Pro"
+  description  String // "Intelligent customer support automation"
+  previewImage String // URL to preview image/screenshot
+
+  // Site metadata
+  difficulty    String? // "Beginner", "Intermediate", "Advanced"
+  estimatedTime String? // "2 hours", "1 day"
+  category      String? // "AI", "Marketing", "E-commerce"
+
+  // Required setup
+  requiredCredentials Json // ["webhook", "openai_api_key", "stripe_key"]
+  setupInstructions   String? // Brief setup guide
+
+  // Status and ordering
+
+  status    SiteStatus @default(ACTIVE) // <-- Add this back
+  sortOrder Int        @default(0) // For custom ordering in UI
+
+  // Analytics
+  viewCount     Int @default(0)
+  completeCount Int @default(0) // How many users have configured this
+
+  // Admin tracking
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, sortOrder]) // <-- Update this index
+  @@index([category])
+}
+
+enum SiteStatus {
+  ACTIVE
+  BETA
+  COMING_SOON
+  DISABLED
 }
 
 enum IssueStatus {
