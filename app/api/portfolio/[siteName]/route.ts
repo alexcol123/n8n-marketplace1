@@ -13,10 +13,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser, getUserCredentialsAction } from "@/utils/actions";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { siteName: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ siteName: string }> }) {
+  const params = await props.params;
   try {
     // Log every request for debugging and monitoring
     console.log(`🔥 API CALL: Processing ${params.siteName} request`);

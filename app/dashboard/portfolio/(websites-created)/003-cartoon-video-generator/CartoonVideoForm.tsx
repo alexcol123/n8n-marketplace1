@@ -1,18 +1,42 @@
-'use client'
+"use client";
 
-import React, { useState, ChangeEvent, DragEvent } from 'react';
-import Image from 'next/image';
-import { Upload, User, MessageSquare, MapPin, Palette, Star, Mail, Loader2, X, AlertCircle, CheckCircle, Download, ExternalLink } from 'lucide-react';
+import React, { useState, ChangeEvent, DragEvent } from "react";
+import Image from "next/image";
+import {
+  Upload,
+  User,
+  MessageSquare,
+  MapPin,
+  Palette,
+  Star,
+  Mail,
+  Loader2,
+  X,
+  AlertCircle,
+  CheckCircle,
+  Download,
+  ExternalLink,
+} from "lucide-react";
 
 // shadcn/ui imports
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface FormData {
   facePhoto: File | null;
@@ -37,49 +61,58 @@ interface ResultData {
   webhookError?: string;
 }
 
-const CartoonVideoForm = () => {
+// 🔥 UPDATED INTERFACE TO ACCEPT SITE NAME AS PROP
+interface CartoonVideoFormProps {
+  siteName: string;
+}
+
+const CartoonVideoForm: React.FC<CartoonVideoFormProps> = ({ siteName }) => {
   const [formData, setFormData] = useState<FormData>({
     facePhoto: null,
-    spokenTextTopic: '',
-    gender: '',
-    sceneSetting: '',
-    characterStyle: '',
-    famousFaceBlend: '',
-    email: ''
+    spokenTextTopic: "",
+    gender: "",
+    sceneSetting: "",
+    characterStyle: "",
+    famousFaceBlend: "",
+    email: "",
   });
-  
-  const [formState, setFormState] = useState<'form' | 'processing' | 'success' | 'error'>('form');
+
+  const [formState, setFormState] = useState<
+    "form" | "processing" | "success" | "error"
+  >("form");
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const [result, setResult] = useState<ResultData | null>(null);
 
-  // 🔥 DYNAMIC API CONFIGURATION
-  const SITE_NAME = "003-cartoon-video-generator"; // This will be captured by [siteName] parameter
+  // 🔥 NOW USES PROP INSTEAD OF HARDCODED VALUE
+  const SITE_NAME = siteName;
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { 
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        facePhoto: file
+        facePhoto: file,
       }));
-      
+
       // Create preview URL
       const reader = new FileReader();
       reader.onload = (e: ProgressEvent<FileReader>) => {
@@ -92,15 +125,15 @@ const CartoonVideoForm = () => {
   };
 
   const removeImage = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      facePhoto: null
+      facePhoto: null,
     }));
     setImagePreview(null);
     // Reset file input
-    const fileInput = document.getElementById('face-photo') as HTMLInputElement;
+    const fileInput = document.getElementById("face-photo") as HTMLInputElement;
     if (fileInput) {
-      fileInput.value = '';
+      fileInput.value = "";
     }
   };
 
@@ -118,15 +151,15 @@ const CartoonVideoForm = () => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      if (file.type.includes('image')) {
-        setFormData(prev => ({
+      if (file.type.includes("image")) {
+        setFormData((prev) => ({
           ...prev,
-          facePhoto: file
+          facePhoto: file,
         }));
-        
+
         // Create preview URL for dropped file
         const reader = new FileReader();
         reader.onload = (e: ProgressEvent<FileReader>) => {
@@ -141,34 +174,40 @@ const CartoonVideoForm = () => {
 
   const handleSubmit = async () => {
     // Reset states
-    setErrorMessage('');
+    setErrorMessage("");
     setResult(null);
-    
+
     // Basic validation
-    if (!formData.facePhoto || !formData.spokenTextTopic || !formData.gender || 
-        !formData.sceneSetting || !formData.characterStyle || !formData.famousFaceBlend || 
-        !formData.email) {
-      setErrorMessage('Please fill in all required fields');
+    if (
+      !formData.facePhoto ||
+      !formData.spokenTextTopic ||
+      !formData.gender ||
+      !formData.sceneSetting ||
+      !formData.characterStyle ||
+      !formData.famousFaceBlend ||
+      !formData.email
+    ) {
+      setErrorMessage("Please fill in all required fields");
       return;
     }
 
-    setFormState('processing');
-    
+    setFormState("processing");
+
     try {
       // 🔥 CREATE FORM DATA FOR DYNAMIC API
       const formDataToSend = new FormData();
-      formDataToSend.append('Face_Photo', formData.facePhoto);
-      formDataToSend.append('Spoken_Text_Topic', formData.spokenTextTopic);
-      formDataToSend.append('Gender', formData.gender);
-      formDataToSend.append('Scene_Setting', formData.sceneSetting);
-      formDataToSend.append('Character_Style', formData.characterStyle);
-      formDataToSend.append('Famous_Face_Blend', formData.famousFaceBlend);
-      formDataToSend.append('Email', formData.email);
+      formDataToSend.append("Face_Photo", formData.facePhoto);
+      formDataToSend.append("Spoken_Text_Topic", formData.spokenTextTopic);
+      formDataToSend.append("Gender", formData.gender);
+      formDataToSend.append("Scene_Setting", formData.sceneSetting);
+      formDataToSend.append("Character_Style", formData.characterStyle);
+      formDataToSend.append("Famous_Face_Blend", formData.famousFaceBlend);
+      formDataToSend.append("Email", formData.email);
 
-      // 🔥 SEND TO DYNAMIC PORTFOLIO API
+      // 🔥 SEND TO DYNAMIC PORTFOLIO API WITH PASSED SITE NAME
       const response = await fetch(`/api/portfolio/${SITE_NAME}`, {
-        method: 'POST',
-        body: formDataToSend
+        method: "POST",
+        body: formDataToSend,
       });
 
       const apiResult = await response.json();
@@ -182,74 +221,79 @@ const CartoonVideoForm = () => {
           fileUrl: apiResult.fileUrl,
           downloadLink: apiResult.downloadLink,
           siteName: apiResult.siteName,
-          timestamp: apiResult.timestamp
+          timestamp: apiResult.timestamp,
         });
-        setFormState('success');
+        setFormState("success");
       } else {
         // 🔥 HANDLE DIFFERENT ERROR TYPES
         if (apiResult.needsSetup) {
           setResult({
             success: false,
-            message: 'Please configure your cartoon video generator credentials first.',
+            message:
+              "Please configure your cartoon video generator credentials first.",
             needsSetup: true,
-            siteName: SITE_NAME
+            siteName: SITE_NAME,
           });
         } else if (apiResult.webhookStatus) {
           setResult({
             success: false,
             message: `Your n8n workflow returned an error (Status: ${apiResult.webhookStatus}). Please check your workflow configuration.`,
-            webhookError: apiResult.webhookError
+            webhookError: apiResult.webhookError,
           });
         } else {
           setResult({
             success: false,
-            message: apiResult.error || 'Something went wrong'
+            message: apiResult.error || "Something went wrong",
           });
         }
-        setFormState('error');
+        setFormState("error");
       }
-
     } catch (error) {
-      console.error('Error submitting form:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Failed to submit form. Please check your connection and try again.';
+      console.error("Error submitting form:", error);
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : "Failed to submit form. Please check your connection and try again.";
       setResult({
         success: false,
-        message: errorMsg
+        message: errorMsg,
       });
-      setFormState('error');
+      setFormState("error");
     }
   };
 
   const resetForm = () => {
     setFormData({
       facePhoto: null,
-      spokenTextTopic: '',
-      gender: '',
-      sceneSetting: '',
-      characterStyle: '',
-      famousFaceBlend: '',
-      email: ''
+      spokenTextTopic: "",
+      gender: "",
+      sceneSetting: "",
+      characterStyle: "",
+      famousFaceBlend: "",
+      email: "",
     });
-    setFormState('form');
+    setFormState("form");
     setImagePreview(null);
-    setErrorMessage('');
+    setErrorMessage("");
     setResult(null);
   };
 
   const retrySubmission = () => {
-    setFormState('form');
-    setErrorMessage('');
+    setFormState("form");
+    setErrorMessage("");
     setResult(null);
   };
 
-  if (formState === 'processing') {
+  if (formState === "processing") {
     return (
+      
       <Card className="max-w-md w-full mx-auto">
         <CardContent className="pt-12 text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-200 border-t-purple-600 mx-auto mb-6"></div>
           <CardTitle className="text-2xl mb-4">Creating Your Video</CardTitle>
           <CardDescription className="mb-6">
-            Your cartoon video is being processed! Our AI is working its magic to create something amazing for you.
+            Your cartoon video is being processed! Our AI is working its magic
+            to create something amazing for you.
           </CardDescription>
           <div className="bg-purple-50 rounded-lg p-4">
             <div className="flex items-center justify-center space-x-2 text-purple-600">
@@ -262,7 +306,7 @@ const CartoonVideoForm = () => {
     );
   }
 
-  if (formState === 'success') {
+  if (formState === "success") {
     return (
       <Card className="max-w-2xl w-full mx-auto">
         <CardContent className="pt-12 text-center">
@@ -270,19 +314,21 @@ const CartoonVideoForm = () => {
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
           <CardTitle className="text-2xl mb-4">Success!</CardTitle>
-          
+
           {/* 🔥 ENHANCED SUCCESS DISPLAY */}
           {result?.imageGenerated && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-700 mb-3">Generated Preview:</h3>
+              <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                Generated Preview:
+              </h3>
               <div className="relative inline-block">
-                <Image 
+                <Image
                   src={result.imageGenerated}
                   alt="Generated cartoon"
                   width={300}
                   height={300}
                   className="max-w-full h-auto rounded-lg shadow-lg border-2 border-gray-200"
-                  style={{ maxHeight: '300px' }}
+                  style={{ maxHeight: "300px" }}
                   unoptimized
                 />
               </div>
@@ -294,9 +340,9 @@ const CartoonVideoForm = () => {
             <div className="mb-4">
               <p className="text-sm font-medium mb-2">Video File:</p>
               <Button asChild className="mb-2">
-                <a 
-                  href={result.fileUrl} 
-                  target="_blank" 
+                <a
+                  href={result.fileUrl}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2"
                 >
@@ -312,9 +358,9 @@ const CartoonVideoForm = () => {
             <div className="mb-4">
               <p className="text-sm font-medium mb-2">Temporary Download:</p>
               <Button asChild variant="outline">
-                <a 
-                  href={result.downloadLink} 
-                  target="_blank" 
+                <a
+                  href={result.downloadLink}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2"
                 >
@@ -324,25 +370,27 @@ const CartoonVideoForm = () => {
               </Button>
             </div>
           )}
-          
+
           <CardDescription className="mb-6">
-            {result?.imageGenerated 
+            {result?.imageGenerated
               ? "Your cartoon image has been generated! The full video will be sent to your email."
-              : "Check your email for your cartoon video!"
-            }
+              : "Check your email for your cartoon video!"}
           </CardDescription>
-          
+
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <p className="text-sm text-green-700">
               📧 Video will be sent to: <strong>{formData.email}</strong>
             </p>
             {result?.siteName && (
               <p className="text-xs text-green-600 mt-1">
-                Processed by: {result.siteName} • {result.timestamp ? new Date(result.timestamp).toLocaleString() : 'Just now'}
+                Processed by: {result.siteName} •{" "}
+                {result.timestamp
+                  ? new Date(result.timestamp).toLocaleString()
+                  : "Just now"}
               </p>
             )}
           </div>
-          
+
           <Button onClick={resetForm} className="w-full">
             Create Another Video
           </Button>
@@ -351,14 +399,16 @@ const CartoonVideoForm = () => {
     );
   }
 
-  if (formState === 'error') {
+  if (formState === "error") {
     return (
-      <Card className="max-w-md w-full mx-auto">
+      <Card className="max-w-md w-full mx-auto ">
         <CardContent className="pt-12 text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <AlertCircle className="h-8 w-8 text-red-600" />
           </div>
-          <CardTitle className="text-2xl mb-4">Oops! Something went wrong</CardTitle>
+          <CardTitle className="text-2xl mb-4">
+            Oops! Something went wrong
+          </CardTitle>
           <CardDescription className="mb-6">
             {result?.message || errorMessage}
           </CardDescription>
@@ -367,7 +417,8 @@ const CartoonVideoForm = () => {
           {result?.needsSetup && (
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700 mb-3">
-                <strong>Setup Required:</strong> You need to configure your credentials for the cartoon video generator.
+                <strong>Setup Required:</strong> You need to configure your
+                credentials for the cartoon video generator.
               </p>
               <Button size="sm" className="mb-2">
                 → Configure Credentials
@@ -402,29 +453,34 @@ const CartoonVideoForm = () => {
 
   // 🔥 MAIN FORM (SIMPLIFIED FOR EMBEDDING)
   return (
-    <div className="space-y-6">
+
+ <div className="bg-card border rounded-lg p-6 mb-6">
+    <div className="space-y-6 ">
       {/* Error Message */}
       {errorMessage && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {errorMessage}
-          </AlertDescription>
+          <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       )}
 
       {/* File Upload */}
       <div className="space-y-2">
+
+     <h3 className="text-lg font-semibold mb-4">
+            🎬 Create Cartoon Video
+          </h3>
+
         <Label className="flex items-center text-sm font-medium">
           <Upload className="h-4 w-4 mr-2" />
           Face Photo *
         </Label>
-        
+
         {/* Image Preview */}
         {imagePreview && (
           <div className="mb-4 relative inline-block">
-            <Image 
-              src={imagePreview} 
+            <Image
+              src={imagePreview}
               alt="Preview"
               width={96}
               height={96}
@@ -442,12 +498,12 @@ const CartoonVideoForm = () => {
             </Button>
           </div>
         )}
-        
+
         <div
           className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${
-            dragActive 
-              ? 'border-purple-400 bg-purple-50' 
-              : 'border-gray-300 hover:border-purple-400'
+            dragActive
+              ? "border-purple-400 bg-purple-50"
+              : "border-gray-300 hover:border-purple-400"
           }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -465,16 +521,23 @@ const CartoonVideoForm = () => {
             {formData.facePhoto ? (
               <div>
                 <div className="text-green-600 mb-2">✓ File uploaded</div>
-                <div className="text-sm text-gray-600">{formData.facePhoto.name}</div> 
-                <div className="text-xs text-gray-400 mt-1">Click to change image</div>
+                <div className="text-sm text-gray-600">
+                  {formData.facePhoto.name}
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Click to change image
+                </div>
               </div>
             ) : (
               <div>
                 <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                 <p className="text-gray-600">
-                  Drop your photo here or <span className="text-purple-600 font-semibold">browse</span>
+                  Drop your photo here or{" "}
+                  <span className="text-purple-600 font-semibold">browse</span>
                 </p>
-                <p className="text-xs text-gray-400 mt-1">PNG, JPG, WEBP up to 10MB</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  PNG, JPG, WEBP up to 10MB
+                </p>
               </div>
             )}
           </label>
@@ -502,7 +565,10 @@ const CartoonVideoForm = () => {
           <User className="h-4 w-4 mr-2" />
           Gender *
         </Label>
-        <Select value={formData.gender} onValueChange={(value) => handleSelectChange('gender', value)}>
+        <Select
+          value={formData.gender}
+          onValueChange={(value) => handleSelectChange("gender", value)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select gender" />
           </SelectTrigger>
@@ -574,26 +640,31 @@ const CartoonVideoForm = () => {
       {/* Submit Button */}
       <Button
         onClick={handleSubmit}
-        disabled={formState === 'processing'}
+        disabled={formState === "processing"}
         className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg py-6"
         size="lg"
       >
-        {formState === 'processing' ? (
+        {formState === "processing" ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             Creating Video...
           </>
         ) : (
-          'Create My Cartoon Video ✨'
+          "Create My Cartoon Video ✨"
         )}
       </Button>
 
       <div className="text-center text-sm text-muted-foreground">
         Your video will be ready in about 3-5 minutes and sent to your email!
         <br />
-        <span className="text-xs">API: /api/portfolio/{SITE_NAME}</span>
+        <span className="text-xs">
+          🔥 Using site: {SITE_NAME} | API: /api/portfolio/{SITE_NAME}
+        </span>
       </div>
     </div>
+ </div>
+
+
   );
 };
 
