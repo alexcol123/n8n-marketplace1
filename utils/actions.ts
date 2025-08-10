@@ -36,9 +36,9 @@ import {
   stepTeachingSchema,
   teachingGuideSchema,
 } from "./workflowTeachGuideSchemas";
-import { extractRequiredApiServices } from "./functions/extractRequiredApiServices";
 
-const getAuthUser = async () => {
+
+export const getAuthUser = async () => {
   const user = await currentUser();
 
   if (!user) throw new Error(" You must be logged in to access this route ");
