@@ -594,7 +594,7 @@ function UnconfiguredSiteCard({ site }: { site: Site }) {
             className="flex-1 bg-primary hover:bg-primary/90 transition-all duration-200 group-hover:translate-y-[-1px]"
           >
             <Link
-              href={`/dashboard/portfolio/${site.siteName}/setup`}
+              href={`/dashboard/portfolio/${site.siteName}`}
               className="flex items-center justify-center gap-2"
             >
               <Settings className="w-4 h-4" />

@@ -4069,6 +4069,13 @@ export const getAllSitesAction = async () => {
   }
 };
 
+
+/**
+ * 🎯 FIXED: Get all sites NOT configured by the current student
+ */
+
+
+
 /**
  * 📊 NEW: Get all sites with detailed stats
  */
