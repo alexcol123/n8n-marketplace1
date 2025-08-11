@@ -3937,17 +3937,51 @@ export const fetchPublicWorkflowTeachingGuide = async (slug: string) => {
 
 // AvailableSite  actions ****,
 
+// utils/actions.ts - UPDATE YOUR EXISTING ACTIONS + ADD MISSING ONES
+
+
+
+/**
+ * 🔥 UPDATED: Create site with new schema fields
+ */
 export const createSiteAction = async (siteData: {
   siteName: string;
   name: string;
   description: string;
   siteUrl: string;
   requiredCredentials: string[];
+  category?: string;
+  difficulty?: string;
+  estimatedTime?: string;
+  workflowId?: string;
+  frontendWorkflowJson?: string;
+  sortOrder?: number;
 }) => {
   try {
-    // Check if user is admin (you can implement this check)
-    // const user = await getAuthUser();
-    // if (!isAdmin(user)) throw new Error("Unauthorized");
+    // Check if siteName already exists
+    const existingSite = await db.availableSite.findUnique({
+      where: { siteName: siteData.siteName }
+    });
+
+    if (existingSite) {
+      return {
+        success: false,
+        message: `Site name "${siteData.siteName}" already exists`,
+      };
+    }
+
+    // Parse frontendWorkflowJson if provided
+    let frontendJson = null;
+    if (siteData.frontendWorkflowJson) {
+      try {
+        frontendJson = JSON.parse(siteData.frontendWorkflowJson);
+      } catch (e) {
+        return {
+          success: false,
+          message: "Invalid JSON format for frontend workflow",
+        };
+      }
+    }
 
     const site = await db.availableSite.create({
       data: {
@@ -3956,10 +3990,25 @@ export const createSiteAction = async (siteData: {
         description: siteData.description,
         siteUrl: siteData.siteUrl,
         requiredCredentials: siteData.requiredCredentials,
+        category: siteData.category || null,
+        difficulty: siteData.difficulty || null,
+        estimatedTime: siteData.estimatedTime || null,
+        workflowId: siteData.workflowId || null,
+        frontendWorkflowJson: frontendJson,
         previewImage: "", // Empty for now
         status: "ACTIVE",
-        sortOrder: 0,
+        sortOrder: siteData.sortOrder || 0,
       },
+      include: {
+        workflow: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            verifiedAndTested: true
+          }
+        }
+      }
     });
 
     return {
@@ -3976,11 +4025,34 @@ export const createSiteAction = async (siteData: {
   }
 };
 
-// Get all sites (for admin panel)
+/**
+ * 🚀 UPDATED: Get all sites with stats and workflow info
+ */
 export const getAllSitesAction = async () => {
   try {
     const sites = await db.availableSite.findMany({
-      orderBy: [{ status: "asc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
+      include: {
+        workflow: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            verifiedAndTested: true
+          }
+        },
+        _count: {
+          select: {
+            userCredentials: {
+              where: { isConfigured: true }
+            }
+          }
+        }
+      },
+      orderBy: [
+        { status: "asc" }, 
+        { sortOrder: "asc" }, 
+        { createdAt: "desc" }
+      ],
     });
 
     return {
@@ -3997,7 +4069,108 @@ export const getAllSitesAction = async () => {
   }
 };
 
-// Update site status
+/**
+ * 📊 NEW: Get all sites with detailed stats
+ */
+
+
+/**
+ * ✏️ NEW: Update existing site
+ */
+export const updateSiteAction = async (siteId: string, siteData: {
+  siteName: string;
+  name: string;
+  description: string;
+  siteUrl: string;
+  requiredCredentials: string[];
+  category?: string;
+  difficulty?: string;
+  estimatedTime?: string;
+  workflowId?: string;
+  frontendWorkflowJson?: string;
+  sortOrder?: number;
+}) => {
+  try {
+    // Check if siteName is taken by another site
+    const existingSite = await db.availableSite.findFirst({
+      where: {
+        siteName: siteData.siteName,
+        NOT: { id: siteId }
+      }
+    });
+
+    if (existingSite) {
+      return {
+        success: false,
+        message: `Site name "${siteData.siteName}" is already taken`,
+      };
+    }
+
+    // Parse frontendWorkflowJson if provided
+    let frontendJson = null;
+    if (siteData.frontendWorkflowJson) {
+      try {
+        frontendJson = JSON.parse(siteData.frontendWorkflowJson);
+      } catch (e) {
+        return {
+          success: false,
+          message: "Invalid JSON format for frontend workflow",
+        };
+      }
+    }
+
+    const site = await db.availableSite.update({
+      where: { id: siteId },
+      data: {
+        siteName: siteData.siteName,
+        name: siteData.name,
+        description: siteData.description,
+        siteUrl: siteData.siteUrl,
+        requiredCredentials: siteData.requiredCredentials,
+        category: siteData.category || null,
+        difficulty: siteData.difficulty || null,
+        estimatedTime: siteData.estimatedTime || null,
+        workflowId: siteData.workflowId || null,
+        frontendWorkflowJson: frontendJson,
+        sortOrder: siteData.sortOrder || 0,
+        updatedAt: new Date()
+      },
+      include: {
+        workflow: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            verifiedAndTested: true
+          }
+        },
+        _count: {
+          select: {
+            userCredentials: {
+              where: { isConfigured: true }
+            }
+          }
+        }
+      }
+    });
+
+    return {
+      success: true,
+      message: "Site updated successfully!",
+      site: site,
+    };
+  } catch (error) {
+    console.error("Error updating site:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to update site",
+    };
+  }
+};
+
+/**
+ * 🔄 UPDATED: Update site status (keeping your existing function)
+ */
 export const updateSiteStatusAction = async (
   siteId: string,
   status: "ACTIVE" | "DISABLED"
@@ -4022,9 +4195,35 @@ export const updateSiteStatusAction = async (
   }
 };
 
-// Delete site
+/**
+ * 🗑️ UPDATED: Delete site (keeping your existing function but with better error handling)
+ */
 export const deleteSiteAction = async (siteId: string) => {
   try {
+    // Check if site exists and get user count
+    const site = await db.availableSite.findUnique({
+      where: { id: siteId },
+      include: {
+        _count: {
+          select: {
+            userCredentials: true
+          }
+        }
+      }
+    });
+
+    if (!site) {
+      return {
+        success: false,
+        message: "Site not found",
+      };
+    }
+
+    // Log if deleting site with user configurations
+    if (site._count.userCredentials > 0) {
+      console.log(`Deleting site "${site.name}" with ${site._count.userCredentials} user configurations`);
+    }
+
     await db.availableSite.delete({
       where: { id: siteId },
     });
@@ -4042,6 +4241,110 @@ export const deleteSiteAction = async (siteId: string) => {
   }
 };
 
+/**
+ * 📚 NEW: Get workflows for site selection dropdown
+ */
+export const getAllWorkflowsForSiteSelectionAction = async () => {
+  try {
+    const workflows = await db.workflow.findMany({
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        category: true,
+        verifiedAndTested: true,
+        viewCount: true,
+        author: {
+          select: {
+            firstName: true,
+            lastName: true,
+            username: true
+          }
+        }
+      },
+      orderBy: [
+        { verifiedAndTested: 'desc' }, // Verified first
+        { viewCount: 'desc' },         // Popular first
+        { createdAt: 'desc' }          // Recent first
+      ]
+    });
+
+    return {
+      success: true,
+      workflows,
+      count: workflows.length
+    };
+  } catch (error) {
+    console.error("Error fetching workflows:", error);
+    return {
+      success: false,
+      workflows: [],
+      count: 0,
+      message: "Failed to fetch workflows",
+    };
+  }
+};
+
+/**
+ * 🎯 NEW: Toggle site status between ACTIVE/INACTIVE
+ */
+export const toggleSiteStatusAction = async (siteId: string) => {
+  try {
+    const site = await db.availableSite.findUnique({
+      where: { id: siteId },
+      select: { id: true, name: true, status: true }
+    });
+
+    if (!site) {
+      return {
+        success: false,
+        message: "Site not found"
+      };
+    }
+
+    const newStatus = site.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+    const updatedSite = await db.availableSite.update({
+      where: { id: siteId },
+      data: { status: newStatus }
+    });
+
+    return {
+      success: true,
+      site: updatedSite,
+      message: `Site "${site.name}" is now ${newStatus.toLowerCase()}`
+    };
+  } catch (error) {
+    console.error("Error toggling site status:", error);
+    return {
+      success: false,
+      message: "Failed to toggle site status",
+    };
+  }
+};
+
+/**
+ * 📊 NEW: Increment site view count
+ */
+export const incrementSiteViewCountAction = async (siteId: string) => {
+  try {
+    await db.availableSite.update({
+      where: { id: siteId },
+      data: { 
+        viewCount: { increment: 1 }
+      }
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error incrementing view count:", error);
+    return {
+      success: false,
+      message: "Failed to increment view count",
+    };
+  }
+};
+
 // =======================================================================================>
 // =======================================================================================>
 // =======================================================================================>
@@ -4050,76 +4353,405 @@ export const deleteSiteAction = async (siteId: string) => {
 // UserSiteCredentials  actions ****,
 
 //Save user credentials for a specific site
-export const saveUserCredentialsAction = async (
-  siteName: string,
-  credentials: Record<string, string>
-) => {
-  try {
-    const user = await getAuthUser();
 
-    const userCredentials = await db.userSiteCredentials.upsert({
+
+
+// utils/actions.ts - ADD THESE NEW OPTIMIZED ACTIONS
+
+
+
+
+
+/**
+ * 🎯 EFFICIENT: Get sites user hasn't configured yet
+ */
+export async function getUserUnconfiguredSitesAction(userId: string) {
+  try {
+    const unconfiguredSites = await db.availableSite.findMany({
       where: {
-        userId_siteName: {
-          userId: user.id,
-          siteName: siteName,
-        },
+        status: 'ACTIVE', // Only show active sites
+        userCredentials: {
+          none: { 
+            userId,
+            isConfigured: true 
+          }
+        }
       },
-      update: {
-        credentials: credentials,
-        isConfigured: true,
-        isActive: true,
-        updatedAt: new Date(),
-      },
-      create: {
-        userId: user.id,
-        siteName: siteName,
-        credentials: credentials,
-        isConfigured: true,
-        isActive: true,
-      },
+      orderBy: [
+        { sortOrder: 'asc' },
+        { viewCount: 'desc' }
+      ]
     });
 
     return {
       success: true,
-      message: "Credentials saved successfully!",
-      userCredentials: userCredentials,
+      unconfiguredSites,
+      count: unconfiguredSites.length
+    };
+  } catch (error) {
+    console.error("Error fetching unconfigured sites:", error);
+    return {
+      success: false,
+      unconfiguredSites: [],
+      count: 0,
+      error: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}
+
+/**
+ * 🔥 CHECK: Does user have specific site configured?
+ * OLD: String matching nightmare
+ * NEW: Proper FK lookup
+ */
+export async function checkUserSiteConfigurationAction(userId: string, siteId: string) {
+  try {
+    const credential = await db.userSiteCredentials.findFirst({
+      where: {
+        userId,
+        availableSiteId: siteId, // Use FK instead of string matching
+        isConfigured: true,
+        isActive: true
+      },
+      include: {
+        availableSite: true
+      }
+    });
+
+    return {
+      success: true,
+      isConfigured: !!credential,
+      credential,
+      site: credential?.availableSite
+    };
+  } catch (error) {
+    console.error("Error checking site configuration:", error);
+    return {
+      success: false,
+      isConfigured: false,
+      error: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}
+
+/**
+ * 💪 OPTIMIZED: Get all sites with usage stats
+ */
+
+export const getAllSitesWithStatsAction = async () => {
+  try {
+    const sites = await db.availableSite.findMany({
+      include: {
+        workflow: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            verifiedAndTested: true
+          }
+        },
+        _count: {
+          select: {
+            userCredentials: {
+              where: { isConfigured: true }
+            }
+          }
+        }
+      },
+      orderBy: [
+        { status: "asc" }, 
+        { sortOrder: "asc" }, 
+        { viewCount: "desc" }
+      ],
+    });
+
+    return {
+      success: true,
+      sites: sites,
+      count: sites.length
+    };
+  } catch (error) {
+    console.error("Error fetching sites with stats:", error);
+    return {
+      success: false,
+      sites: [],
+      count: 0,
+      message: "Failed to fetch sites",
+    };
+  }
+};
+
+
+
+/**
+ * ⚡ SAVE: User site credentials with FK relationship
+ */
+export async function saveUserSiteCredentialsAction(
+  userId: string, 
+  siteId: string, 
+  credentials: Record<string, any>
+) {
+  try {
+    // Validate that the site exists
+    const site = await db.availableSite.findUnique({
+      where: { id: siteId }
+    });
+
+    if (!site) {
+      return {
+        success: false,
+        error: "Site not found"
+      };
+    }
+
+    // Check required credentials are provided
+    const requiredCreds = site.requiredCredentials as string[];
+    const missingCreds = requiredCreds.filter(cred => !credentials[cred]);
+    
+    if (missingCreds.length > 0) {
+      return {
+        success: false,
+        error: `Missing required credentials: ${missingCreds.join(', ')}`
+      };
+    }
+
+    // Upsert user credentials
+    const userCredential = await db.userSiteCredentials.upsert({
+      where: {
+        userId_availableSiteId: {
+          userId,
+          availableSiteId: siteId
+        }
+      },
+      update: {
+        credentials,
+        isConfigured: true,
+        isActive: true,
+        lastUsed: new Date()
+      },
+      create: {
+        userId,
+        availableSiteId: siteId,
+        credentials,
+        isConfigured: true,
+        isActive: true,
+        lastUsed: new Date()
+      },
+      include: {
+        availableSite: true
+      }
+    });
+
+    // Increment completion count for analytics
+    await db.availableSite.update({
+      where: { id: siteId },
+      data: { 
+        completeCount: { increment: 1 }
+      }
+    });
+
+    return {
+      success: true,
+      credential: userCredential,
+      message: "Credentials saved successfully"
     };
   } catch (error) {
     console.error("Error saving credentials:", error);
     return {
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to save credentials",
+      error: error instanceof Error ? error.message : "Unknown error"
     };
   }
-};
+}
 
-// Get user credentials for a specific site
-export const getUserCredentialsAction = async (siteName: string) => {
+/**
+ * 🗑️ DELETE: Remove user site credentials
+ */
+export async function deleteUserSiteCredentialsAction(userId: string, siteId: string) {
   try {
-    const user = await getAuthUser();
-
-    const userCredentials = await db.userSiteCredentials.findUnique({
+    await db.userSiteCredentials.delete({
       where: {
-        userId_siteName: {
-          userId: user.id,
-          siteName: siteName,
-        },
-      },
+        userId_availableSiteId: {
+          userId,
+          availableSiteId: siteId
+        }
+      }
+    });
+
+    // Decrement completion count
+    await db.availableSite.update({
+      where: { id: siteId },
+      data: { 
+        completeCount: { decrement: 1 }
+      }
     });
 
     return {
       success: true,
-      credentials: userCredentials?.credentials || null,
-      isConfigured: userCredentials?.isConfigured || false,
+      message: "Site configuration removed"
     };
   } catch (error) {
-    console.error("Error getting credentials:", error);
+    console.error("Error deleting credentials:", error);
     return {
       success: false,
-      credentials: null,
-      isConfigured: false,
-      message: "Failed to get credentials",
+      error: error instanceof Error ? error.message : "Unknown error"
     };
   }
-};
+}
+
+/**
+ * 📈 DASHBOARD: Get user portfolio stats
+ */
+export async function getUserPortfolioStatsAction(userId: string) {
+  try {
+    // Get all user's credentials with site info
+    const userCredentials = await db.userSiteCredentials.findMany({
+      where: { userId },
+      include: {
+        availableSite: {
+          select: {
+            id: true,
+            name: true,
+            category: true,
+            difficulty: true,
+            viewCount: true
+          }
+        }
+      }
+    });
+
+    const configuredCount = userCredentials.filter(cred => cred.isConfigured).length;
+    const totalSites = await db.availableSite.count({
+      where: { status: 'ACTIVE' }
+    });
+
+    // Calculate categories breakdown
+    const categoriesUsed = userCredentials
+      .filter(cred => cred.isConfigured && cred.availableSite.category)
+      .reduce((acc, cred) => {
+        const category = cred.availableSite.category!;
+        acc[category] = (acc[category] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+    // Calculate difficulty breakdown
+    const difficultyBreakdown = userCredentials
+      .filter(cred => cred.isConfigured && cred.availableSite.difficulty)
+      .reduce((acc, cred) => {
+        const difficulty = cred.availableSite.difficulty!;
+        acc[difficulty] = (acc[difficulty] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+    return {
+      success: true,
+      stats: {
+        configuredSites: configuredCount,
+        totalAvailableSites: totalSites,
+        completionPercentage: Math.round((configuredCount / totalSites) * 100),
+        categoriesUsed: Object.keys(categoriesUsed),
+        categoryBreakdown: categoriesUsed,
+        difficultyBreakdown,
+        lastActivityDate: userCredentials
+          .filter(cred => cred.lastUsed)
+          .sort((a, b) => new Date(b.lastUsed!).getTime() - new Date(a.lastUsed!).getTime())[0]?.lastUsed,
+        totalUsageCount: userCredentials.reduce((sum, cred) => sum + cred.usageCount, 0)
+      }
+    };
+  } catch (error) {
+    console.error("Error fetching portfolio stats:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}
+
+/**
+ * 🔍 LEGACY SUPPORT: Get credentials by siteName (for backward compatibility)
+ * Eventually replace all usages with the new FK-based functions above
+ */
+export async function getUserCredentialsBySiteNameAction(userId: string, siteName: string) {
+  try {
+    const credential = await db.userSiteCredentials.findFirst({
+      where: {
+        userId,
+        availableSite: {
+          siteName // Query through FK relationship
+        }
+      },
+      include: {
+        availableSite: true
+      }
+    });
+
+    return {
+      success: true,
+      isConfigured: credential?.isConfigured || false,
+      credentials: credential?.credentials,
+      credential,
+      site: credential?.availableSite
+    };
+  } catch (error) {
+    console.error("Error fetching credentials by site name:", error);
+    return {
+      success: false,
+      isConfigured: false,
+      error: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}
+
+/**
+ * 🎯 BULK: Get user's complete portfolio data in ONE query
+ * This is the ULTIMATE efficiency function!
+ */
+export async function getUserCompletePortfolioAction(userId: string) {
+  try {
+    const [userCredentials, allSites, portfolioStats] = await Promise.all([
+      // Get user's configured sites
+      db.userSiteCredentials.findMany({
+        where: { userId },
+        include: { availableSite: true },
+        orderBy: { availableSite: { sortOrder: 'asc' } }
+      }),
+      
+      // Get all available sites
+      db.availableSite.findMany({
+        where: { status: 'ACTIVE' },
+        orderBy: [
+          { sortOrder: 'asc' },
+          { viewCount: 'desc' }
+        ]
+      }),
+
+      // Get portfolio stats
+      getUserPortfolioStatsAction(userId)
+    ]);
+
+    const configuredSites = userCredentials
+      .filter(cred => cred.isConfigured)
+      .map(cred => cred.availableSite);
+
+    const unconfiguredSites = allSites.filter(site => 
+      !userCredentials.some(cred => cred.availableSiteId === site.id && cred.isConfigured)
+    );
+
+    return {
+      success: true,
+      data: {
+        configuredSites,
+        unconfiguredSites,
+        allSites,
+        userCredentials,
+        stats: portfolioStats.success ? portfolioStats.stats : null
+      }
+    };
+  } catch (error) {
+    console.error("Error fetching complete portfolio:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}

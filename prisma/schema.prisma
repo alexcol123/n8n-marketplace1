@@ -59,6 +59,7 @@ model Workflow {
   completions           WorkflowCompletion[]
   workflowSteps         WorkflowStep[] // NEW: Simple steps
   WorkflowTeachingGuide WorkflowTeachingGuide?
+  availableSites        AvailableSite[] // Reverse relation
 }
 
 model WorkflowStep {
@@ -260,8 +261,9 @@ model UserSiteCredentials {
   userId String // Reference to Profile.clerkId
   user   Profile @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
 
-  // Site identification
-  siteName String // "chatbot", "video-generator", "form-builder", etc.
+  // Site identification - PROPER FK RELATIONSHIP
+  availableSiteId String // FK to AvailableSite.id
+  availableSite   AvailableSite @relation(fields: [availableSiteId], references: [id], onDelete: Cascade)
 
   // Flexible credentials storage
   credentials Json // All webhooks, API keys, settings for this site type
@@ -278,14 +280,19 @@ model UserSiteCredentials {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([userId, siteName]) // One config per user per site type
+  @@unique([userId, availableSiteId]) // One config per user per site
   @@index([userId])
-  @@index([siteName])
+  @@index([availableSiteId])
   @@index([isActive, isConfigured])
 }
 
 model AvailableSite {
   id String @id @default(uuid())
+
+  workflowId String? // FK to Workflow.id (optional)
+  workflow   Workflow? @relation(fields: [workflowId], references: [id])
+
+  frontendWorkflowJson Json? // Modified version with webhooks/credentials
 
   // Site identification
   siteName String @unique // "chatbot", "video-generator" - matches folder name
@@ -306,20 +313,23 @@ model AvailableSite {
   setupInstructions   String? // Brief setup guide
 
   // Status and ordering
-
-  status    SiteStatus @default(ACTIVE) // <-- Add this back
+  status    SiteStatus @default(ACTIVE)
   sortOrder Int        @default(0) // For custom ordering in UI
 
   // Analytics
   viewCount     Int @default(0)
   completeCount Int @default(0) // How many users have configured this
 
+  // REVERSE RELATION - One site can have many user credentials
+  userCredentials UserSiteCredentials[]
+
   // Admin tracking
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([status, sortOrder]) // <-- Update this index
+  @@index([status, sortOrder])
   @@index([category])
+  @@index([siteName]) // Keep this for API route lookups
 }
 
 enum SiteStatus {
