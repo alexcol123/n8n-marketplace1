@@ -284,16 +284,7 @@ async function Dashboard() {
           {/* Quick Actions */}
           <div className="flex flex-col gap-3">
             <CreateNewWorkflowButton />
-            <Button
-              variant="outline"
-              asChild
-              className="flex items-center gap-2"
-            >
-              <Link href="/leaderboard">
-                <Trophy className="h-4 w-4" />
-                Leaderboard
-              </Link>
-            </Button>
+    
           </div>
         </div>
 
@@ -584,10 +575,7 @@ async function Dashboard() {
                 className="h-auto flex-col gap-2 p-4"
                 asChild
               >
-                <Link href="/leaderboard/creators">
-                  <Crown className="h-5 w-5" />
-                  <span className="text-sm">Creator Board</span>
-                </Link>
+
               </Button>
               <Button
                 variant="outline"

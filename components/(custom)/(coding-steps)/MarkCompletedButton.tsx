@@ -6,13 +6,10 @@ import {
   Loader2,
   Trophy,
   RotateCcw,
-  Sparkles,
-  Star,
   Target,
   Award,
   Rocket,
   BarChart3,
-  Zap,
   CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -62,7 +59,6 @@ export default function MarkCompletedButton({
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [justCompleted, setJustCompleted] = useState(false);
 
   // Engaging completion messages that encourage return
   const celebrationMessages = [
@@ -117,7 +113,6 @@ export default function MarkCompletedButton({
         setCompletedAt(
           result.completedAt ? new Date(result.completedAt) : null
         );
-        setJustCompleted(true);
         setShowCelebration(true);
 
         // Show celebration toast with return encouragement
@@ -133,7 +128,6 @@ export default function MarkCompletedButton({
         // Hide celebration after animation
         setTimeout(() => {
           setShowCelebration(false);
-          setJustCompleted(false);
         }, 3000);
       } else {
         toast.error(result.message);
@@ -232,43 +226,18 @@ export default function MarkCompletedButton({
           <div className="absolute bottom-4 left-4 w-16 h-16 bg-emerald-400/15 rounded-full blur-xl animate-pulse delay-700" />
         </div>
 
-        {/* Celebration overlay */}
+        {/* Simple celebration effect */}
         {showCelebration && (
           <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-green-400/20 to-emerald-400/20 animate-pulse" />
-            {/* Floating sparkles */}
-            {[...Array(6)].map((_, i) => (
-              <Sparkles
-                key={i}
-                className="absolute h-4 w-4 text-yellow-400 animate-bounce"
-                style={{
-                  left: `${Math.random() * 80 + 10}%`,
-                  top: `${Math.random() * 60 + 20}%`,
-                  animationDelay: `${Math.random() * 1000}ms`,
-                }}
-              />
-            ))}
+            <div className="absolute inset-0 bg-gradient-to-r from-green-400/10 to-emerald-400/10 animate-pulse" />
           </div>
         )}
 
         <div className="relative p-6 border-2 border-green-200/50 dark:border-green-800/50 rounded-xl backdrop-blur-sm">
           <div className="text-center space-y-4">
-            {/* Trophy with animation */}
-            <div className="relative mx-auto w-fit">
-              <div
-                className={cn(
-                  "h-16 w-16 rounded-full flex items-center justify-center mx-auto",
-                  "bg-gradient-to-br from-green-500 to-emerald-500 shadow-lg",
-                  justCompleted && "animate-bounce"
-                )}
-              >
-                <Trophy className="h-8 w-8 text-white" />
-              </div>
-              {justCompleted && (
-                <div className="absolute -top-1 -right-1">
-                  <Star className="h-6 w-6 text-yellow-400 animate-spin" />
-                </div>
-              )}
+            {/* Simple Trophy */}
+            <div className="h-16 w-16 rounded-full flex items-center justify-center mx-auto bg-gradient-to-br from-green-500 to-emerald-500 shadow-lg">
+              <Trophy className="h-8 w-8 text-white" />
             </div>
 
             <div>
@@ -286,38 +255,44 @@ export default function MarkCompletedButton({
               )}
             </div>
 
-            {/* Action buttons */}
+            {/* Action buttons - Enhanced for Monetization */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
                 asChild
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg"
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg"
               >
                 <Link
-                  href="/dashboard/myCompletions"
+                  href="/dashboard/portfolio"
                   className="flex items-center gap-2"
                 >
-                  <BarChart3 className="h-4 w-4" />
-                  View All Progress
+                  <Trophy className="h-4 w-4" />
+                  Add to Portfolio ⭐
                 </Link>
               </Button>
 
               <Button
                 asChild
                 variant="outline"
-                className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-primary/20 hover:bg-primary/5"
+                className="border-green-200 hover:bg-green-50"
               >
-                <Link href="/" className="flex items-center gap-2">
-                  <Zap className="h-4 w-4" />
-                  Next Challenge
+                <Link
+                  href="/dashboard/myCompletions"
+                  className="flex items-center gap-2"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  View Progress
                 </Link>
               </Button>
             </div>
 
-            {/* Encouragement message */}
-            <div className="text-center bg-green-100/50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200/50">
-              <p className="text-xs text-green-700 dark:text-green-300 font-medium">
-                🚀 You&apos;re building serious automation skills! Keep the momentum
-                going with more tutorials
+            {/* Portfolio Upsell message */}
+            <div className="text-center bg-purple-100/50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200/50">
+              <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">
+                💼 Build your professional portfolio with completed automations!
+                <br />
+                <span className="text-purple-600 dark:text-purple-400">
+                  Show clients your skills • Get hired faster • Stand out from the crowd
+                </span>
               </p>
             </div>
           </div>
@@ -436,7 +411,6 @@ export default function MarkCompletedButton({
               <>
                 <CheckCircle className="h-4 w-4 group-hover:text-green-300 transition-colors duration-300" />
                 <span>Save My Progress</span>
-                <Sparkles className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </>
             )}
           </div>

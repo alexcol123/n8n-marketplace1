@@ -5,7 +5,6 @@ import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import UnifiedStepCard from "./UnifiedStepCard";
 import { ConnectionInfo } from "@/utils/functions/WorkflowStepsInOrder";
 import {
@@ -14,9 +13,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
-  Clock,
-  BarChart3,
-  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MarkCompletedButton from "./MarkCompletedButton";
@@ -261,111 +257,41 @@ export default function WorkflowStepsViewer({
 
   return (
     <div className={cn("flex flex-col", className)}>
-      <Card className="flex-1 overflow-hidden border-primary/20 shadow-lg">
-        {/* Top Navigation & Progress Section */}
-        <div className="border-b border-border/50 bg-gradient-to-r from-primary/5 via-background to-primary/5">
-          {/* Progress Bar & Stats Row */}
-          <div className="px-6 pt-4 pb-3">
-            <div className="flex items-center justify-between mb-4">
-              {/* Left: Progress Info */}
-              <div className="flex items-center gap-4">
-                <Badge
-                  variant="secondary"
-                  className="bg-primary/10 text-primary border border-primary/20 text-xs px-2 py-1 font-medium"
-                >
+      <Card className="flex-1 overflow-hidden border-border shadow-sm">
+        {/* Simplified Header */}
+        <div className="border-b border-border bg-card">
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between">
+              {/* Left: Simple Tutorial Badge */}
+              <div className="flex items-center gap-3">
+                <Badge variant="secondary" className="text-xs px-2 py-1">
                   <Workflow className="h-3 w-3 mr-1" />
                   Tutorial
                 </Badge>
-
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div className="hidden md:flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{stats.totalSteps}min</span>
-                  </div>
-                  <div className="hidden md:flex items-center gap-1">
-                    <BarChart3 className="h-4 w-4" />
-                    <span>{stats.totalSteps} Steps</span>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-xs px-2 py-1",
-                      stats.complexity === "Beginner" &&
-                        "border-emerald-200 text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800",
-                      stats.complexity === "Intermediate" &&
-                        "border-amber-200 text-amber-700 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800",
-                      stats.complexity === "Advanced" &&
-                        "border-rose-200 text-rose-700 bg-rose-50 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-800"
-                    )}
-                  >
-                    {stats.complexity}
-                  </Badge>
-
-                  {currentStep?.isReturnStep === true && (
-                    <Badge variant="default">
-                      <ArrowLeft className="h-3 w-3 mr-1" />
-                      Return Step
-                    </Badge>
-                  )}
+                <div className="text-sm text-muted-foreground">
+                  {stats.totalSteps} Steps
                 </div>
               </div>
 
-              {/* Right: Current Step & Controls */}
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="text-sm font-medium">
-                    {isOnCompletionStep
-                      ? "Tutorial Complete!"
-                      : `Step ${currentStepIndex + 1} of ${
-                          displayedSteps.length
-                        }`}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {viewedSteps.size} viewed • {completionPercentage}% complete
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Enhanced Progress Bar */}
-            <div className="relative">
-              <Progress
-                value={completionPercentage}
-                className="h-3 bg-muted/40"
-              />
-              {/* Progress step indicators */}
-              <div className="absolute top-0 left-0 right-0 flex justify-between items-center h-3">
-                {Array.from({ length: displayedSteps.length }, (_, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "w-4 h-4 rounded-full border-2 border-background -mt-0.5 transition-all duration-300 shadow-sm",
-                      i < viewedSteps.size || isOnCompletionStep
-                        ? "bg-primary shadow-primary/30"
-                        : i === currentStepIndex
-                        ? "bg-primary/60 ring-2 ring-primary/30 scale-110"
-                        : "bg-muted hover:bg-muted/80"
-                    )}
-                  />
-                ))}
+              {/* Right: Simple Progress */}
+              <div className="text-sm text-muted-foreground">
+                {isOnCompletionStep
+                  ? "Complete! 🎉"
+                  : `Step ${currentStepIndex + 1} of ${displayedSteps.length} (${completionPercentage}%)`}
               </div>
             </div>
           </div>
 
-          {/* Navigation Controls */}
-          <div className="px-6 py-3 border-t border-border/30 bg-background/50">
+          {/* Simple Navigation */}
+          <div className="px-4 py-3 border-t border-border">
             <div className="flex items-center justify-between">
               <Button
                 variant="outline"
-                size="default"
+                size="sm"
                 onClick={goToPreviousStep}
                 disabled={currentStepIndex === 0}
-                className={cn(
-                  "gap-2 min-w-[120px] font-medium transition-all",
-                  currentStepIndex === 0 && "opacity-50 cursor-not-allowed"
-                )}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 mr-1" />
                 Previous
               </Button>
 
@@ -373,85 +299,64 @@ export default function WorkflowStepsViewer({
               <div className="text-center px-4 hidden sm:block">
                 <div className="text-sm font-medium truncate max-w-[300px]">
                   {isOnCompletionStep
-                    ? "🎉 All Steps Complete!"
-                    : currentStep?.stepTitle ||
-                      currentStep?.name ||
-                      "Loading..."}
+                    ? "All Steps Complete!"
+                    : currentStep?.stepTitle || currentStep?.name || "Loading..."}
                 </div>
-                {!isOnCompletionStep && currentStep && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {currentStep.type || ""}
-                  </div>
-                )}
               </div>
 
               <Button
-                size="default"
+                size="sm"
                 onClick={goToNextStep}
                 disabled={currentStepIndex >= totalStepsWithCompletion - 1}
-                className={cn(
-                  "gap-2 min-w-[120px] font-medium transition-all duration-300",
-                  currentStepIndex === displayedSteps.length - 1
-                    ? "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-lg"
-                    : "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md"
-                )}
+                className={currentStepIndex === displayedSteps.length - 1 ? "bg-green-600 hover:bg-green-700" : ""}
               >
-                {currentStepIndex === displayedSteps.length - 1
-                  ? "Complete"
-                  : "Next"}
-                <ChevronRight className="h-4 w-4" />
+                {currentStepIndex === displayedSteps.length - 1 ? "Complete" : "Next"}
+                <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
           </div>
         </div>
 
         {/* Main Content Area */}
-        <CardContent className="p-0 flex-1">
-          <div className="p-1">
-            {isOnCompletionStep ? (
-              /* Completion Step */
-              <MarkCompletedButton workflowId={workflowId} />
-            ) : currentStep ? (
-              /* Current Step */
-              <div className="space-y-2">
-                {/* Step Content */}
-                <div className="bg-card/50 p-1">
-                  <UnifiedStepCard
-                    key={currentStep.id}
-                    step={currentStep}
-                    stepNumber={currentStepIndex + 1}
-                    onToggleExpanded={handleStepToggleExpanded}
-                    isMarkedAsViewed={viewedSteps.has(currentStep.id)}
-                    isExpanded={expandedStepId === currentStep.id}
-                    onExpand={handleStepExpand}
-                    canEditSteps={canEditSteps}
-                    guideData={guideData as NodeDocumentation | undefined}
-                    isReturnStep={currentStep.isReturnStep === true}
-                  />
-                </div>
+        <CardContent className="p-2 flex-1">
+          {isOnCompletionStep ? (
+            /* Completion Step */
+            <MarkCompletedButton workflowId={workflowId} />
+          ) : currentStep ? (
+            /* Current Step */
+            <UnifiedStepCard
+              key={currentStep.id}
+              step={currentStep}
+              stepNumber={currentStepIndex + 1}
+              onToggleExpanded={handleStepToggleExpanded}
+              isMarkedAsViewed={viewedSteps.has(currentStep.id)}
+              isExpanded={expandedStepId === currentStep.id}
+              onExpand={handleStepExpand}
+              canEditSteps={canEditSteps}
+              guideData={guideData as NodeDocumentation | undefined}
+              isReturnStep={currentStep.isReturnStep === true}
+            />
+          ) : (
+            /* Error State */
+            <div className="text-center py-16">
+              <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-6">
+                <AlertTriangle className="h-8 w-8 text-muted-foreground" />
               </div>
-            ) : (
-              /* Error State */
-              <div className="text-center py-16">
-                <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-6">
-                  <AlertTriangle className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Step Not Found</h3>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  We couldn&#39;t load this step. This might be a temporary
-                  issue or the step may have been removed.
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentStepIndex(0)}
-                  className="gap-2"
-                >
-                  <ArrowRight className="h-4 w-4" />
-                  Return to First Step
-                </Button>
-              </div>
-            )}
-          </div>
+              <h3 className="text-xl font-semibold mb-3">Step Not Found</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                We couldn&#39;t load this step. This might be a temporary
+                issue or the step may have been removed.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStepIndex(0)}
+                className="gap-2"
+              >
+                <ArrowRight className="h-4 w-4" />
+                Return to First Step
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,6 +1,5 @@
 import * as z from "zod";
 
-import { CategoryType } from "@prisma/client";
 
 export const profileSchema = z.object({
   // firstName: z.string().max(5, { message: 'max length is 5' }),
@@ -66,23 +65,7 @@ function validateFile() {
 
 // =================================
 
-// Define the CategoryType enum to match your schema
-// export const CategoryTypeEnum = z.enum([
-//   "technologya",
-//   "lifestyle",
-//   "business",
-//   "travel",
-// ]);
-
-export const CategoryTypeEnum = z.nativeEnum(CategoryType, {
-  errorMap: () => {
-    return {
-      message: `Category must be one of: ${Object.values(CategoryType).join(
-        ", "
-      )}`,
-    };
-  },
-});
+// CategoryType enum removed - no longer using categories
 
 // Updated schema
 // Updated schema (REMOVED steps field)
@@ -95,11 +78,7 @@ export const workflowSchema = z.object({
     .max(100, {
       message: "Title must be less than 100 characters.",
     }),
-  content: z.string({ required_error: "Content is required" }).min(100, {
-    message: "Content must be at least 100 characters.",
-  }),
-  category: CategoryTypeEnum,
-  steps: z.string().optional().default("[]"),
+
 
   videoUrl: z
     .string()

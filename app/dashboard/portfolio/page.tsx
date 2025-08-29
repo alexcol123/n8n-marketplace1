@@ -28,6 +28,10 @@ import {
   EyeOff,
   DollarSign,
   ExternalLink,
+  FileCode,
+  Download,
+  Key,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -54,31 +58,39 @@ interface Site {
   siteUrl: string;
   category?: string;
   isPopular?: boolean;
-  sortOrder?: number;
   difficulty?: string;
   estimatedTime?: string;
   status?: string;
+  requiredCredentials: string[];
+  frontendWorkflowJson?: string;
+  workflowId?: string;
+  workflow?: {
+    id: string;
+    title: string;
+    category: string;
+    verifiedAndTested: boolean;
+  };
 }
 
-interface UserSiteCredential {
-  id: string;
-  userId: string;
-  availableSiteId: string;
-  credentials: any;
-  isActive: boolean;
-  isConfigured: boolean;
-  lastUsed?: Date;
-  usageCount: number;
-  createdAt: Date;
-  updatedAt: Date;
-  availableSite: Site;
-}
+// interface UserSiteCredential {
+//   id: string;
+//   userId: string;
+//   availableSiteId: string;
+//   credentials: any;
+//   isActive: boolean;
+//   isConfigured: boolean;
+//   lastUsed?: Date;
+//   usageCount: number;
+//   createdAt: Date;
+//   updatedAt: Date;
+//   availableSite: Site;
+// }
 
 export default function UserPortfolioPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [availableSites, setAvailableSites] = useState<Site[]>([]);
   const [configuredSites, setConfiguredSites] = useState<Site[]>([]);
-    const [unConfiguredSites, setUnConfiguredSites] = useState<Site[]>([]);
+  // const [unConfiguredSites, setUnConfiguredSites] = useState<Site[]>([]);
   const [showBrowse, setShowBrowse] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +118,7 @@ export default function UserPortfolioPage() {
       );
 
       if (portfolioResult.success && portfolioResult.data) {
-        const { configuredSites, unconfiguredSites, allSites } =
+        const { configuredSites, unconfiguredSites } =
           portfolioResult.data;
 
         // Set the data efficiently
@@ -138,10 +150,9 @@ export default function UserPortfolioPage() {
   };
 
   // Get unconfigured sites efficiently
-  const unconfiguredSites = availableSites.filter(
-    (site) => !configuredSites.some((configured) => configured.id === site.id)
-  );
-
+  // const unconfiguredSites = availableSites.filter(
+  //   (site) => !configuredSites.some((configured) => configured.id === site.id)
+  // );
 
   // Loading state
   if (loading) {
@@ -392,118 +403,26 @@ export default function UserPortfolioPage() {
             )}
           </div>
         )}
-
-        {/* Motivational Message Section - ALWAYS SHOW */}
-        <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 via-background to-primary/5 mb-8">
-          <CardContent className="p-8 text-center">
-            <div className="flex justify-center mb-4">
-              <div className="relative">
-                <CheckCircle className="w-12 h-12 text-primary" />
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full animate-pulse"></div>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <h3 className="text-3xl font-bold mb-3 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                STOP BUILDING. START BILLING! 💰
-              </h3>
-              <p className="text-xl font-semibold text-primary mb-2">
-                Your automation skills = Someone else's $3K/month problem SOLVED
-              </p>
-            </div>
-
-            <div className="bg-primary/10 rounded-xl p-6 mb-6 border border-primary/20">
-              <p className="text-lg text-foreground font-medium leading-relaxed">
-                {configuredSites.length > 0
-                  ? `You've built ${
-                      configuredSites.length
-                    } professional automation solution${
-                      configuredSites.length !== 1 ? "s" : ""
-                    }. That's ${
-                      configuredSites.length * 2
-                    }+ hours you could save EVERY client. Time to CHARGE for that value! 🚀`
-                  : "Your automation knowledge is worth $50-100/hour. Every day you don't freelance is $400+ you're leaving on the table. 📈"}
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-4 mb-6 text-sm">
-              <div className="bg-background/50 rounded-lg p-4 border border-primary/10">
-                <div className="text-2xl font-bold text-primary">$800</div>
-                <div className="text-muted-foreground">First project goal</div>
-              </div>
-              <div className="bg-background/50 rounded-lg p-4 border border-primary/10">
-                <div className="text-2xl font-bold text-primary">8-12</div>
-                <div className="text-muted-foreground">Hours to complete</div>
-              </div>
-              <div className="bg-background/50 rounded-lg p-4 border border-primary/10">
-                <div className="text-2xl font-bold text-primary">$75/hr</div>
-                <div className="text-muted-foreground">Your starting rate</div>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <p className="text-lg font-bold text-foreground mb-2">
-                🎯 YOUR MISSION (Choose One, Do It TODAY):
-              </p>
-              <div className="text-left max-w-xl mx-auto space-y-2 text-foreground">
-                <p>
-                  • Text 3 business owners you know: "I build automation that
-                  saves 10+ hours/week"
-                </p>
-                <p>
-                  • Post a workflow demo on LinkedIn with: "This saved my client
-                  15 hours monthly"
-                </p>
-                <p>
-                  • Email 5 local restaurants: "I can automate your order
-                  management for $600"
-                </p>
-                <p>
-                  • Message 3 real estate agents: "Want automated lead follow-up
-                  for $500?"
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl p-4 mb-6 border-l-4 border-primary">
-              <p className="text-lg font-bold text-foreground">
-                💡 REALITY CHECK: While you're "perfecting" your skills, someone
-                else is charging $75/hour for automation you could build in your
-                sleep.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white font-bold text-lg px-8 py-3"
-              >
-                <DollarSign className="w-6 h-6 mr-2" />
-                I'M READY TO MAKE MONEY
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-primary text-primary hover:bg-primary/10 font-semibold"
-              >
-                <ExternalLink className="w-5 h-5 mr-2" />
-                Share My Portfolio
-              </Button>
-            </div>
-
-            <p className="text-sm text-muted-foreground mt-4 italic">
-              "The best time to start freelancing was yesterday. The second best
-              time is RIGHT NOW." 🚀
-            </p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
 }
 
-// Configured Site Card Component
+// Enhanced Configured Site Card Component
 function ConfiguredSiteCard({ site }: { site: Site }) {
+  const getPricingSuggestion = (difficulty?: string) => {
+    switch (difficulty?.toLowerCase()) {
+      case "beginner":
+        return "$297-497 setup fee";
+      case "intermediate":
+        return "$497-797 setup fee";
+      case "advanced":
+        return "$797-1,497 setup fee";
+      default:
+        return "$497 setup fee";
+    }
+  };
+
   return (
     <Card className="group relative overflow-hidden border-2 border-emerald-200 hover:border-emerald-400 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/20 bg-gradient-to-br from-emerald-50/50 to-transparent h-full flex flex-col">
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/5 opacity-100 group-hover:opacity-100 transition-opacity duration-500" />
@@ -546,9 +465,26 @@ function ConfiguredSiteCard({ site }: { site: Site }) {
       </CardHeader>
 
       <CardContent className="relative z-10 pt-0 flex-1 flex flex-col justify-between">
-        <CardDescription className="text-sm text-muted-foreground mb-4 line-clamp-2">
-          {site.description}
-        </CardDescription>
+        <div className="flex-1">
+          <CardDescription className="text-sm text-muted-foreground mb-4 line-clamp-2">
+            {site.description}
+          </CardDescription>
+
+          {/* Earning Potential Highlight */}
+          <div className="p-3 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-lg mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm font-medium text-emerald-800">
+                  Ready to Earn
+                </span>
+              </div>
+              <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300">
+                {getPricingSuggestion(site.difficulty)}
+              </Badge>
+            </div>
+          </div>
+        </div>
 
         <div className="flex gap-2">
           <Button
@@ -569,8 +505,59 @@ function ConfiguredSiteCard({ site }: { site: Site }) {
   );
 }
 
-// Unconfigured Site Card Component
+// Enhanced Unconfigured Site Card Component with Workflow Download
 function UnconfiguredSiteCard({ site }: { site: Site }) {
+  const handleDownloadWorkflow = () => {
+    if (!site.frontendWorkflowJson) {
+      alert("No workflow template available for this site yet.");
+      return;
+    }
+
+    try {
+      const workflowData = JSON.parse(site.frontendWorkflowJson);
+      const blob = new Blob([JSON.stringify(workflowData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${site.siteName}-workflow-template.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      alert("Error downloading workflow template");
+      console.error(error);
+    }
+  };
+
+  const getDifficultyColor = (difficulty?: string) => {
+    switch (difficulty?.toLowerCase()) {
+      case "beginner":
+        return "text-green-600 bg-green-50 border-green-200";
+      case "intermediate":
+        return "text-yellow-600 bg-yellow-50 border-yellow-200";
+      case "advanced":
+        return "text-red-600 bg-red-50 border-red-200";
+      default:
+        return "text-gray-600 bg-gray-50 border-gray-200";
+    }
+  };
+
+  const getPricingSuggestion = (difficulty?: string) => {
+    switch (difficulty?.toLowerCase()) {
+      case "beginner":
+        return "$297-497 setup fee";
+      case "intermediate":
+        return "$497-797 setup fee";
+      case "advanced":
+        return "$797-1,497 setup fee";
+      default:
+        return "$497 setup fee";
+    }
+  };
+
   return (
     <Card className="group relative overflow-hidden border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 h-full flex flex-col">
       <div className="absolute inset-0 bg-gradient-to-br from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -594,11 +581,20 @@ function UnconfiguredSiteCard({ site }: { site: Site }) {
               <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">
                 {site.name}
               </CardTitle>
-              {site.category && (
-                <Badge variant="outline" className="mt-1 text-xs">
-                  {site.category}
-                </Badge>
-              )}
+              <div className="flex gap-2 mt-1">
+                {site.category && (
+                  <Badge variant="outline" className="text-xs">
+                    {site.category}
+                  </Badge>
+                )}
+                {site.difficulty && (
+                  <Badge
+                    className={`text-xs ${getDifficultyColor(site.difficulty)}`}
+                  >
+                    {site.difficulty}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
 
@@ -613,10 +609,90 @@ function UnconfiguredSiteCard({ site }: { site: Site }) {
       </CardHeader>
 
       <CardContent className="relative z-10 pt-0 flex-1 flex flex-col justify-between">
-        <CardDescription className="text-sm text-muted-foreground mb-4 line-clamp-2">
-          {site.description}
-        </CardDescription>
+        <div className="flex-1">
+          <CardDescription className="text-sm text-muted-foreground mb-4 line-clamp-2">
+            {site.description}
+          </CardDescription>
 
+          {/* Workflow Template Section */}
+          <div className="space-y-3 mb-4">
+            <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <FileCode className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">
+                  n8n Workflow Template
+                </span>
+              </div>
+              {site.frontendWorkflowJson ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDownloadWorkflow}
+                  className="text-blue-600 border-blue-300 hover:bg-blue-100"
+                >
+                  <Download className="w-3 h-3 mr-1" />
+                  Download JSON
+                </Button>
+              ) : (
+                <Badge variant="secondary" className="text-xs">
+                  Coming Soon
+                </Badge>
+              )}
+            </div>
+
+            {/* Required Credentials */}
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Key className="w-4 h-4 text-amber-600" />
+                <span className="text-sm font-medium text-amber-800">
+                  Required Setup
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {site.requiredCredentials.map((cred) => (
+                  <Badge
+                    key={cred}
+                    variant="outline"
+                    className="text-xs text-amber-700 border-amber-300"
+                  >
+                    {cred.replace("_", " ")}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Time & Pricing Info */}
+            <div className="grid grid-cols-2 gap-2">
+              {site.estimatedTime && (
+                <div className="p-2 bg-green-50 border border-green-200 rounded-lg text-center">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Clock className="w-3 h-3 text-green-600" />
+                    <span className="text-xs font-medium text-green-800">
+                      Setup Time
+                    </span>
+                  </div>
+                  <div className="text-xs text-green-700">
+                    {site.estimatedTime}
+                  </div>
+                </div>
+              )}
+
+              <div className="p-2 bg-purple-50 border border-purple-200 rounded-lg text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <DollarSign className="w-3 h-3 text-purple-600" />
+                  <span className="text-xs font-medium text-purple-800">
+                    Client Pricing
+                  </span>
+                </div>
+                <div className="text-xs text-purple-700">
+                  {getPricingSuggestion(site.difficulty)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
         <div className="flex gap-2">
           <Button
             asChild

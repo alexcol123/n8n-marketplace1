@@ -11,7 +11,7 @@
 // - POST /api/portfolio/anything → params.siteName = "anything"
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser, getUserCredentialsAction } from "@/utils/actions";
+import { getAuthUser, getUserCredentialsBySiteNameAction } from "@/utils/actions";
 
 export async function POST(request: NextRequest, props: { params: Promise<{ siteName: string }> }) {
   const params = await props.params;
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
     // 
     // getUserCredentialsAction looks up the current user's credentials
     // for the specific siteName (from the URL parameter)
-    const credentialsResult = await getUserCredentialsAction(params.siteName);
+    const credentialsResult = await getUserCredentialsBySiteNameAction( user.id, params.siteName);
     
     // Check if the user has configured credentials for this site
     if (!credentialsResult.success || !credentialsResult.credentials) {

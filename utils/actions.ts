@@ -17,14 +17,13 @@ import { deleteImage, uploadImage } from "./supabase";
 
 import slug from "slug";
 import {
-  CategoryType,
   IssueStatus,
   Priority,
   WorkflowStep,
 } from "@prisma/client";
 import { getDateTime } from "./functions/getDateTime";
 
-import { CompletionCountData, CompletionWithUserData } from "./types";
+
 
 import { identifyService } from "./functions/identifyService";
 import { extractAndSaveWorkflowSteps } from "./functions/extractWorkflowSteps";
@@ -347,31 +346,28 @@ export const updateProfileImageAction = async (
 
 export const fetchWorkflows = async ({
   search = "",
-  category,
 }: {
   search?: string;
-  category?: string;
 }) => {
   const workflows = await db.workflow.findMany({
-    where: {
-      category: category as CategoryType | undefined,
-      OR: [
-        { title: { contains: search, mode: "insensitive" } },
-        { content: { contains: search, mode: "insensitive" } },
-      ],
-    },
+    where: search ? {
+      title: { contains: search, mode: "insensitive" }
+    } : {},
     select: {
       id: true,
       title: true,
-      content: true,
       workflowImage: true,
       creationImage: true,
       createdAt: true,
       authorId: true,
       author: true,
-      category: true,
       slug: true,
       viewCount: true,
+      WorkflowTeachingGuide: {
+        select: {
+          whatYoullBuildSummary: true,
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",
@@ -464,7 +460,6 @@ export async function getUserWorkflowStats() {
       select: {
         id: true,
         viewCount: true,
-        category: true,
       },
     });
 
@@ -477,24 +472,8 @@ export async function getUserWorkflowStats() {
       0
     );
 
-    // Count categories
-    const categoryCount = new Map<string, number>();
-
-    userWorkflows.forEach((workflow) => {
-      const category = workflow.category;
-      categoryCount.set(category, (categoryCount.get(category) || 0) + 1);
-    });
-
-    // Convert category map to array
-    const categoriesUsed = Array.from(categoryCount.entries()).map(
-      ([name, count]) => ({
-        name,
-        count,
-      })
-    );
-
-    // Sort categories by count (highest first)
-    categoriesUsed.sort((a, b) => b.count - a.count);
+    // Categories no longer used - removed category field
+    const categoriesUsed: Array<{name: string, count: number}> = [];
 
     // Get most used category
 
@@ -667,164 +646,10 @@ export const deleteWorkflowAction = async (
   }
 };
 
-// Add this to utils/actions.ts
 
-// Leaderboard data types
-interface TopDownloadedWorkflow {
-  id: string;
-  title: string;
-  authorName: string;
-  authorProfileImage: string;
-  _count: {
-    downloads: number;
-  };
-}
 
-interface TopContributor {
-  id: string;
-  name: string;
-  username: string;
-  profileImage: string;
-  workflowCount: number;
-}
 
-interface TrendingWorkflow {
-  id: string;
-  title: string;
-  authorName: string;
-  authorProfileImage: string;
-  recentViews: number;
-}
 
-interface LeaderboardData {
-  topDownloadedWorkflows: TopDownloadedWorkflow[];
-  topWorkflowCreators: TopContributor[];
-  trendingThisMonth: TrendingWorkflow[];
-}
-
-// Function to fetch leaderboard data
-export const getLeaderboardData = async (): Promise<LeaderboardData> => {
-  try {
-    // Get top downloaded workflows
-    const topDownloadedWorkflows = await db.workflow.findMany({
-      take: 10,
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        author: {
-          select: {
-            firstName: true,
-            lastName: true,
-            profileImage: true,
-          },
-        },
-        _count: {
-          select: {
-            downloads: true,
-          },
-        },
-      },
-      orderBy: {
-        downloads: {
-          _count: "desc",
-        },
-      },
-    });
-
-    // Get top workflow creators
-    const topWorkflowCreators = await db.profile.findMany({
-      take: 10,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        profileImage: true,
-        _count: {
-          select: {
-            Workflow: true,
-          },
-        },
-      },
-      orderBy: {
-        Workflow: {
-          _count: "desc",
-        },
-      },
-    });
-
-    // Get trending workflows this month
-    // First get the date for the beginning of the current month
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    // Find workflows with the most views in the current month
-    const trendingThisMonth = await db.workflow.findMany({
-      take: 10,
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        viewCount: true, // This is used as a proxy for monthly views
-        author: {
-          select: {
-            firstName: true,
-            lastName: true,
-            profileImage: true,
-          },
-        },
-      },
-      where: {
-        updatedAt: {
-          gte: startOfMonth,
-        },
-      },
-      orderBy: {
-        viewCount: "desc",
-      },
-    });
-
-    // Format the data for the component
-    return {
-      topDownloadedWorkflows: topDownloadedWorkflows.map((workflow) => ({
-        id: workflow.slug, // Using slug as ID for URL construction
-        title: workflow.title,
-        slug: workflow.slug,
-        authorName: `${workflow.author.firstName} ${workflow.author.lastName}`,
-        authorProfileImage: workflow.author.profileImage,
-        _count: {
-          downloads: workflow._count.downloads,
-        },
-      })),
-
-      topWorkflowCreators: topWorkflowCreators.map((creator) => ({
-        id: creator.id,
-        name: `${creator.firstName} ${creator.lastName}`,
-        username: creator.username,
-        profileImage: creator.profileImage,
-        workflowCount: creator._count.Workflow,
-      })),
-
-      trendingThisMonth: trendingThisMonth.map((workflow) => ({
-        id: workflow.slug, // Using slug as ID for URL construction
-        title: workflow.title,
-        authorName: `${workflow.author.firstName} ${workflow.author.lastName}`,
-        authorProfileImage: workflow.author.profileImage,
-        recentViews: workflow.viewCount, // Using viewCount as proxy for monthly views
-      })),
-    };
-  } catch (error) {
-    console.error("Error fetching leaderboard data:", error);
-
-    // Return empty data in case of error
-    return {
-      topDownloadedWorkflows: [],
-      topWorkflowCreators: [],
-      trendingThisMonth: [],
-    };
-  }
-};
 
 export const getUserProfileWithWorkflows = async (username: string) => {
   try {
@@ -853,8 +678,7 @@ export const getUserProfileWithWorkflows = async (username: string) => {
             id: true,
             slug: true,
             title: true,
-            category: true,
-            workflowImage: true,
+                workflowImage: true,
             creationImage: true,
             viewCount: true,
             createdAt: true,
@@ -1013,8 +837,7 @@ export const fetchUserCompletions = async () => {
           select: {
             id: true,
             title: true,
-            category: true,
-            slug: true,
+                slug: true,
             workflowImage: true,
             creationImage: true,
             author: {
@@ -1183,172 +1006,7 @@ export const getCompletionLeaderboard = async (limit: number = 10) => {
   }
 };
 
-// Get user's ranking position
-export const getUserCompletionRank = async () => {
-  try {
-    const user = await getAuthUser();
 
-    // Get user's completion count
-    const userCompletionCount = await db.workflowCompletion.count({
-      where: {
-        userId: user.id,
-      },
-    });
-
-    // Get count of users with more completions
-    const usersWithMoreCompletions = await db.workflowCompletion.groupBy({
-      by: ["userId"],
-      _count: {
-        userId: true,
-      },
-      having: {
-        userId: {
-          _count: {
-            gt: userCompletionCount,
-          },
-        },
-      },
-    });
-
-    const rank = usersWithMoreCompletions.length + 1;
-
-    return {
-      rank,
-      completionCount: userCompletionCount,
-    };
-  } catch (error) {
-    console.error("Error fetching user completion rank:", error);
-    return {
-      rank: null,
-      completionCount: 0,
-    };
-  }
-};
-
-export const getRecentCompletionLeaderboards = async () => {
-  try {
-    const now = new Date();
-
-    // Calculate date boundaries
-    const todayStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    );
-    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    // Get today's completions
-    const todayCompletions = await db.workflowCompletion.groupBy({
-      by: ["userId"],
-      where: {
-        completedAt: {
-          gte: todayStart,
-        },
-      },
-      _count: {
-        userId: true,
-      },
-      orderBy: {
-        _count: {
-          userId: "desc",
-        },
-      },
-      take: 10,
-    });
-
-    // Get this week's completions
-    const weekCompletions = await db.workflowCompletion.groupBy({
-      by: ["userId"],
-      where: {
-        completedAt: {
-          gte: weekStart,
-        },
-      },
-      _count: {
-        userId: true,
-      },
-      orderBy: {
-        _count: {
-          userId: "desc",
-        },
-      },
-      take: 10,
-    });
-
-    // Get this month's completions
-    const monthCompletions = await db.workflowCompletion.groupBy({
-      by: ["userId"],
-      where: {
-        completedAt: {
-          gte: monthStart,
-        },
-      },
-      _count: {
-        userId: true,
-      },
-      orderBy: {
-        _count: {
-          userId: "desc",
-        },
-      },
-      take: 10,
-    });
-
-    // Get user details for all completion data
-    const allUserIds = [
-      ...todayCompletions.map((c) => c.userId),
-      ...weekCompletions.map((c) => c.userId),
-      ...monthCompletions.map((c) => c.userId),
-    ];
-
-    const uniqueUserIds = [...new Set(allUserIds)];
-
-    const users = await db.profile.findMany({
-      where: {
-        clerkId: {
-          in: uniqueUserIds,
-        },
-      },
-      select: {
-        clerkId: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        profileImage: true,
-      },
-    });
-
-    // Helper function to combine completion data with user info
-    const combineWithUserData = (
-      completions: CompletionCountData[]
-    ): CompletionWithUserData[] => {
-      return completions
-        .map((completion) => {
-          const user = users.find((u) => u.clerkId === completion.userId);
-          return {
-            userId: completion.userId,
-            completionCount: completion._count.userId,
-            user: user || null,
-          };
-        })
-        .filter((item): item is CompletionWithUserData => item.user !== null); // Type guard to filter out null users
-    };
-
-    return {
-      today: combineWithUserData(todayCompletions),
-      week: combineWithUserData(weekCompletions),
-      month: combineWithUserData(monthCompletions),
-    };
-  } catch (error) {
-    console.error("Error fetching recent completion leaderboards:", error);
-    return {
-      today: [],
-      week: [],
-      month: [],
-    };
-  }
-};
 
 // Get completion streaks for gamification
 export const getCompletionStreaks = async () => {
@@ -3218,8 +2876,6 @@ export const createWorkflowAction = async (
     // ... existing validation code ...
     const validatedFields = validateWithZodSchema(workflowSchema, {
       title: rawData.title,
-      content: rawData.content,
-      category: rawData.category,
       videoUrl: rawData.videoUrl || "",
     });
 
@@ -3261,15 +2917,13 @@ export const createWorkflowAction = async (
     // Create the workflow data
     const workflowData = {
       title: validatedFields.title,
-      content: validatedFields.content,
       slug: slugString,
       viewCount: 0,
       workflowImage: workflowImagePath,
       creationImage: creationImagePath || null,
-      category: validatedFields.category,
       authorId: user.id,
       workFlowJson,
-      videoUrl: rawData.videoUrl ? rawData.videoUrl.toString() : null,
+      videoUrl: validatedFields.videoUrl || null,
     };
 
     // CREATE WORKFLOW
@@ -3348,13 +3002,8 @@ async function generateWorkflowTeachingGuide(
       data: {
         workflowId,
         title: teachingContent.title,
-        description: teachingContent.description,
-        projectIntro: teachingContent.projectIntro,
-        idealFor: teachingContent.idealFor,
-        timeToValue: teachingContent.timeToValue,
-        howItWorks: teachingContent.howItWorks,
-        realCostOfNotHaving: teachingContent.realCostOfNotHaving,
         whatYoullBuild: teachingContent.whatYoullBuild,
+        whatYoullBuildSummary: teachingContent.whatYoullBuildSummary,
         possibleMonetization: teachingContent.possibleMonetization,
         toolsUsed: teachingContent.toolsUsed,
       },
@@ -3382,20 +3031,8 @@ async function generateTeachingGuideWithLLM(
 
     return {
       title: `💰 Get Results Fast - Master ${originalTitle}`,
-      description:
-        "Build powerful automation that saves time and increases efficiency for any business.",
-      projectIntro:
-        "Most businesses waste countless hours on repetitive tasks that could be automated. This workflow shows you how to reclaim that time and focus on what truly matters. Whether you're a small business owner looking to streamline operations or an entrepreneur ready to scale efficiently, this automation transforms daily chaos into systematic success.",
-      idealFor:
-        "🎯 Small Business Owners 🎯 Freelancers & Consultants 🎯 Operations Managers",
-      timeToValue:
-        "⚡ **2 hours** to build vs. **10+ hours** spent every week on manual, repetitive tasks that drain your energy and focus.",
-      howItWorks:
-        "✅ Automatically detects when tasks need to be processed ✅ Connects your existing tools without complex setup ✅ Runs in the background while you focus on growth ✅ Provides clear notifications when actions are completed",
-      realCostOfNotHaving:
-        "What you're really losing isn't just time - it's your competitive edge. Every hour spent on manual work is an hour not spent serving customers or growing your business. This inefficiency signals to competitors that you're stuck in operational quicksand while they're scaling systematically.",
       whatYoullBuild:
-        "• A complete workflow that automates tasks and connects different services\n• Professional automation skills ready to be monetized\n• Experience with cutting-edge automation tools and APIs\n• A systematic approach to identifying automation opportunities",
+        `Build a **professional ${originalTitle.toLowerCase()} automation system** that eliminates manual work and transforms your business operations into a streamlined, profit-generating machine. This complete automation uses **n8n**, **webhooks**, and **HTTP requests** to create a hands-off workflow that processes tasks in minutes instead of hours—reducing what typically takes 2-3 hours of manual work down to just 5 minutes of automated execution. Your system operates 24/7 without supervision, connecting multiple services seamlessly and handling complex workflows that would normally require constant human intervention. The result is a scalable automation that you can immediately deploy for clients or your own business, turning operational bottlenecks into competitive advantages while you focus on growth and revenue generation.`,
       possibleMonetization:
         "🚀 BUSINESS OPPORTUNITY: Every small business around you is drowning in manual tasks and would pay handsomely to escape. Charge $497 to set up this exact automation for local businesses, or offer 'Done-For-You Automation' at $197/month per client. With just 25 business clients, you're earning $4,925/month solving real operational pain while they focus on growth.",
       toolsUsed:
@@ -3465,17 +3102,12 @@ Step ${step.stepNumber}: ${step.title}
   )
   .join("\n")}
 
-PAUL GRAHAM STYLE REQUIREMENTS:
-- title: Problem-focused, under 60 characters. "💰 Get Paid in Days, Not Weeks" style. Focus on business outcome + emotional impact.
-- description: One crisp sentence about the business transformation, not the technology.
-- projectIntro: Start with the pain. What are people REALLY losing by doing this manually? Make it feel costly and urgent.
-- idealFor: Three specific audiences using "🎯 [Audience] 🎯 [Audience] 🎯 [Audience]" format.
-- timeToValue: "⚡ **X time** to build vs. **Y time** wasted every week on [specific manual tasks]"
-- howItWorks: 3-4 "✅ Automatically..." bullets showing what happens without human intervention.
-- realCostOfNotHaving: Pure Paul Graham. What's the REAL cost? Opportunity cost, competitive disadvantage, reputation damage.
-- whatYoullBuild: Technical outcomes with **bold tool names**, 4-6 bullets using •
-- possibleMonetization: Focus on selling TO businesses who need this. Specific pricing for setup + monthly service. Calculate realistic revenue.
-- toolsUsed: Array of "Tool Name - What it does for the business outcome" (not technical specs)
+CONTENT REQUIREMENTS (5 Essential Fields Only):
+- title: Problem-focused, outcome-driven title under 60 characters using formulas like 'OUTCOME + TIME FRAME + PAIN RELIEF' (e.g., 'Get Paid in Days, Not Weeks') or 'STOP/NEVER + PROBLEM' (e.g., 'Never Miss Another Payment'). Focus on business result and emotional impact, not technical features. Include relevant emojis.
+- whatYoullBuild: A compelling 150-200 word description following this structure: [MAIN PRODUCT/OUTCOME] + [KEY BENEFIT] + [TECHNICAL FOUNDATION] + [TIME SAVINGS] + [BUSINESS IMPACT]. First analyze the workflow steps to identify the primary end product (e.g., 'cartoon video generator', 'automated report system', 'lead qualification bot'). Lead with this main outcome, then highlight the key benefit it provides. Include specific time-saving examples (e.g., 'reduces 3-hour manual process to 10 minutes'). Mention **bold tool names** that power the system. End with broader business impact or scalability benefit. Emphasize what the user will achieve, not just what tools they'll use.
+- whatYoullBuildSummary: A compelling 2-line summary (maximum 120 characters) for workflow cards that captures attention and makes readers want to build this project. Focus on the main outcome and key benefit. Use action-oriented language and include the primary tool or result. Examples: 'Build automated invoice system that charges clients instantly and sends receipts via Gmail' or 'Create AI-powered video generator that transforms text into engaging cartoon content in minutes'. Make it irresistible and portfolio-worthy.
+- possibleMonetization: Focus on selling TO business owners who need this automation. Structure: 1) Identify the target market that has this pain, 2) Specific pricing for setup ($XXX) and monthly service ($XX/month), 3) Include realistic client count and monthly revenue calculation, 4) Position as solving immediate business pain. Make it feel like a validated business opportunity.
+- toolsUsed: Array of tools formatted as "Tool Name - Brief Description" using accessible language that explains what the tool does for the business outcome, not technical specifications.
 
 Make every section feel urgent and valuable. They should think "I'm hemorrhaging money without this" not "that's a nice feature."`,
         },
@@ -3495,13 +3127,8 @@ Make every section feel urgent and valuable. They should think "I'm hemorrhaging
     // Validate that all required fields exist (fail fast if LLM didn't follow schema)
     const requiredFields = [
       "title",
-      "description",
-      "projectIntro",
-      "idealFor",
-      "timeToValue",
-      "howItWorks",
-      "realCostOfNotHaving",
       "whatYoullBuild",
+      "whatYoullBuildSummary",
       "possibleMonetization",
       "toolsUsed",
     ];
@@ -3532,7 +3159,8 @@ Make every section feel urgent and valuable. They should think "I'm hemorrhaging
       realCostOfNotHaving:
         "What you're really losing isn't just time - it's your competitive advantage. Every hour spent on manual work is an hour not spent on strategy, customer acquisition, or innovation. This operational inefficiency signals to the market that you're stuck in the weeds while smarter competitors are scaling systematically.",
       whatYoullBuild:
-        "• A complete workflow that automates repetitive tasks automatically\n• Professional automation skills that create immediate business value\n• Experience with enterprise-grade automation tools\n• A systematic approach to identifying automation opportunities\n• Hands-free processes that work 24/7 without supervision",
+        `Build a **comprehensive automation system** that transforms your business operations from manual labor into a profit-generating machine working around the clock. This complete workflow automation uses **n8n**, **webhooks**, and **enterprise-grade automation tools** to eliminate repetitive tasks and create systematic processes that generate immediate business value—reducing what typically takes 3-4 hours of manual work down to just 10 minutes of automated execution. Your hands-free system operates 24/7 without supervision, automatically identifying and processing opportunities while you focus on strategic growth. The result is professional automation skills that create scalable business value, turning operational bottlenecks into competitive advantages that position you as the automation expert in your market.`,
+      whatYoullBuildSummary: `Build automated ${originalTitle.toLowerCase()} system that saves hours of manual work using n8n workflows`,
       possibleMonetization:
         "🚀 BUSINESS OPPORTUNITY: Every business in your area is bleeding money on manual processes and would pay premium rates to escape this operational quicksand. Charge $397 to implement this automation for local companies, or offer 'Done-For-You Process Automation' at $147/month per client. With just 30 business clients, you're generating $4,410/month in recurring revenue helping them reclaim their time and sanity.",
       toolsUsed:
@@ -3709,22 +3337,15 @@ export const fetchWorkflowTeachingGuide = async (workflowId: string) => {
       throw new Error("You don't have permission to access this workflow");
     }
 
-    // Fetch the WorkflowTeachingGuide with ALL Paul Graham fields
+    // Fetch the WorkflowTeachingGuide with essential fields only
     const teachingGuide = await db.workflowTeachingGuide.findUnique({
       where: { workflowId },
       select: {
         id: true,
         title: true,
-        description: true,
-        projectIntro: true,
-        idealFor: true,
-        timeToValue: true,
-        howItWorks: true,
-        realCostOfNotHaving: true,
         whatYoullBuild: true,
         possibleMonetization: true,
-
-        toolsUsed: true, // NEW: Updated to String[]
+        toolsUsed: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -3772,7 +3393,7 @@ export const fetchWorkflowTeachingGuide = async (workflowId: string) => {
 // Alternative version if you want to fetch by slug instead of ID
 export const fetchWorkflowTeachingGuideBySlug = async (slug: string) => {
   try {
-    const user = await getAuthUser();
+   
 
     // Find workflow by slug first
     const workflow = await db.workflow.findUnique({
@@ -3795,21 +3416,15 @@ export const fetchWorkflowTeachingGuideBySlug = async (slug: string) => {
       throw new Error("You don't have permission to access this workflow");
     }
 
-    // Fetch the WorkflowTeachingGuide with ALL Paul Graham fields
+    // Fetch the WorkflowTeachingGuide with essential fields only
     const teachingGuide = await db.workflowTeachingGuide.findUnique({
       where: { workflowId: workflow.id },
       select: {
         id: true,
         title: true,
-        description: true, // NEW: Paul Graham field
-        projectIntro: true,
-        idealFor: true, // NEW: Paul Graham field
-        timeToValue: true, // NEW: Paul Graham field
-        howItWorks: true, // NEW: Paul Graham field
-        realCostOfNotHaving: true, // NEW: Paul Graham field
         whatYoullBuild: true,
         possibleMonetization: true,
-        toolsUsed: true, // NEW: Updated to String[]
+        toolsUsed: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -3871,21 +3486,15 @@ export const fetchPublicWorkflowTeachingGuide = async (slug: string) => {
       throw new Error("Workflow not found");
     }
 
-    // Fetch the WorkflowTeachingGuide with ALL Paul Graham fields
+    // Fetch the WorkflowTeachingGuide with essential fields only
     const teachingGuide = await db.workflowTeachingGuide.findUnique({
       where: { workflowId: workflow.id },
       select: {
         id: true,
         title: true,
-        description: true, // NEW: Paul Graham field
-        projectIntro: true,
-        idealFor: true, // NEW: Paul Graham field
-        timeToValue: true, // NEW: Paul Graham field
-        howItWorks: true, // NEW: Paul Graham field
-        realCostOfNotHaving: true, // NEW: Paul Graham field
         whatYoullBuild: true,
         possibleMonetization: true,
-        toolsUsed: true, // NEW: Updated to String[]
+        toolsUsed: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -3937,12 +3546,10 @@ export const fetchPublicWorkflowTeachingGuide = async (slug: string) => {
 
 // AvailableSite  actions ****,
 
-// utils/actions.ts - UPDATE YOUR EXISTING ACTIONS + ADD MISSING ONES
-
-
+// utils/actions.ts - UPDATED ACTIONS WITH SORTORDER REMOVED
 
 /**
- * 🔥 UPDATED: Create site with new schema fields
+ * 🔥 UPDATED: Create site with new schema fields (sortOrder removed)
  */
 export const createSiteAction = async (siteData: {
   siteName: string;
@@ -3955,7 +3562,6 @@ export const createSiteAction = async (siteData: {
   estimatedTime?: string;
   workflowId?: string;
   frontendWorkflowJson?: string;
-  sortOrder?: number;
 }) => {
   try {
     // Check if siteName already exists
@@ -3990,22 +3596,20 @@ export const createSiteAction = async (siteData: {
         description: siteData.description,
         siteUrl: siteData.siteUrl,
         requiredCredentials: siteData.requiredCredentials,
-        category: siteData.category || null,
         difficulty: siteData.difficulty || null,
         estimatedTime: siteData.estimatedTime || null,
         workflowId: siteData.workflowId || null,
         frontendWorkflowJson: frontendJson,
         previewImage: "", // Empty for now
         status: "ACTIVE",
-        sortOrder: siteData.sortOrder || 0,
+        // sortOrder removed
       },
       include: {
         workflow: {
           select: {
             id: true,
             title: true,
-            category: true,
-            verifiedAndTested: true
+                verifiedAndTested: true
           }
         }
       }
@@ -4026,7 +3630,7 @@ export const createSiteAction = async (siteData: {
 };
 
 /**
- * 🚀 UPDATED: Get all sites with stats and workflow info
+ * 🚀 UPDATED: Get all sites with stats and workflow info (sortOrder removed)
  */
 export const getAllSitesAction = async () => {
   try {
@@ -4036,8 +3640,7 @@ export const getAllSitesAction = async () => {
           select: {
             id: true,
             title: true,
-            category: true,
-            verifiedAndTested: true
+                verifiedAndTested: true
           }
         },
         _count: {
@@ -4050,8 +3653,7 @@ export const getAllSitesAction = async () => {
       },
       orderBy: [
         { status: "asc" }, 
-        { sortOrder: "asc" }, 
-        { createdAt: "desc" }
+        { createdAt: "desc" }  // Order by creation date instead of sortOrder
       ],
     });
 
@@ -4069,20 +3671,8 @@ export const getAllSitesAction = async () => {
   }
 };
 
-
 /**
- * 🎯 FIXED: Get all sites NOT configured by the current student
- */
-
-
-
-/**
- * 📊 NEW: Get all sites with detailed stats
- */
-
-
-/**
- * ✏️ NEW: Update existing site
+ * ✏️ UPDATED: Update existing site (sortOrder removed)
  */
 export const updateSiteAction = async (siteId: string, siteData: {
   siteName: string;
@@ -4095,7 +3685,6 @@ export const updateSiteAction = async (siteId: string, siteData: {
   estimatedTime?: string;
   workflowId?: string;
   frontendWorkflowJson?: string;
-  sortOrder?: number;
 }) => {
   try {
     // Check if siteName is taken by another site
@@ -4134,12 +3723,11 @@ export const updateSiteAction = async (siteId: string, siteData: {
         description: siteData.description,
         siteUrl: siteData.siteUrl,
         requiredCredentials: siteData.requiredCredentials,
-        category: siteData.category || null,
         difficulty: siteData.difficulty || null,
         estimatedTime: siteData.estimatedTime || null,
         workflowId: siteData.workflowId || null,
         frontendWorkflowJson: frontendJson,
-        sortOrder: siteData.sortOrder || 0,
+        // sortOrder removed
         updatedAt: new Date()
       },
       include: {
@@ -4147,8 +3735,7 @@ export const updateSiteAction = async (siteId: string, siteData: {
           select: {
             id: true,
             title: true,
-            category: true,
-            verifiedAndTested: true
+                verifiedAndTested: true
           }
         },
         _count: {
@@ -4258,7 +3845,6 @@ export const getAllWorkflowsForSiteSelectionAction = async () => {
         id: true,
         title: true,
         slug: true,
-        category: true,
         verifiedAndTested: true,
         viewCount: true,
         author: {
@@ -4359,18 +3945,8 @@ export const incrementSiteViewCountAction = async (siteId: string) => {
 
 // UserSiteCredentials  actions ****,
 
-//Save user credentials for a specific site
-
-
-
-// utils/actions.ts - ADD THESE NEW OPTIMIZED ACTIONS
-
-
-
-
-
 /**
- * 🎯 EFFICIENT: Get sites user hasn't configured yet
+ * 🎯 UPDATED: Get sites user hasn't configured yet (sortOrder removed)
  */
 export async function getUserUnconfiguredSitesAction(userId: string) {
   try {
@@ -4385,8 +3961,8 @@ export async function getUserUnconfiguredSitesAction(userId: string) {
         }
       },
       orderBy: [
-        { sortOrder: 'asc' },
-        { viewCount: 'desc' }
+        { viewCount: 'desc' },    // Order by popularity instead
+        { createdAt: 'desc' }     // Then by newest
       ]
     });
 
@@ -4442,9 +4018,8 @@ export async function checkUserSiteConfigurationAction(userId: string, siteId: s
 }
 
 /**
- * 💪 OPTIMIZED: Get all sites with usage stats
+ * 💪 UPDATED: Get all sites with usage stats (sortOrder removed)
  */
-
 export const getAllSitesWithStatsAction = async () => {
   try {
     const sites = await db.availableSite.findMany({
@@ -4453,8 +4028,7 @@ export const getAllSitesWithStatsAction = async () => {
           select: {
             id: true,
             title: true,
-            category: true,
-            verifiedAndTested: true
+                verifiedAndTested: true
           }
         },
         _count: {
@@ -4467,8 +4041,7 @@ export const getAllSitesWithStatsAction = async () => {
       },
       orderBy: [
         { status: "asc" }, 
-        { sortOrder: "asc" }, 
-        { viewCount: "desc" }
+        { viewCount: "desc" }  // Order by popularity instead of sortOrder
       ],
     });
 
@@ -4487,8 +4060,6 @@ export const getAllSitesWithStatsAction = async () => {
     };
   }
 };
-
-
 
 /**
  * ⚡ SAVE: User site credentials with FK relationship
@@ -4619,8 +4190,7 @@ export async function getUserPortfolioStatsAction(userId: string) {
           select: {
             id: true,
             name: true,
-            category: true,
-            difficulty: true,
+                difficulty: true,
             viewCount: true
           }
         }
@@ -4632,14 +4202,8 @@ export async function getUserPortfolioStatsAction(userId: string) {
       where: { status: 'ACTIVE' }
     });
 
-    // Calculate categories breakdown
-    const categoriesUsed = userCredentials
-      .filter(cred => cred.isConfigured && cred.availableSite.category)
-      .reduce((acc, cred) => {
-        const category = cred.availableSite.category!;
-        acc[category] = (acc[category] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+    // Categories breakdown removed - category field no longer exists
+    const categoriesUsed = {} as Record<string, number>;
 
     // Calculate difficulty breakdown
     const difficultyBreakdown = userCredentials
@@ -4710,8 +4274,7 @@ export async function getUserCredentialsBySiteNameAction(userId: string, siteNam
 }
 
 /**
- * 🎯 BULK: Get user's complete portfolio data in ONE query
- * This is the ULTIMATE efficiency function!
+ * 🎯 UPDATED: Get user's complete portfolio data in ONE query (sortOrder removed)
  */
 export async function getUserCompletePortfolioAction(userId: string) {
   try {
@@ -4720,15 +4283,15 @@ export async function getUserCompletePortfolioAction(userId: string) {
       db.userSiteCredentials.findMany({
         where: { userId },
         include: { availableSite: true },
-        orderBy: { availableSite: { sortOrder: 'asc' } }
+        orderBy: { createdAt: 'desc' }  // Order by creation date instead
       }),
       
       // Get all available sites
       db.availableSite.findMany({
         where: { status: 'ACTIVE' },
         orderBy: [
-          { sortOrder: 'asc' },
-          { viewCount: 'desc' }
+          { viewCount: 'desc' },   // Order by popularity instead
+          { createdAt: 'desc' }    // Then by newest
         ]
       }),
 

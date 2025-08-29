@@ -6,8 +6,6 @@ import { SubmitButton } from "@/components/(custom)/(dashboard)/Form/Buttons";
 import FormContainer from "@/components/(custom)/(dashboard)/Form/FormContainer";
 import FormInput from "@/components/(custom)/(dashboard)/Form/FormInput";
 import ImageInput from "@/components/(custom)/(dashboard)/Form/ImageInput";
-import TextAreaInput from "@/components/(custom)/(dashboard)/Form/TextAreaInput";
-import CategoriesInput from "@/components/(custom)/(dashboard)/Form/CategoriesInput";
 import WorkflowJsonInput from "@/components/(custom)/(dashboard)/Form/WorkflowJsonInput";
 // REMOVED: StepArrayInput import - no longer needed
 import { toast } from "sonner";
@@ -16,15 +14,12 @@ import { useState } from "react";
 import {
   FileCode,
   Upload,
-  BrainCircuit,
   // REMOVED: ListChecks - no longer needed for manual steps
   PenLine,
   CheckCircle2,
   Lock,
   AlertCircle,
-  Youtube,
 } from "lucide-react";
-import WorkflowAIGenerator from "@/components/(custom)/(ai)/WorkflowAiGenerator";
 import { validateWorkflowJsonElement } from "@/components/(custom)/(dashboard)/Form/ValidateWorkflowJsonElement";
 
 
@@ -114,7 +109,7 @@ const CreateWorkflow = () => {
                 >
                   <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-6">
                     Start by uploading your n8n workflow JSON file. This is
-                    required to unlock AI-powered features in the next steps.
+                    required to proceed with workflow creation.
                   </p>
 
                   {/* WorkflowJsonInput */}
@@ -303,7 +298,7 @@ const CreateWorkflow = () => {
             </div>
             <Separator className="my-4 sm:my-8" />
 
-            {/* Step 3: AI-Powered Content Generation - Only shown when JSON is uploaded */}
+            {/* Step 3: Manual Content Creation - Only shown when JSON is uploaded */}
             <div
               className={`relative transition-all duration-300 ${
                 jsonUploaded ? "opacity-100" : "opacity-50 pointer-events-none"
@@ -317,59 +312,6 @@ const CreateWorkflow = () => {
                 >
                   {!jsonUploaded && <Lock className="h-3 w-3 sm:h-4 sm:w-4" />}
                   {jsonUploaded && "3"}
-                </div>
-                <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-                  <BrainCircuit
-                    className={`h-4 w-4 sm:h-5 sm:w-5 ${
-                      jsonUploaded ? "text-primary" : "text-muted-foreground"
-                    }`}
-                  />
-                  <span className="break-words">AI Content Generation</span>
-                </h2>
-
-                {!jsonUploaded && (
-                  <span className="text-xs sm:text-sm text-muted-foreground ml-auto">
-                    Upload JSON to unlock
-                  </span>
-                )}
-              </div>
-
-              <div className="pl-0 sm:pl-14">
-                <div
-                  className={`bg-primary/5 p-3 sm:p-6 rounded-lg border border-primary/20 transition-all ${
-                    !jsonUploaded && "blur-[2px]"
-                  }`}
-                >
-                  <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-6">
-                    Use AI to help you create content for your workflow. The AI
-                    will analyze your workflow JSON and generate titles,
-                    descriptions, and implementation steps automatically.
-                  </p>
-
-                  {/* WorkflowAIGenerator component */}
-                  <div className="mb-4 sm:mb-6 p-2 sm:p-4 bg-muted/10 rounded-lg border border-primary/10">
-                    <WorkflowAIGenerator />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <Separator className="my-4 sm:my-8" />
-
-            {/* Step 4: Manual Content Creation - Only shown when JSON is uploaded */}
-            <div
-              className={`relative transition-all duration-300 ${
-                jsonUploaded ? "opacity-100" : "opacity-50 pointer-events-none"
-              }`}
-            >
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-4 mb-3 sm:mb-6">
-                <div
-                  className={`h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg ${
-                    !jsonUploaded && "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {!jsonUploaded && <Lock className="h-3 w-3 sm:h-4 sm:w-4" />}
-                  {jsonUploaded && "4"}
                 </div>
                 <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
                   <PenLine
@@ -394,7 +336,7 @@ const CreateWorkflow = () => {
                   }`}
                 >
                   <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-6">
-                    Create or edit your workflow content. Steps will be
+                    Create your workflow content manually. Steps will be
                     automatically generated from your JSON workflow when you
                     publish.
                   </p>
@@ -409,20 +351,7 @@ const CreateWorkflow = () => {
                       helperText="Choose a clear, descriptive title (100 characters max)"
                     />
 
-                    <TextAreaInput
-                      name="content"
-                      labelText="Description"
-                      placeholder="Describe what this workflow does and why it's useful..."
-                      required
-                      minLength={100}
-                      maxLength={1000}
-                      rows={4}
-                      helperText="Explain the purpose, benefits, and use cases of your workflow"
-                    />
-
-                    <CategoriesInput />
-
-                    {/* REMOVED: Manual steps input section - steps are now auto-generated from JSON */}
+                    {/* REMOVED: Description and Categories inputs - simplified form */}
                   </div>
                 </div>
               </div>
@@ -430,7 +359,7 @@ const CreateWorkflow = () => {
 
             <Separator className="my-4 sm:my-8" />
 
-            {/* Step 5: Add YouTube Video (Optional) - Only shown when JSON is uploaded */}
+            {/* Step 4: Submit - Only shown when JSON is uploaded */}
             <div
               className={`relative transition-all duration-300 ${
                 jsonUploaded ? "opacity-100" : "opacity-50 pointer-events-none"
@@ -443,63 +372,7 @@ const CreateWorkflow = () => {
                   }`}
                 >
                   {!jsonUploaded && <Lock className="h-3 w-3 sm:h-4 sm:w-4" />}
-                  {jsonUploaded && "5"}
-                </div>
-                <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-                  <Youtube
-                    className={`h-4 w-4 sm:h-5 sm:w-5 ${
-                      jsonUploaded ? "text-primary" : "text-muted-foreground"
-                    }`}
-                  />
-                  <span>Add YouTube Video (Optional)</span>
-                </h2>
-
-                {!jsonUploaded && (
-                  <span className="text-xs sm:text-sm text-muted-foreground ml-auto">
-                    Upload JSON to unlock
-                  </span>
-                )}
-              </div>
-
-              <div className="pl-0 sm:pl-14">
-                <div
-                  className={`bg-muted/10 p-3 sm:p-6 rounded-lg border border-muted transition-all ${
-                    !jsonUploaded && "blur-[2px]"
-                  }`}
-                >
-                  <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-6">
-                    Add a YouTube video that demonstrates your workflow in
-                    action. This will be embedded on your workflow detail page.
-                  </p>
-
-                  <FormInput
-                    type="url"
-                    name="videoUrl"
-                    label="YouTube Video URL"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    required={false}
-                    helperText="Optional: Add a YouTube video URL that demonstrates your workflow in action"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Separator className="my-4 sm:my-8" />
-
-            {/* Step 6: Submit - Only shown when JSON is uploaded */}
-            <div
-              className={`relative transition-all duration-300 ${
-                jsonUploaded ? "opacity-100" : "opacity-50 pointer-events-none"
-              }`}
-            >
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-4 mb-3 sm:mb-6">
-                <div
-                  className={`h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg ${
-                    !jsonUploaded && "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {!jsonUploaded && <Lock className="h-3 w-3 sm:h-4 sm:w-4" />}
-                  {jsonUploaded && "6"}
+                  {jsonUploaded && "4"}
                 </div>
                 <h2 className="text-lg sm:text-xl font-semibold">
                   Publish Your Workflow
@@ -519,7 +392,7 @@ const CreateWorkflow = () => {
                   }`}
                 >
                   <p className="text-xs sm:text-sm mb-3 sm:mb-6">
-                    Review your workflow details before publishing. Once
+                    Review your workflow title and images before publishing. Once
                     published, your workflow will be available to the community.
                     Implementation steps will be automatically generated from
                     your JSON.

@@ -65,6 +65,7 @@ export default function CredentialSetup({ siteName, onComplete }: CredentialSetu
   // Load user profile and site data on mount
   useEffect(() => {
     loadUserAndSiteData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siteName]);
 
   const loadUserAndSiteData = async () => {
@@ -169,7 +170,7 @@ export default function CredentialSetup({ siteName, onComplete }: CredentialSetu
             ❌ Site not found: <strong>{siteName}</strong>
           </div>
           <p className="text-muted-foreground mb-4">
-            This automation site doesn't exist or may have been removed.
+            This automation site doesn&apos;t exist or may have been removed.
           </p>
           <button 
             onClick={() => router.back()}

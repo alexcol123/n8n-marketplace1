@@ -40,17 +40,15 @@ model Profile {
 model Workflow {
   id                String       @id @default(uuid())
   title             String
-  content           String       @db.Text
   workflowImage     String
   creationImage     String?
   videoUrl          String?
   slug              String       @unique
   authorId          String
   author            Profile      @relation(fields: [authorId], references: [clerkId], onDelete: Cascade, name: "AuthoredWorkflows")
-  category          CategoryType
   viewCount         Int          @default(0)
   workFlowJson      Json         @default("{}")
-  verifiedAndTested Boolean      @default(false)
+  verifiedAndTested Boolean      @default(true)
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
@@ -226,24 +224,19 @@ model NodeDocumentation {
   @@unique([serviceName, hostIdentifier])
 }
 
-// WorkflowTeachingGuide - Project-level content only
+// WorkflowTeachingGuide - Reduced to essential billing fields only
 model WorkflowTeachingGuide {
   id String @id @default(uuid())
-
+  
   // --- Workflow linking ---
   workflowId String // Foreign key to Workflow.id
 
-  // --- Essential teaching content (ALL REQUIRED) ---
-  title                String // Required: "💰 Get Paid in Days, Not Weeks"
-  description          String // Required: Brief business-focused description 
-  projectIntro         String // Required: Paul Graham style pain-first introduction
-  idealFor             String // Required: "🎯 Freelancers & Consultants..."
-  timeToValue          String // Required: "⚡ **1 hour** to build vs..."
-  howItWorks           String // Required: "✅ Automatically generates invoices..."
-  realCostOfNotHaving  String // Required: Paul Graham style hidden costs
-  whatYoullBuild       String // Required: Technical outcomes with **bold tools**
-  possibleMonetization String // Required: Business opportunity description
-  toolsUsed            String[] // Required: Array of tool descriptions
+  // --- THE ONLY 5 FIELDS STUDENTS NEED TO START BILLING 💰 ---
+  title                String // "💰 Get Paid $1,200 for This 2-Hour Build"
+  whatYoullBuild       String // Technical outcome: "**Automated** invoice system using **Stripe** + **Gmail**"
+  whatYoullBuildSummary String? // 2-line summary for cards: "Build automated invoice system that charges clients instantly and sends receipts via Gmail"
+  possibleMonetization String // "Charge local restaurants $397 setup + $97/month maintenance"
+  toolsUsed            String[] // ["Stripe - Payment processing", "Gmail - Email automation"]
 
   // --- Standard fields ---
   createdAt DateTime @default(now())
@@ -314,7 +307,7 @@ model AvailableSite {
 
   // Status and ordering
   status    SiteStatus @default(ACTIVE)
-  sortOrder Int        @default(0) // For custom ordering in UI
+
 
   // Analytics
   viewCount     Int @default(0)
@@ -327,7 +320,7 @@ model AvailableSite {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([status, sortOrder])
+
   @@index([category])
   @@index([siteName]) // Keep this for API route lookups
 }
@@ -353,20 +346,3 @@ enum Priority {
   URGENT
 }
 
-// Predefined categories
-enum CategoryType {
-  ai
-  secops
-  sales
-  it_ops
-  marketing
-  engineering
-  devops
-  building_blocks
-  design
-  finance
-  hr
-  other
-  product
-  support
-}

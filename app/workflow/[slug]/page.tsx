@@ -7,22 +7,9 @@ import {
 } from "@/utils/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-import {
-  CalendarIcon,
-  Clock,
-  CheckCircle,
-  FileText,
-  Info,
-  Download,
-  Star,
-} from "lucide-react";
-import Image from "next/image";
+import { CalendarIcon, Clock } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import WorkflowJsonDisplay from "@/components/(custom)/(download)/WorkFlowJsonDisplay";
-import { WorkflowJsonDownloadButton } from "@/components/(custom)/(download)/WorkflowJsonDownloadButton";
 import ShareButton from "@/components/(custom)/(landing)/ShareButton";
 
 import { ReturnToWorkflowsBtn } from "@/components/(custom)/(dashboard)/Form/Buttons";
@@ -32,14 +19,12 @@ import YouTubeVideoPlayer from "@/components/(custom)/(video)/YoutubeVideoPlayer
 
 import WorkflowStepsViewer from "@/components/(custom)/(coding-steps)/WorkflowStepsViewer";
 import { Workflow, Profile, WorkflowStep } from "@prisma/client";
-import ZoomableWorkflowImage from "@/components/(custom)/(coding-steps)/ZoomableWorkflowImage";
-import CreatorCard from "@/components/(custom)/(coding-steps)/CreatorCard";
 
 import getWorkflowComplexityFunc from "@/utils/functions/getWorkflowComplexityFunc";
-import getWorkflowComplexityColorFunc from "@/utils/functions/getWorkflowComplexityColorFunc";
 import formatDateFunc from "@/utils/functions/formmatDate";
 import readingTimeFunc from "@/utils/functions/readingTimeFunc";
 import WorkflowTeachingGuideComponent from "@/components/(custom)/(slug)/WorkflowTeachingGuideComponent";
+import ZoomableWorkflowImage from "@/components/(custom)/(coding-steps)/ZoomableWorkflowImage";
 
 type WorkflowWithAuthor = Workflow & {
   author: Profile;
@@ -64,14 +49,46 @@ const SingleWorkflowPage = async ({
   const workflowTeachingGuide = await fetchWorkflowTeachingGuide(workflow.id);
   const teachingGuideData = workflowTeachingGuide.data?.teachingGuide;
 
+  // Create enhanced guide data with fallbacks
+  const createEnhancedGuideData = () => {
+    const baseWorkflowData = {
+      workflowImage: workflow.creationImage || workflow.workflowImage,
+      workflowTitle: workflow.title,
+      // workflowCategory: removed category field,
+      workflowSteps: workflow.workflowSteps?.length || 0,
+      workflowJson: workflow.workFlowJson,
+      workflowId: workflow.id,
+      isVerified: workflow.verifiedAndTested,
+      complexity: complexity,
+    };
 
+    if (teachingGuideData) {
+      // Use existing teaching guide data
+      return {
+        ...teachingGuideData,
+        ...baseWorkflowData,
+      };
+    } else {
+      // Create fallback teaching guide
+      return {
+        id: workflow.id,
+        title: workflow.title,
+        whatYoullBuild: `Build a **complete automation system** that transforms manual business processes into a profit-generating machine working 24/7. This comprehensive automation uses **n8n** to orchestrate ${
+          workflow.workflowSteps?.length || 0
+        } interconnected workflow steps, reducing what typically takes 2-4 hours of manual work down to just 5-10 minutes of automated execution. Your system handles complex data processing, service integrations, and business logic without human intervention—turning operational bottlenecks into competitive advantages. The result is a scalable, professional-grade automation that eliminates repetitive tasks, connects multiple services seamlessly, and operates continuously to generate value while you focus on strategic growth and client acquisition.`,
+        possibleMonetization: `Transform this automation into a profitable service business. Charge local businesses $497 for initial setup and implementation, then $197/month for ongoing maintenance and optimization. With just 20-25 clients, you're earning $4,940/month helping businesses automate their operations while you focus on scaling your automation consultancy.`,
+        toolsUsed: [
+          "n8n - Powerful workflow automation platform that connects any service",
+          "Webhooks - Instant triggers that start automations when events happen",
+          "HTTP Requests - Universal connector for any web service or API",
+          "Custom APIs - Service integrations for seamless data flow",
+        ],
+        ...baseWorkflowData,
+      };
+    }
+  };
 
-  // const servicesList = extractRequiredApiServices(workflow.workFlowJson);
-  // console.log("Required API Services:", servicesList);
-   console.log("Workflow Teaching Guide:", workflowTeachingGuide);
-  //console.log('extractRequiredApiServices', extractRequiredApiServices(workflow));
-  //console.log('workflow', workflow);
-
+  // Calculate complexity first
   const orderedSteps = workflow.workflowSteps
     ? [...workflow.workflowSteps]
     : [];
@@ -85,14 +102,14 @@ const SingleWorkflowPage = async ({
     workflowCharactersLength
   );
 
-  const contentParagraphs = workflow?.content?.split(/\n+/) || [];
+  const enhancedGuideData = createEnhancedGuideData();
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`;
   };
 
   const readingTime = readingTimeFunc(
-    workflow?.content,
+    "", // removed content field
     workflow?.workflowSteps?.map(
       (step) => step.stepDescription || step.stepTitle || ""
     ) || []
@@ -102,213 +119,146 @@ const SingleWorkflowPage = async ({
   const guideLookup = await fetchWorkflowGuides(workflow.workflowSteps);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Back button */}
-        <div className="mb-8">
+        <div className="mb-12">
           <ReturnToWorkflowsBtn />
         </div>
 
         {/* Hero section */}
-        <header className="mb-12">
-          <div className="flex items-center gap-2 mb-3">
-            <Badge
-              variant="secondary"
-              className="text-xs font-medium px-2 py-1"
-            >
-              {workflow.category}
-            </Badge>
-            <span className="text-muted-foreground text-sm">•</span>
-            <span className="text-sm text-muted-foreground">
-              {workflow.viewCount.toLocaleString()} views
-            </span>
-          </div>
-
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-8 leading-tight">
-            {workflow.title}
-          </h1>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-4 bg-muted/30 rounded-xl border border-primary/10">
-            <Link
-              href={`/authors/${workflow.author.username}`}
-              className="flex items-center gap-4 hover:opacity-80 transition-opacity group"
-            >
-              <Avatar className="h-12 w-12 border-2 border-primary/20 shadow-md group-hover:border-primary/40 transition-colors">
-                <AvatarImage
-                  src={workflow.author.profileImage}
-                  alt={`${workflow.author.firstName} ${workflow.author.lastName}`}
-                />
-                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                  {getInitials(
-                    workflow.author.firstName,
-                    workflow.author.lastName
-                  )}
-                </AvatarFallback>
-              </Avatar>
-              <div className="space-y-1">
-                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                  {workflow.author.firstName} {workflow.author.lastName}
-                </h3>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <CalendarIcon className="h-3 w-3" />
-                    <span>{formatDateFunc(workflow.createdAt)}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    <span>{readingTime} min</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            <ShareButton
-              propertyId={workflow.slug}
-              name={workflow.title}
-              description={workflow.content}
-              imageUrl={workflow.creationImage || workflow.workflowImage}
-              variant="default"
-            />
-          </div>
-        </header>
-
-        {/* Main content grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
-          {/* Featured image */}
-          <div className="lg:col-span-2">
-            <figure className="relative aspect-video rounded-2xl overflow-hidden shadow-xl border border-primary/10 group">
-              <Image
-                src={workflow.creationImage || workflow.workflowImage}
-                alt={workflow.title}
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 66vw"
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10"></div>
-              <div className="absolute top-4 right-4">
-                <Badge className="bg-green-600 text-white shadow-lg border-0">
-                  <Star className="h-3 w-3 mr-1" />
-                  Ready to Use
+        <header className="mb-20">
+          <div className="space-y-8">
+            {/* Top metadata row */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <Badge
+                  variant="outline"
+                  className="text-sm font-medium px-3 py-1.5 bg-background border-border/60 hover:border-border transition-colors"
+                >
+                  Portfolio Project
                 </Badge>
-              </div>
-            </figure>
-          </div>
 
-          {/* Quick stats */}
-          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow duration-300 bg-gradient-to-br from-background to-muted/20 sticky top-8">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                <Info className="h-4 w-4 text-primary" />
-                Quick Info
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center p-4 bg-primary/5 rounded-lg border border-primary/10">
-                <div className="text-2xl font-bold text-primary">
-                  {workflow.workflowSteps.length}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Workflow Nodes
-                </div>
-              </div>
-
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Platform</span>
-                  <span className="font-medium">n8n</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Difficulty</span>
-                  <Badge
-                    variant="outline"
-                    className={`text-xs font-medium ${getWorkflowComplexityColorFunc(
-                      complexity
-                    )}`}
-                  >
-                    {complexity}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Category</span>
-                  <span className="font-medium">{workflow.category}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Status</span>
-                  <div className="flex items-center gap-1">
-                    <CheckCircle className="h-3 w-3 text-green-600" />
-                    <span className="font-medium text-green-600 text-xs">
-                      Verified
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
+                    <span className="font-medium">
+                      {workflow.viewCount.toLocaleString()} views
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-primary/10">
-                <WorkflowJsonDownloadButton
-                  workflowContent={workflow.workFlowJson}
-                  workflowId={workflow.id}
-                  title={workflow.title}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Description */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" />
-            What This Workflow Does
-          </h2>
-          <Card className="border-primary/20 shadow-md">
-            <CardContent className="p-8">
-              <div className="prose prose-lg dark:prose-invert max-w-none">
-                {contentParagraphs.map((paragraph, index) => (
-                  <p
-                    key={index}
-                    className="text-foreground/90 leading-relaxed mb-4 last:mb-0"
+              {workflow.verifiedAndTested && (
+                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-medium px-3 py-1.5 shadow-none">
+                  <svg
+                    className="w-3 h-3 mr-1.5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </section>
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Verified & Tested
+                </Badge>
+              )}
+            </div>
 
-        {/* Video */}
-        {workflow.videoUrl && (
-          <section className="mb-16">
-            <YouTubeVideoPlayer
-              videoUrl={workflow.videoUrl}
-              title={workflow.title}
-            />
-          </section>
-        )}
+            {/* Main title */}
+            <div className="space-y-4">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-foreground">
+                {workflow.title}
+              </h1>
 
-        {/* Automation steps */}
-
-        {/* Download section */}
-        {workflow.workFlowJson && (
-          <section className="mb-16">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-primary mb-3 flex items-center justify-center gap-3">
-                <Download className="h-8 w-8" />
-                Get This Automation
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Ready-to-use JSON file that you can import directly into your
-                n8n instance
+              {/* Workflow description */}
+              <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-4xl">
+                Complete full-stack project with n8n automation backend and modern frontend. Perfect for building your portfolio and demonstrating real value to clients.
               </p>
             </div>
 
+            {/* Metadata indicators */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="inline-flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg border border-border/50">
+                <div
+                  className={`h-2 w-2 rounded-full ${
+                    complexity === "Basic"
+                      ? "bg-emerald-500"
+                      : complexity === "Intermediate"
+                      ? "bg-amber-500"
+                      : "bg-red-500"
+                  }`}
+                ></div>
+                <span className="text-sm font-medium text-muted-foreground">
+                  {complexity} Level
+                </span>
+              </div>
+
+              <div className="inline-flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg border border-border/50">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">
+                  {readingTime} min read
+                </span>
+              </div>
+
+              <div className="inline-flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg border border-border/50">
+                <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">
+                  {formatDateFunc(workflow.createdAt)}
+                </span>
+              </div>
+            </div>
+
+            {/* Author and actions row */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 pt-4 border-t border-border/50">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
+                  <AvatarImage
+                    src={workflow.author.profileImage}
+                    alt={`${workflow.author.firstName} ${workflow.author.lastName}`}
+                  />
+                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                    {getInitials(
+                      workflow.author.firstName,
+                      workflow.author.lastName
+                    )}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium text-foreground">
+                    {workflow.author.firstName} {workflow.author.lastName}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Workflow Creator
+                  </p>
+                </div>
+              </div>
+
+              <ShareButton
+                propertyId={workflow.slug}
+                name={workflow.title}
+                description="Complete full-stack project with n8n automation backend and modern frontend. Perfect for building your portfolio and demonstrating real value to clients."
+                imageUrl={workflow.creationImage || workflow.workflowImage}
+                variant="default"
+              />
+            </div>
+          </div>
+        </header>
+
+        <div className="mb-20">
+          <WorkflowTeachingGuideComponent guide={enhancedGuideData} />
+        </div>
+
+        {/* Video */}
+        {workflow.videoUrl && (
+          <section className="mb-20">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-2xl blur-xl"></div>
-              <div className="relative bg-background border border-primary/20 rounded-2xl p-1 shadow-xl">
-                <WorkflowJsonDisplay
-                  workflowContent={workflow.workFlowJson}
-                  workflowId={workflow.id}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-3xl blur-xl opacity-50"></div>
+              <div className="relative bg-background/50 backdrop-blur-sm border border-primary/10 rounded-3xl p-2 shadow-xl">
+                <YouTubeVideoPlayer
+                  videoUrl={workflow.videoUrl}
                   title={workflow.title}
                 />
               </div>
@@ -316,18 +266,14 @@ const SingleWorkflowPage = async ({
           </section>
         )}
 
-        {/* Workflow image */}
-        <section className="mb-16">
-          <ZoomableWorkflowImage
-            imageSrc={workflow.workflowImage}
-            imageAlt="Workflow Diagram"
-            className="rounded-2xl shadow-xl"
-          />
-        </section>
+        <ZoomableWorkflowImage
+          imageSrc={workflow.workflowImage}
+          imageAlt={workflow.title}
+        />
 
         {/* Tutorial sections */}
         {workflow.workFlowJson && (
-          <section className="mb-16">
+          <section className="mb-20">
             <WorkflowStepsViewer
               workflowSteps={orderedSteps}
               // workflowJson={workflow.workFlowJson}
@@ -338,20 +284,6 @@ const SingleWorkflowPage = async ({
             />
           </section>
         )}
-
-        {/* Author section */}
-
-        <CreatorCard
-          username={workflow.author.username}
-          profileImage={workflow.author.profileImage}
-          firstName={workflow.author.firstName}
-          lastName={workflow.author.lastName}
-          bio={workflow.author.bio ?? undefined}
-          email={workflow.author.email}
-        />
-
-        {/* Teaching guide main  */}
-        <WorkflowTeachingGuideComponent guide={teachingGuideData} />
       </div>
     </main>
   );

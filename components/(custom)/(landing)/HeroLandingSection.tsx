@@ -1,190 +1,108 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowDown,
-  ChevronDown,
-  Clock,
-  PlayCircle,
+  ArrowRight,
   Sparkles,
-  Target,
-  Timer,
-  TrendingUp,
-  Trophy,
-  Zap,
 } from "lucide-react";
 import Link from "next/link";
 
 const HeroLandingSection = () => {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-background via-primary/5 to-primary/10">
-      {/* Background decoration - Hidden on mobile */}
-      <div className="absolute inset-0 overflow-hidden hidden sm:block">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
+    <section className="relative overflow-hidden bg-gradient-to-b from-background to-muted/20">
+      {/* Subtle background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 -right-48 w-96 h-96 bg-green-500/5 rounded-full blur-3xl" />
+        <div className="absolute -top-24 -left-48 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative container mx-auto px-4 py-12 sm:py-16 lg:py-24">
-        <div className="text-center max-w-4xl mx-auto">
-          {/* Trending badge - Hidden on mobile, full design on large screens */}
-          <div className="hidden sm:inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6 border border-primary/20">
-            <TrendingUp className="h-4 w-4" />
-            <span>🔥 Join 10,000+ students mastering automation</span>
+      <div className="relative container mx-auto px-4 py-24 sm:py-32 lg:py-40">
+        <div className="text-center max-w-5xl mx-auto">
+          {/* Accent badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 text-sm font-medium mb-8">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span>n8n Portfolio Builder</span>
           </div>
 
           {/* Main headline */}
-          <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent leading-tight">
-            Master n8n Automation
+          <h1 className="text-5xl sm:text-6xl lg:text-8xl font-bold mb-8 leading-tight tracking-tight">
+            <span className="text-foreground">Build </span>
+            <span className="text-green-600 dark:text-green-400">Portfolio</span>
             <br />
-            <span className="text-primary">One Workflow at a Time</span>
+            <span className="text-foreground">Earn </span>
+            <span className="bg-gradient-to-r from-green-600 via-green-500 to-emerald-600 bg-clip-text text-transparent">$100/hour</span>
           </h1>
 
-          {/* Subheadline - Full design on large screens */}
-          <p className="text-base sm:text-xl lg:text-2xl text-muted-foreground mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed">
-            Learn automation through hands-on practice with real-world
-            workflows.
-            <span className="text-primary font-semibold hidden sm:inline">
-              {" "}
-              Start building, start automating, start succeeding.
-            </span>
+          {/* Elegant subheadline */}
+          <p className="text-xl sm:text-2xl text-muted-foreground/80 mb-12 max-w-3xl mx-auto leading-relaxed font-light">
+            Master n8n automation by building real workflows.
+            <span className="text-foreground/60"> Showcase your skills to clients and command premium rates.</span>
           </p>
 
-          {/* Success indicators - Show on MD+ as in your design */}
-          <div className="hidden md:flex flex-wrap justify-center gap-4 lg:gap-8 mb-8 text-sm">
-            <Badge
-              variant="outline"
-              className="px-4 py-2 border-2 border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors"
-            >
-              <Timer className="h-4 w-4 text-green-600 dark:text-green-400 mr-2" />
-              <span className="text-green-800 dark:text-green-200 font-medium">
-                ⚡ Average setup: 10 minutes
-              </span>
-            </Badge>
-            <Badge
-              variant="outline"
-              className="px-4 py-2 border-2 border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50 transition-colors"
-            >
-              <Target className="h-4 w-4 text-blue-600 dark:text-blue-400 mr-2" />
-              <span className="text-blue-800 dark:text-blue-200 font-medium">
-                🎯 94% complete their first workflow
-              </span>
-            </Badge>
-            <Badge
-              variant="outline"
-              className="px-4 py-2 border-2 border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-950/50 transition-colors"
-            >
-              <Zap className="h-4 w-4 text-purple-600 dark:text-purple-400 mr-2" />
-              <span className="text-purple-800 dark:text-purple-200 font-medium">
-                💪 3 workflows mastered in first week
-              </span>
-            </Badge>
-          </div>
-
-          {/* Stats row - Mobile compact, desktop full */}
-          <div className="flex justify-center gap-4 sm:gap-6 lg:gap-12 mb-6 sm:mb-10">
-            <div className="text-center">
-              <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary mb-1">
-                50+
+          {/* Elegant stats */}
+          <div className="flex justify-center mb-16">
+            <div className="flex items-center gap-12 text-center">
+              <div className="relative">
+                <div className="absolute -top-1 -left-1 w-full h-full bg-green-500/10 rounded-lg" />
+                <div className="relative bg-background border border-border rounded-lg px-8 py-6">
+                  <div className="text-3xl sm:text-4xl font-bold text-green-600 dark:text-green-400 mb-1">
+                    $150k+
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    earned by students
+                  </div>
+                </div>
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Workflows
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary mb-1">
-                2k+
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Students
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary mb-1">
-                95%
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Success Rate
+              <div className="hidden sm:block w-px h-16 bg-border" />
+              <div className="hidden sm:block relative">
+                <div className="absolute -top-1 -left-1 w-full h-full bg-primary/10 rounded-lg" />
+                <div className="relative bg-background border border-border rounded-lg px-8 py-6">
+                  <div className="text-3xl sm:text-4xl font-bold text-primary mb-1">
+                    500+
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    students enrolled
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* CTA buttons - Match your large screen design */}
-          <div className="flex flex-col mx-10 gap-3 items-center max-w-sm sm:mx-auto sm:max-w-none sm:flex-row sm:gap-4 sm:justify-center mb-6 sm:mb-12">
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className=" w-full sm:w-auto group border-2 border-primary/30 hover:border-primary hover:bg-primary/5  px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-lg font-semibold transition-all duration-300"
-            >
-              <a
-                href="#workflows"
-                className="flex items-center justify-center gap-2"
-              >
-                <ArrowDown className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="sm:hidden ">Browse Workflows</span>
-                <span className="hidden sm:inline">Browse Workflows Below</span>
-                <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 transition-transform group-hover:translate-y-1" />
-              </a>
-            </Button>
-
+          {/* Modern CTA */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Button
               asChild
               size="lg"
-              className="w-full sm:w-auto group relative overflow-hidden bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary/70 shadow-xl hover:shadow-2xl hover:shadow-primary/25 transform hover:scale-105 transition-all duration-300 px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-lg font-semibold"
+              className="group relative bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-10 py-6 text-lg font-medium rounded-full"
             >
               <Link
                 href="/sign-in"
-                className="flex items-center justify-center gap-2 sm:gap-3"
+                className="flex items-center justify-center gap-3"
               >
-                {/* Shine effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                <PlayCircle className="h-4 w-4 sm:h-6 sm:w-6 relative z-10" />
-                <span className="relative z-10 sm:hidden">Get Started</span>
-                <span className="relative z-10 hidden sm:inline">
-                  Get Started Free
-                </span>
-                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 relative z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span>Start Building Portfolio</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
+            </Button>
+            
+            <Button
+              asChild
+              variant="ghost"
+              size="lg"
+              className="group text-muted-foreground hover:text-foreground px-8 py-6 text-lg font-medium"
+            >
+              <a href="#workflows" className="flex items-center gap-2">
+                <span>Browse workflows</span>
+                <ArrowRight className="h-4 w-4 rotate-90 group-hover:translate-y-1 transition-transform" />
+              </a>
             </Button>
           </div>
 
-          {/* Feature highlights - Mobile optimized, desktop matches your design */}
-          <div className="grid grid-cols-3 gap-3 sm:gap-6 max-w-4xl mx-auto">
-            <div className="bg-card/50 backdrop-blur-sm border border-primary/20 rounded-lg sm:rounded-xl p-3 sm:p-6 hover:border-primary/40 transition-colors">
-              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2 sm:mb-4 mx-auto">
-                <Target className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-1 sm:mb-2 text-xs sm:text-base text-center ">
-                Hands-On Learning
-              </h3>
-              <p className="hidden md:block text-sm text-muted-foreground">
-                Practice with real workflows, not just theory
-              </p>
-            </div>
-
-            <div className="bg-card/50 backdrop-blur-sm border border-primary/20 rounded-lg sm:rounded-xl p-3 sm:p-6 hover:border-primary/40 transition-colors">
-              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2 sm:mb-4 mx-auto">
-                <Clock className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-1 sm:mb-2 text-xs sm:text-base text-center ">
-                Learn at Your Pace
-              </h3>
-              <p className="hidden md:block text-sm text-muted-foreground">
-                Start simple, progress to advanced automation
-              </p>
-            </div>
-
-            <div className="bg-card/50 backdrop-blur-sm border border-primary/20 rounded-lg sm:rounded-xl p-3 sm:p-6 hover:border-primary/40 transition-colors">
-              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2 sm:mb-4 mx-auto">
-                <Trophy className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-1 sm:mb-2 text-xs sm:text-base text-center ">
-                Track Progress
-              </h3>
-              <p className="hidden md:block text-sm text-muted-foreground">
-                Mark completed workflows and build your portfolio
-              </p>
+          {/* Subtle social proof */}
+          <div className="flex justify-center">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 px-4 py-2 rounded-full border">
+              <Sparkles className="h-4 w-4 text-green-500" />
+              <span>Trusted by 2,000+ automation professionals</span>
             </div>
           </div>
+
         </div>
       </div>
     </section>

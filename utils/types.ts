@@ -6,16 +6,18 @@ export type actionFunction = (
 export type WorkflowCardTypes = {
   id: string;
   title: string;
-  content: string;
   workflowImage: string;
   creationImage: string | null; // Changed from undefined to null
   authorId: string;
   author: User;
-  category: string;
   slug: string;
   videoUrl?: string | null;
   viewCount: number;
   createdAt: Date;
+  // Teaching guide summary for cards
+  WorkflowTeachingGuide?: {
+    whatYoullBuildSummary?: string | null;
+  } | null;
 };
 
 export type User = {

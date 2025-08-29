@@ -22,6 +22,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/api/workflow-analysis/generate-all/route.js", "app/api/workflow-analysis/description/route.js", "app/api/workflow-analysis/steps/route.js", "app/api/workflow-analysis/title/route.js", "app/api/workflow-analysis/category/route.js", "app/dashboard/myCompletions"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/dashboard/myCompletions"],
   "exclude": ["node_modules"]
 }

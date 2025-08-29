@@ -7,16 +7,13 @@ import {  fetchWorkflows } from "@/utils/actions";
 
 
 const CardsContainer = async ({
-  category,
   search,
 }: {
-  category?: string;
   search?: string;
-}) => {
+} = {}) => {
 
 
   const workflows: WorkflowCardTypes[] = await fetchWorkflows({
-    category,
     search,
   });
 

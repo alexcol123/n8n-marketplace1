@@ -79,8 +79,7 @@ export default function AdminWebsitesPage() {
     estimatedTime: '',
     requiredCredentials: ['webhook'],
     workflowId: '',
-    frontendWorkflowJson: '',
-    sortOrder: 0
+    frontendWorkflowJson: ''
   });
 
   const credentialOptions = [
@@ -170,8 +169,7 @@ export default function AdminWebsitesPage() {
       estimatedTime: site.estimatedTime || '',
       requiredCredentials: site.requiredCredentials,
       workflowId: site.workflowId || '',
-      frontendWorkflowJson: '',
-      sortOrder: site.sortOrder
+      frontendWorkflowJson: ''
     });
     setShowForm(true);
   };
@@ -201,8 +199,7 @@ export default function AdminWebsitesPage() {
       estimatedTime: '',
       requiredCredentials: ['webhook'],
       workflowId: '',
-      frontendWorkflowJson: '',
-      sortOrder: 0
+      frontendWorkflowJson: ''
     });
   };
 
@@ -375,19 +372,53 @@ export default function AdminWebsitesPage() {
                 </p>
               </div>
 
-              {/* Sort Order */}
+              {/* Frontend Workflow JSON */}
               <div>
-                <label className="block text-sm font-medium mb-2">Sort Order</label>
-                <input
-                  type="number"
-                  value={formData.sortOrder}
-                  onChange={(e) => setFormData(prev => ({...prev, sortOrder: parseInt(e.target.value) || 0}))}
-                  placeholder="0"
-                  className="w-full px-3 py-2 border rounded-lg bg-background"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Lower numbers appear first in the list
+                <label className="block text-sm font-medium mb-2">
+                  Student Workflow Template (n8n JSON)
+                </label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Pre-configured n8n workflow JSON that students can copy and import into their n8n instance. 
+                  Include placeholder credentials that students will replace with their own API keys.
                 </p>
+                <textarea
+                  value={formData.frontendWorkflowJson}
+                  onChange={(e) => setFormData(prev => ({...prev, frontendWorkflowJson: e.target.value}))}
+                  placeholder='{"nodes": [...], "connections": {...}}'
+                  rows={8}
+                  className="w-full px-3 py-2 border rounded-lg bg-background font-mono text-xs"
+                />
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      try {
+                        if (formData.frontendWorkflowJson) {
+                          const formatted = JSON.stringify(
+                            JSON.parse(formData.frontendWorkflowJson), 
+                            null, 
+                            2
+                          );
+                          setFormData(prev => ({...prev, frontendWorkflowJson: formatted}));
+                        }
+                      } catch (e) {
+                        alert('Invalid JSON format');
+                      }
+                    }}
+                  >
+                    Format JSON
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormData(prev => ({...prev, frontendWorkflowJson: ''}))}
+                  >
+                    Clear
+                  </Button>
+                </div>
               </div>
 
               <Button

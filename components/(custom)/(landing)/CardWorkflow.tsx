@@ -9,10 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowRight,
   CalendarIcon,
   Eye,
   Trash2,
@@ -72,6 +70,8 @@ export default function CardWorkflow({
   });
   const router = useRouter();
 
+  console.log('workflow  ', workflows)
+
   // Format date to readable string
   const formatDate = (dateString: Date) => {
     const date = new Date(dateString);
@@ -82,16 +82,10 @@ export default function CardWorkflow({
     });
   };
 
-  // Get author's initials for avatar fallback
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`;
-  };
 
-  // Extract first name and truncate content
-  const truncatedContent =
-    workflows?.content?.length > 120
-      ? `${workflows.content.substring(0, 120)}...`
-      : workflows?.content;
+  // Get description from teaching guide or fallback to default
+  const truncatedContent = workflows.WorkflowTeachingGuide?.whatYoullBuildSummary 
+    || "Complete full-stack project with n8n automation backend and modern frontend. Perfect for building your portfolio and demonstrating real value to clients.";
 
   const workflowUrl = `/workflow/${workflows?.slug}`;
 
@@ -209,14 +203,14 @@ export default function CardWorkflow({
   return (
     <>
       <Card
-        className="max-w-md overflow-hidden transition-all duration-300 hover:shadow-lg border-primary/10 pt-0 group"
+        className="max-w-md overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 border border-primary/20 hover:border-primary/40 pt-0 group bg-gradient-to-b from-card to-card/80 backdrop-blur-sm"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         <Link href={workflowUrl}>
-          <div className="relative overflow-hidden h-60">
+          <div className="relative overflow-hidden h-80 rounded-t-lg">
             <div
-              className={`absolute inset-0 bg-cover bg-center transition-transform duration-500 ${
+              className={`absolute inset-0 bg-cover bg-center transition-transform duration-700 ${
                 isHovered ? "scale-110" : "scale-100"
               }`}
               style={{
@@ -227,89 +221,66 @@ export default function CardWorkflow({
                 })`,
               }}
             />
-            {/* Improved gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+            {/* Enhanced gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+            
+            {/* Floating elements */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-            {/* Category badge with improved positioning */}
-            <div className="absolute bottom-4 left-4">
-              <Badge
-                variant="secondary"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-3 py-1 shadow-md transition-all duration-300 group-hover:translate-y-[-2px]"
-              >
-                {workflows?.category}
-              </Badge>
-            </div>
 
-            {/* View count badge - Added */}
+            {/* View count badge - redesigned */}
             <div className="absolute top-4 right-4">
               <Badge
                 variant="outline"
-                className="bg-black/50 text-white border-transparent backdrop-blur-sm"
+                className="bg-black/60 text-white border-white/30 backdrop-blur-md transition-all duration-300 group-hover:bg-black/80"
               >
-                <Eye className="h-3 w-3 mr-1" />
-                {workflows.viewCount || 0}
+                <Eye className="h-3 w-3 mr-1.5" />
+                <span className="font-medium">{workflows.viewCount || 0}</span>
               </Badge>
+            </div>
+
+            {/* Build Now overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end justify-center pb-6">
+              <div className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-full backdrop-blur-sm transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 font-semibold text-lg shadow-xl">
+                Build Now
+              </div>
             </div>
           </div>
         </Link>
 
-        <CardHeader className="pb-2 pt-4">
+        <CardHeader className="pb-3 pt-6">
           <Link href={workflowUrl}>
-            <CardTitle className="text-xl font-bold line-clamp-2 text-foreground hover:text-primary transition-colors group-hover:text-primary">
+            <CardTitle className="text-xl font-bold line-clamp-2 text-foreground hover:text-primary transition-colors duration-300 group-hover:text-primary leading-tight">
               {workflows?.title.replace(/^"(.+)"$/, "$1")}
             </CardTitle>
           </Link>
         </CardHeader>
 
         <CardContent className="space-y-4">
-          <CardDescription className="text-sm text-muted-foreground/90 line-clamp-3">
+          <CardDescription className="text-base text-muted-foreground leading-relaxed line-clamp-3">
             {truncatedContent}
           </CardDescription>
 
-          <div className="flex items-center justify-between pt-2 group ">
-            <Link
-              href={`/authors/${workflows.author.username}`}
-              className="flex items-center space-x-2 border border-muted p-1 rounded hover:border-primary"
-            >
-              <Avatar className="h-8 w-8 border border-primary/10 ">
-                <AvatarImage
-                  src={workflows?.author?.profileImage}
-                  alt={`${workflows?.author?.firstName} ${workflows?.author?.lastName}`}
-                />
-                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                  {getInitials(
-                    workflows?.author?.firstName,
-                    workflows?.author?.lastName
-                  )}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium text-foreground">
-                {workflows?.author?.firstName} {workflows?.author?.lastName}
-              </span>
-            </Link>
-
-            <div className="flex items-center text-xs text-muted-foreground">
-              <CalendarIcon className="mr-1 h-3 w-3" />
-              <span>{formatDate(workflows?.createdAt)}</span>
+          {/* Project metadata */}
+          <div className="flex items-center justify-between pt-3">
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="text-xs font-medium px-2 py-1">
+                Full-Stack Project
+              </Badge>
+              <Badge variant="secondary" className="text-xs font-medium px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                Portfolio Ready
+              </Badge>
+            </div>
+            
+            <div className="flex items-center text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
+              <CalendarIcon className="mr-1.5 h-3 w-3" />
+              <span className="font-medium">{formatDate(workflows?.createdAt)}</span>
             </div>
           </div>
         </CardContent>
 
-        <CardFooter className="pt-0 pb-4">
-          <div className="w-full space-y-3">
-            {/* View Workflow Button */}
-            <div className="w-full flex justify-end">
-              <Link href={workflowUrl} className="flex items-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-primary  hover:text-white hover:bg-primary h-auto px-3 py-1.5 rounded-full transition-all duration-300  border-primary/20 "
-                >
-                  View workflow{" "}
-                  <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-              </Link>
-            </div>
+        <CardFooter className="pt-2 pb-6">
+          <div className="w-full space-y-4">
 
             {/* Creator Actions Section */}
             {canDelete && (
@@ -373,41 +344,7 @@ export default function CardWorkflow({
                     </div>
                   </div>
 
-                  {/* Edit Actions - Only show if canEditSteps is true */}
-                  {canEditSteps && (
-                    <>
-                      <div className="relative">
-                        <Separator decorative className="bg-primary/25" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="bg-gradient-to-br from-muted/40 to-muted/70 px-3 py-1 rounded-full">
-                            <Edit className="h-3 w-3 text-primary" />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-3 pt-1">
-                        <div className="text-center">
-                          <h6 className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
-                            Advanced Editor
-                          </h6>
-                        </div>
-
-                        <Link
-                          href={`/dashboard/wf/${workflows?.slug}`}
-                          className="block w-full"
-                        >
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full h-9 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 bg-background/80 backdrop-blur-sm border border-emerald-200 dark:border-emerald-800/50 shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] group"
-                          >
-                            <Edit className="h-3.5 w-3.5 mr-2" />
-                            Edit Steps
-                            <ArrowRight className="ml-auto h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                          </Button>
-                        </Link>
-                      </div>
-                    </>
-                  )}
+     
 
                   {/* Quick Stats Footer */}
                   <div className="pt-3 border-t border-primary/15">
@@ -427,7 +364,7 @@ export default function CardWorkflow({
                     </div>
                   </div>
                 </div>
-              </div>
+          </div>
             )}
           </div>
         </CardFooter>
