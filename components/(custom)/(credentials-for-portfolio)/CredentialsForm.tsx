@@ -12,6 +12,7 @@ import {
 interface CredentialSetupProps {
   siteName: string;
   onComplete?: () => void;
+  onCancel?: () => void;
 }
 
 interface UserProfile {
@@ -30,7 +31,7 @@ interface Site {
   difficulty?: string;
 }
 
-export default function CredentialSetup({ siteName, onComplete }: CredentialSetupProps) {
+export default function CredentialSetup({ siteName, onComplete, onCancel }: CredentialSetupProps) {
   const [credentials, setCredentials] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [siteData, setSiteData] = useState<Site | null>(null);
@@ -184,105 +185,148 @@ export default function CredentialSetup({ siteName, onComplete }: CredentialSetu
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="bg-card border rounded-lg p-6">
-        {/* Site Info Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-3">
-            <h2 className="text-2xl font-semibold">
-              🔧 Configure {siteData.name}
-            </h2>
-            {siteData.category && (
-              <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
-                {siteData.category}
-              </span>
-            )}
-            {siteData.difficulty && (
-              <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-full">
-                {siteData.difficulty}
-              </span>
-            )}
-          </div>
-          
-          <p className="text-muted-foreground mb-4">
-            {siteData.description}
-          </p>
-          
-          <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 p-4 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-primary">🔑</span>
-              <strong className="text-primary">Required credentials for this site:</strong>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-6">
+      <div className="max-w-3xl mx-auto">
+        <div className="bg-card/95 backdrop-blur-sm border-2 border-primary/20 rounded-2xl shadow-2xl overflow-hidden">
+          {/* Enhanced Header */}
+          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-8 border-b border-primary/20">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center border border-primary/30">
+                  <span className="text-2xl">🔧</span>
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                    Configure {siteData.name}
+                  </h1>
+                  <div className="flex items-center gap-2 mt-2">
+                    {siteData.category && (
+                      <span className="px-3 py-1 bg-primary/15 text-primary text-sm rounded-full border border-primary/20 font-medium">
+                        {siteData.category}
+                      </span>
+                    )}
+                    {siteData.difficulty && (
+                      <span className="px-3 py-1 bg-secondary text-secondary-foreground text-sm rounded-full font-medium">
+                        {siteData.difficulty}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {siteData.requiredCredentials.map(cred => (
-                <span key={cred} className="px-2 py-1 bg-primary/20 text-primary text-sm rounded">
-                  {credentialLabels[cred] || cred}
-                </span>
+            
+            <p className="text-muted-foreground text-lg leading-relaxed mb-6">
+              {siteData.description}
+            </p>
+            
+            <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 p-5 rounded-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                  <span className="text-amber-600">🔑</span>
+                </div>
+                <h3 className="font-semibold text-amber-800 dark:text-amber-200 text-lg">
+                  Required Credentials
+                </h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {siteData.requiredCredentials.map(cred => (
+                  <span 
+                    key={cred} 
+                    className="px-3 py-2 bg-amber-500/20 text-amber-800 dark:text-amber-200 text-sm rounded-lg border border-amber-500/30 font-medium"
+                  >
+                    {credentialLabels[cred] || cred}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Form */}
+          <div className="p-8">
+            <div className="space-y-8">
+              {siteData.requiredCredentials.map((credType) => (
+                <div key={credType} className="group">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-foreground mb-4">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    {credentialLabels[credType] || credType}
+                    <span className="text-red-500 text-base">*</span>
+                    {credentials[credType] && (
+                      <div className="ml-auto flex items-center gap-1 text-green-600 text-xs bg-green-50 dark:bg-green-950/50 px-2 py-1 rounded-full">
+                        <span>✅</span>
+                        Configured
+                      </div>
+                    )}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={credType.includes('key') ? 'password' : 'url'}
+                      value={credentials[credType] || ''}
+                      onChange={(e) => setCredentials(prev => ({
+                        ...prev,
+                        [credType]: e.target.value
+                      }))}
+                      onKeyPress={handleKeyPress}
+                      placeholder={credentialPlaceholders[credType] || `Enter ${credType}`}
+                      className="w-full px-4 py-4 border-2 border-border rounded-xl bg-background/50 backdrop-blur-sm focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-200 placeholder:text-muted-foreground/60 text-foreground font-mono text-sm group-hover:border-primary/30"
+                    />
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                  </div>
+                </div>
               ))}
             </div>
-          </div>
-        </div>
 
-        {/* Credentials Form */}
-        <div className="space-y-4">
-          {siteData.requiredCredentials.map((credType) => (
-            <div key={credType}>
-              <label className="block text-sm font-medium mb-2">
-                {credentialLabels[credType] || credType} 
-                <span className="text-red-500 ml-1">*</span>
-              </label>
-              <input
-                type={credType.includes('key') ? 'password' : 'url'}
-                value={credentials[credType] || ''}
-                onChange={(e) => setCredentials(prev => ({
-                  ...prev,
-                  [credType]: e.target.value
-                }))}
-                onKeyPress={handleKeyPress}
-                placeholder={credentialPlaceholders[credType] || `Enter ${credType}`}
-                className="w-full px-3 py-2 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-              />
-              {credentials[credType] && (
-                <div className="mt-1 text-xs text-green-600 flex items-center gap-1">
-                  <span>✅</span>
-                  Configured
-                </div>
-              )}
+            {/* Enhanced Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 pt-10 mt-8 border-t-2 border-border">
+              <button
+                onClick={handleSubmit}
+                disabled={isLoading || !siteData?.requiredCredentials}
+                className="flex-1 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground px-8 py-4 rounded-xl hover:from-primary/90 hover:to-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5 transform"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-3">
+                    <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
+                    Saving Configuration...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-3">
+                    <span className="text-xl">🚀</span>
+                    Save & Go Live
+                  </span>
+                )}
+              </button>
+              
+              <button
+                className="border-2 border-border px-8 py-4 rounded-xl hover:bg-muted/50 hover:border-primary/30 transition-all duration-200 font-semibold text-lg hover:-translate-y-0.5 transform"
+                onClick={() => {
+                  if (onCancel) {
+                    onCancel();
+                  } else {
+                    router.back();
+                  }
+                }}
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
             </div>
-          ))}
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-6 border-t">
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading || !siteData?.requiredCredentials}
-              className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
-                  Saving...
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  🚀 Save & Go Live
-                </span>
-              )}
-            </button>
-            
-            <button
-              className="border px-6 py-3 rounded-lg hover:bg-muted transition-colors"
-              onClick={() => router.back()}
-              disabled={isLoading}
-            >
-              Cancel
-            </button>
-          </div>
-
-          {/* Help Text */}
-          <div className="text-xs text-muted-foreground pt-2 bg-muted/30 p-3 rounded">
-            <strong>💡 Pro Tip:</strong> Make sure your webhooks are active and API keys have the necessary permissions. 
-            You can always come back and update these credentials later.
+            {/* Enhanced Help Section */}
+            <div className="mt-8 p-6 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-blue-600 text-lg">💡</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Pro Tips for Success</h4>
+                  <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1 leading-relaxed">
+                    <li>• Ensure your webhooks are active and properly configured in n8n</li>
+                    <li>• Verify API keys have the necessary permissions for your workflow</li>
+                    <li>• Test your credentials before going live to avoid issues</li>
+                    <li>• You can always return here to update these settings later</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

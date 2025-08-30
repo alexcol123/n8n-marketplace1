@@ -4,9 +4,6 @@ export function extractRequiredApiServices(workflowJson) {
 
   // Safety check - return empty array if no valid workflowJson
   if (!workflowJson || typeof workflowJson !== "object") {
-    console.log(
-      "⚠️ workflowJson is undefined/null/invalid, returning empty array"
-    );
     return [];
   }
 
@@ -67,10 +64,6 @@ export function extractRequiredApiServices(workflowJson) {
         }
       }
     });
-  } else {
-    console.log(
-      "⚠️ workflowJson.nodes is not a valid array, returning empty array"
-    );
   }
 
   return Array.from(services);

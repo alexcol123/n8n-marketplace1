@@ -1,7 +1,7 @@
 // components/(custom)/(coding-steps)/WorkflowStepsViewer.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -194,25 +194,24 @@ export default function WorkflowStepsViewer({
 
   // Now currentStep is safely checked before being passed to extractGuideIdentifiers
   const guideKey = extractGuideIdentifiers(currentStep);
-  console.log("guideKey:", guideKey);
 
   const guideData = guideKey ? guideLookup?.[guideKey] : null;
 
   // Handle step expansion tracking
-  const handleStepToggleExpanded = (stepId: string, isExpanded: boolean) => {
+  const handleStepToggleExpanded = useCallback((stepId: string, isExpanded: boolean) => {
     if (isExpanded) {
       setViewedSteps((prev) => new Set([...prev, stepId]));
     }
-  };
+  }, []);
 
-  const handleStepExpand = (stepId: string) => {
+  const handleStepExpand = useCallback((stepId: string) => {
     if (expandedStepId === stepId) {
       setExpandedStepId(null);
     } else {
       setExpandedStepId(stepId);
       setViewedSteps((prev) => new Set([...prev, stepId]));
     }
-  };
+  }, [expandedStepId]);
 
   // Navigation handlers
   const goToNextStep = () => {

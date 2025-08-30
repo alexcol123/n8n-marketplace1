@@ -5,11 +5,9 @@ import {
   Wrench,
   Key,
   Zap,
-  DollarSign,
-  Clock,
+
   Sparkles,
-  TrendingUp,
-  Rocket,
+
   Star,
   Download,
   CheckCircle,
@@ -250,7 +248,7 @@ export default function FinalWorkflowPage({ guide }: WorkflowHeroProps) {
               <div className="relative bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-md border border-primary/20 rounded-3xl p-8 md:p-12 lg:p-16 shadow-2xl">
                 
                 {/* Quick Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                   <div className="text-center p-6 bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm border border-primary/20 rounded-2xl">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-3">
                       <Activity className="h-6 w-6 text-primary" />
@@ -275,17 +273,7 @@ export default function FinalWorkflowPage({ guide }: WorkflowHeroProps) {
                     </div>
                   </div>
 
-                  <div className="text-center p-6 bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm border border-primary/20 rounded-2xl">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-3">
-                      <TrendingUp className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="text-2xl font-bold text-primary mb-1">
-                      {guide.complexity}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Difficulty
-                    </div>
-                  </div>
+  
 
                   <div className="text-center p-6 bg-gradient-to-br from-green-500/10 to-green-500/5 backdrop-blur-sm border border-green-500/20 rounded-2xl">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-green-500/20 to-green-500/10 flex items-center justify-center mx-auto mb-3">
@@ -365,68 +353,8 @@ export default function FinalWorkflowPage({ guide }: WorkflowHeroProps) {
                 </p>
               </div>
               
-              {/* Enhanced pricing cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
-                {/* Setup Fee Card */}
-                <div className="group relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-green-600/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-                  <div className="relative bg-gradient-to-br from-card/60 to-card/40 backdrop-blur-sm border border-green-500/20 rounded-2xl p-8 shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300">
-                    <div className="relative mb-6">
-                      <div className="absolute inset-0 bg-green-500/20 rounded-full blur-lg opacity-50"></div>
-                      <DollarSign className="relative h-10 w-10 text-green-500 mx-auto" />
-                    </div>
-                    <h4 className="font-bold text-foreground mb-3 text-lg">Setup Fee</h4>
-                    <p className="text-3xl font-bold  mb-2 bg-gradient-to-r from-green-500 to-green-600 bg-clip-text text-transparent">
-                      $397-$497
-                    </p>
-                    <p className="text-sm text-muted-foreground">One-time implementation</p>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500/50 to-green-600/50 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
-                  </div>
-                </div>
 
-                {/* Monthly Service Card */}
-                <div className="group relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-                  <div className="relative bg-gradient-to-br from-card/60 to-card/40 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-8 shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300">
-                    <div className="relative mb-6">
-                      <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-lg opacity-50"></div>
-                      <Clock className="relative h-10 w-10 text-blue-500 mx-auto" />
-                    </div>
-                    <h4 className="font-bold text-foreground mb-3 text-lg">Monthly Service</h4>
-                    <p className="text-3xl font-bold  mb-2 bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent">
-                      $99-$250
-                    </p>
-                    <p className="text-sm text-muted-foreground">Recurring maintenance</p>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500/50 to-blue-600/50 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
-                  </div>
-                </div>
 
-                {/* Monthly Potential Card */}
-                <div className="group relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-purple-600/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-                  <div className="relative bg-gradient-to-br from-card/60 to-card/40 backdrop-blur-sm border border-purple-500/20 rounded-2xl p-8 shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300">
-                    <div className="relative mb-6">
-                      <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-lg opacity-50"></div>
-                      <TrendingUp className="relative h-10 w-10 text-purple-500 mx-auto" />
-                    </div>
-                    <h4 className="font-bold text-foreground mb-3 text-lg">Monthly Potential</h4>
-                    <p className="text-3xl font-bold mb-2 bg-gradient-to-r from-purple-500 to-purple-600 bg-clip-text text-transparent">
-                      $4,400+
-                    </p>
-                    <p className="text-sm text-muted-foreground">With 25-30 clients</p>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500/50 to-purple-600/50 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Call to action */}
-              <div className="mt-16">
-                <div className="inline-flex items-center px-8 py-4 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 cursor-pointer">
-                  <Rocket className="h-5 w-5 mr-2" />
-                  Start Building Your Business Today
-                  <div className="ml-2 w-2 h-2 bg-primary-foreground rounded-full animate-ping"></div>
-                </div>
-              </div>
             </div>
           </div>
         </section>

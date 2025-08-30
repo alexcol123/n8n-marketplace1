@@ -70,16 +70,6 @@ function validateFile() {
 // Updated schema
 // Updated schema (REMOVED steps field)
 export const workflowSchema = z.object({
-  title: z
-    .string({ required_error: "Title is required" })
-    .min(3, {
-      message: "Title must be at least 3 characters.",
-    })
-    .max(100, {
-      message: "Title must be less than 100 characters.",
-    }),
-
-
   videoUrl: z
     .string()
     .url("Please enter a valid URL")

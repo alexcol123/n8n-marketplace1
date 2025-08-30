@@ -114,7 +114,6 @@ export const isCreatorOrAdmin = async (
 };
 
 const renderError = (error: unknown): { message: string; success: boolean } => {
-  console.log(error);
   return {
     message: error instanceof Error ? error.message : "An error occurred",
     success: false,
@@ -385,13 +384,11 @@ export const fetchSingleWorkflow = async (slug: string) => {
       user = await getAuthUser();
     } catch {
       // User is not logged in, continue without user
-      console.log("User not logged in, continuing as public user");
     }
     //  studio
     //creating-and-sharing-customized-cartoon-content-author-henry-munoz-date-072125-910am
     //automated-cartoon-video-creation-and-sharing-author-henry-munoz-date-072125-907am
 
-    console.log(slug);
     const workflow = await db.workflow.findUnique({
       where: { slug },
       include: {
@@ -1307,32 +1304,6 @@ export const updateIssueStatus = async (
   }
 };
 
-// Get issues by status (for admin filtering)
-export const fetchIssuesByStatus = async (status?: IssueStatus) => {
-  try {
-    const issues = await db.issue.findMany({
-      where: status ? { status: status as IssueStatus } : undefined,
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-            username: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-
-    return issues;
-  } catch (error) {
-    console.error("Error fetching issues by status:", error);
-    return [];
-  }
-};
 
 // Get single issue details
 export const fetchIssueById = async (issueId: string) => {
@@ -2295,7 +2266,6 @@ export const fetchWorkflowGuides = async (workflowSteps: WorkflowStep[]) => {
 
     return guidesMap;
   } catch (error) {
-    console.log(error);
     return {};
   }
 };
@@ -2394,7 +2364,6 @@ export const createNodeSetupGuideAction = async (
       try {
         helpLinks = JSON.parse(rawData.helpLinks as string);
       } catch (error) {
-        console.log(error);
         return {
           message: "Invalid JSON format for help links",
           success: false,
@@ -2407,7 +2376,6 @@ export const createNodeSetupGuideAction = async (
       try {
         videoLinks = JSON.parse(rawData.videoLinks as string);
       } catch (error) {
-        console.log(error);
         return {
           message: "Invalid JSON format for video links",
           success: false,
@@ -2423,7 +2391,6 @@ export const createNodeSetupGuideAction = async (
       try {
         troubleshooting = JSON.parse(rawData.troubleshooting as string);
       } catch (error) {
-        console.log(error);
         return {
           message: "Invalid JSON format for troubleshooting",
           success: false,
@@ -2440,7 +2407,6 @@ export const createNodeSetupGuideAction = async (
       try {
         credentialsLinks = JSON.parse(rawData.credentialsLinks as string);
       } catch (error) {
-        console.log(error);
         return {
           message: "Invalid JSON format for credentials links",
           success: false,
@@ -2510,9 +2476,6 @@ export const updateNodeGuideImageAction = async (
     const guideId = formData.get("stepId") as string; // Note: ImageInputContainer sends this as "stepId"
     const image = formData.get("image") as File;
 
-    console.log("Guide ID:", guideId);
-    console.log("Image file:", image?.name, image?.size);
-
     if (!guideId) {
       return { message: "Guide ID is required" };
     }
@@ -2539,12 +2502,8 @@ export const updateNodeGuideImageAction = async (
       return { message: "Guide not found" };
     }
 
-    console.log("Current guide found, uploading new image...");
-
     // Upload the new image
     const fullPath = await uploadImage(validatedFields.image);
-
-    console.log("Image uploaded to:", fullPath);
 
     // Update the guide with the new image
     await db.nodeDocumentation.update({
@@ -2552,17 +2511,13 @@ export const updateNodeGuideImageAction = async (
       data: { nodeImage: fullPath },
     });
 
-    console.log("Database updated successfully");
-
     // Delete the old image from storage (if it exists and is a Supabase URL)
     if (
       currentGuide.nodeImage &&
       currentGuide.nodeImage.includes("supabase.co")
     ) {
       try {
-        console.log("Deleting old image:", currentGuide.nodeImage);
         await deleteImage(currentGuide.nodeImage);
-        console.log("Old image deleted successfully");
       } catch (deleteError) {
         console.error("Failed to delete old node image:", deleteError);
         // Don't fail the entire operation if image deletion fails
@@ -2572,8 +2527,6 @@ export const updateNodeGuideImageAction = async (
     // Revalidate the relevant pages
 
     // revalidatePath(`/admin/node-guides/${guideId}/edit`);
-
-    console.log("Paths revalidated, returning success");
 
     return {
       message: "Node image updated successfully",
@@ -2666,7 +2619,6 @@ export const updateNodeSetupGuideAction = async (
       try {
         helpLinks = JSON.parse(rawData.helpLinks as string);
       } catch (error) {
-        console.log(error);
         return {
           message: "Invalid JSON format for help links",
           success: false,
@@ -2679,7 +2631,6 @@ export const updateNodeSetupGuideAction = async (
       try {
         videoLinks = JSON.parse(rawData.videoLinks as string);
       } catch (error) {
-        console.log(error);
         return {
           message: "Invalid JSON format for video links",
           success: false,
@@ -2695,7 +2646,6 @@ export const updateNodeSetupGuideAction = async (
       try {
         troubleshooting = JSON.parse(rawData.troubleshooting as string);
       } catch (error) {
-        console.log(error);
         return {
           message: "Invalid JSON format for troubleshooting",
           success: false,
@@ -2711,7 +2661,6 @@ export const updateNodeSetupGuideAction = async (
       try {
         credentialsLinks = JSON.parse(rawData.credentialsLinks as string);
       } catch (error) {
-        console.log(error);
         return {
           message: "Invalid JSON format for credentials links",
           success: false,
@@ -2875,9 +2824,12 @@ export const createWorkflowAction = async (
   try {
     // ... existing validation code ...
     const validatedFields = validateWithZodSchema(workflowSchema, {
-      title: rawData.title,
       videoUrl: rawData.videoUrl || "",
     });
+
+    // Generate sequence number for title
+    const workflowCount = await db.workflow.count();
+    const sequenceNumber = (workflowCount + 1).toString().padStart(5, '0');
 
     // ... existing image upload code ...
     const validatedWorkflowImage = validateWithZodSchema(imageSchema, {
@@ -2899,9 +2851,8 @@ export const createWorkflowAction = async (
       }
     }
 
-    // Create slug
-    const slugContent = `${validatedFields.title} author ${user.firstName} ${user.lastName} date ${workflowCreatedAt}`;
-    const slugString = slug(slugContent, { lower: true });
+    // Create initial slug from sequence number (will be updated after teaching guide generation)
+    const slugString = `workflow-${sequenceNumber}`;
 
     // Process workflow JSON
     let workFlowJson = {};
@@ -2916,7 +2867,7 @@ export const createWorkflowAction = async (
 
     // Create the workflow data
     const workflowData = {
-      title: validatedFields.title,
+      title: sequenceNumber, // Will be updated to teaching guide title later
       slug: slugString,
       viewCount: 0,
       workflowImage: workflowImagePath,
@@ -2952,7 +2903,7 @@ export const createWorkflowAction = async (
       await generateWorkflowTeachingGuide(
         createdWorkflow.id,
         workFlowJson,
-        validatedFields.title
+        sequenceNumber
       );
     } catch (error) {
       console.error("Error generating workflow teaching guide:", error);
@@ -2970,6 +2921,48 @@ export const createWorkflowAction = async (
   // revalidatePath("/dashboard/wf");
   redirect("/dashboard/wf");
 };
+
+async function createFrontendScaffold(
+  workflowId: string,
+  sequenceNumber: string,
+  slugName: string,
+  teachingTitle: string
+) {
+  try {
+    // Create AvailableSite record - this is all we need for dynamic routes!
+    const siteName = `${sequenceNumber}-${slugName}`;
+    
+    // Check if site already exists
+    const existingSite = await db.availableSite.findUnique({
+      where: { siteName },
+    });
+
+    if (!existingSite) {
+      await db.availableSite.create({
+        data: {
+          workflowId,
+          siteName,
+          siteUrl: `/dashboard/portfolio/${siteName}`,
+          name: teachingTitle,
+          description: `Frontend implementation for ${teachingTitle}`,
+          previewImage: "/placeholder-frontend.png",
+          difficulty: "Intermediate",
+          estimatedTime: "2-4 hours",
+          category: "Custom Build",
+          requiredCredentials: ["webhook"],
+          setupInstructions: "Frontend is being developed. Check back soon!",
+          status: "COMING_SOON",
+        },
+      });
+    } else {
+      // Site already exists
+    }
+    
+  } catch (error) {
+    console.error("❌ Failed to create frontend scaffold:", error);
+    // Don't throw - this is optional functionality
+  }
+}
 
 async function generateWorkflowTeachingGuide(
   workflowId: string,
@@ -3009,7 +3002,20 @@ async function generateWorkflowTeachingGuide(
       },
     });
 
-    console.log(`✅ Teaching guide generated for workflow ${workflowId}`);
+    // Update workflow title and slug to match teaching guide
+    const newSlug = slug(teachingContent.title, { lower: true });
+    const updatedWorkflow = await db.workflow.update({
+      where: { id: workflowId },
+      data: {
+        title: teachingContent.title,
+        slug: newSlug,
+      },
+    });
+
+    // Create frontend scaffold if needed
+    if (updatedWorkflow.needsFrontend) {
+      await createFrontendScaffold(workflowId, originalTitle, newSlug, teachingContent.title);
+    }
   } catch (error) {
     console.error("❌ Failed to generate workflow teaching guide:", error);
     throw error;
@@ -3203,10 +3209,6 @@ async function generateStepsTeachingContent(workflowId: string) {
         });
 
         cumulativeContext = teachingContent.summaryForNext || "";
-
-        console.log(
-          `✅ Teaching content generated for step ${step.stepNumber}: ${step.stepTitle}`
-        );
       } catch (stepError) {
         console.error(
           `❌ Failed to generate teaching content for step ${step.id}:`,
@@ -3214,10 +3216,6 @@ async function generateStepsTeachingContent(workflowId: string) {
         );
       }
     }
-
-    console.log(
-      `✅ Teaching content generated for ${workflowSteps.length} steps with progressive context`
-    );
   } catch (error) {
     console.error("❌ Failed to generate steps teaching content:", error);
     throw error;
@@ -3813,10 +3811,7 @@ export const deleteSiteAction = async (siteId: string) => {
       };
     }
 
-    // Log if deleting site with user configurations
-    if (site._count.userCredentials > 0) {
-      console.log(`Deleting site "${site.name}" with ${site._count.userCredentials} user configurations`);
-    }
+    // Note: deleting site with user configurations if any exist
 
     await db.availableSite.delete({
       where: { id: siteId },
@@ -3945,77 +3940,7 @@ export const incrementSiteViewCountAction = async (siteId: string) => {
 
 // UserSiteCredentials  actions ****,
 
-/**
- * 🎯 UPDATED: Get sites user hasn't configured yet (sortOrder removed)
- */
-export async function getUserUnconfiguredSitesAction(userId: string) {
-  try {
-    const unconfiguredSites = await db.availableSite.findMany({
-      where: {
-        status: 'ACTIVE', // Only show active sites
-        userCredentials: {
-          none: { 
-            userId,
-            isConfigured: true 
-          }
-        }
-      },
-      orderBy: [
-        { viewCount: 'desc' },    // Order by popularity instead
-        { createdAt: 'desc' }     // Then by newest
-      ]
-    });
 
-    return {
-      success: true,
-      unconfiguredSites,
-      count: unconfiguredSites.length
-    };
-  } catch (error) {
-    console.error("Error fetching unconfigured sites:", error);
-    return {
-      success: false,
-      unconfiguredSites: [],
-      count: 0,
-      error: error instanceof Error ? error.message : "Unknown error"
-    };
-  }
-}
-
-/**
- * 🔥 CHECK: Does user have specific site configured?
- * OLD: String matching nightmare
- * NEW: Proper FK lookup
- */
-export async function checkUserSiteConfigurationAction(userId: string, siteId: string) {
-  try {
-    const credential = await db.userSiteCredentials.findFirst({
-      where: {
-        userId,
-        availableSiteId: siteId, // Use FK instead of string matching
-        isConfigured: true,
-        isActive: true
-      },
-      include: {
-        availableSite: true
-      }
-    });
-
-    return {
-      success: true,
-      isConfigured: !!credential,
-      credential,
-      site: credential?.availableSite
-    };
-  } catch (error) {
-    console.error("Error checking site configuration:", error);
-    return {
-      success: false,
-      isConfigured: false,
-      error: error instanceof Error ? error.message : "Unknown error"
-    };
-  }
-}
 
 /**
  * 💪 UPDATED: Get all sites with usage stats (sortOrder removed)
@@ -4142,40 +4067,6 @@ export async function saveUserSiteCredentialsAction(
   }
 }
 
-/**
- * 🗑️ DELETE: Remove user site credentials
- */
-export async function deleteUserSiteCredentialsAction(userId: string, siteId: string) {
-  try {
-    await db.userSiteCredentials.delete({
-      where: {
-        userId_availableSiteId: {
-          userId,
-          availableSiteId: siteId
-        }
-      }
-    });
-
-    // Decrement completion count
-    await db.availableSite.update({
-      where: { id: siteId },
-      data: { 
-        completeCount: { decrement: 1 }
-      }
-    });
-
-    return {
-      success: true,
-      message: "Site configuration removed"
-    };
-  } catch (error) {
-    console.error("Error deleting credentials:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error"
-    };
-  }
-}
 
 /**
  * 📈 DASHBOARD: Get user portfolio stats
@@ -4325,3 +4216,5 @@ export async function getUserCompletePortfolioAction(userId: string) {
     };
   }
 }
+
+

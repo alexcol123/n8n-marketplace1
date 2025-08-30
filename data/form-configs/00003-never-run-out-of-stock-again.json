@@ -1,0 +1,15 @@
+{
+  "title": "Never Run Out of Stock Again! 📉🚫",
+  "description": "Enter your details for the Never Run Out of Stock Again! 📉🚫 workflow",
+  "fields": [
+    {
+      "id": "field_1756525144496",
+      "type": "text",
+      "label": "name",
+      "placeholder": "ALex",
+      "required": false
+    }
+  ],
+  "submitText": "Submit",
+  "successMessage": "Your request has been submitted successfully!"
+}

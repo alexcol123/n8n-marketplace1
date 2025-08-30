@@ -1,0 +1,15 @@
+{
+  "title": "Video Gen",
+  "description": "Enter your details for the Video Gen workflow",
+  "fields": [
+    {
+      "id": "field_1756523724021",
+      "type": "email",
+      "label": "New email field",
+      "placeholder": "Enter email...",
+      "required": false
+    }
+  ],
+  "submitText": "Submit",
+  "successMessage": "Your request has been submitted successfully!"
+}

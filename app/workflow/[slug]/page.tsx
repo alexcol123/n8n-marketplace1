@@ -5,22 +5,20 @@ import {
   fetchWorkflowGuides,
   fetchWorkflowTeachingGuide,
 } from "@/utils/actions";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { CalendarIcon, Clock } from "lucide-react";
-import Link from "next/link";
+
+import { CalendarIcon, Clock, Rocket } from "lucide-react";
 import { notFound } from "next/navigation";
 import ShareButton from "@/components/(custom)/(landing)/ShareButton";
 
 import { ReturnToWorkflowsBtn } from "@/components/(custom)/(dashboard)/Form/Buttons";
 
 import EmptyList from "@/components/(custom)/EmptyList";
-import YouTubeVideoPlayer from "@/components/(custom)/(video)/YoutubeVideoPlayer";
+import WorkflowVideoSection from "@/components/(custom)/(video)/WorkflowVideoSection";
 
 import WorkflowStepsViewer from "@/components/(custom)/(coding-steps)/WorkflowStepsViewer";
 import { Workflow, Profile, WorkflowStep } from "@prisma/client";
 
-import getWorkflowComplexityFunc from "@/utils/functions/getWorkflowComplexityFunc";
 import formatDateFunc from "@/utils/functions/formmatDate";
 import readingTimeFunc from "@/utils/functions/readingTimeFunc";
 import WorkflowTeachingGuideComponent from "@/components/(custom)/(slug)/WorkflowTeachingGuideComponent";
@@ -59,7 +57,7 @@ const SingleWorkflowPage = async ({
       workflowJson: workflow.workFlowJson,
       workflowId: workflow.id,
       isVerified: workflow.verifiedAndTested,
-      complexity: complexity,
+
     };
 
     if (teachingGuideData) {
@@ -93,20 +91,13 @@ const SingleWorkflowPage = async ({
     ? [...workflow.workflowSteps]
     : [];
 
-  const workflowCharactersLength = JSON.stringify(
-    workflow?.workFlowJson
-  ).length;
 
-  const complexity = getWorkflowComplexityFunc(
-    workflow.workFlowJson,
-    workflowCharactersLength
-  );
+
+
 
   const enhancedGuideData = createEnhancedGuideData();
 
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`;
-  };
+
 
   const readingTime = readingTimeFunc(
     "", // removed content field
@@ -127,32 +118,31 @@ const SingleWorkflowPage = async ({
         </div>
 
         {/* Hero section */}
-        <header className="mb-20">
-          <div className="space-y-8">
-            {/* Top metadata row */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <Badge
-                  variant="outline"
-                  className="text-sm font-medium px-3 py-1.5 bg-background border-border/60 hover:border-border transition-colors"
-                >
-                  Portfolio Project
-                </Badge>
-
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
-                    <span className="font-medium">
-                      {workflow.viewCount.toLocaleString()} views
-                    </span>
+        <header className="mb-24">
+          <div className="space-y-10">
+            {/* Top metadata row with improved styling */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+              <div className="flex items-center gap-6">
+                {/* Enhanced view counter */}
+                <div className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-full border border-emerald-200/50 dark:border-emerald-700/50 transition-all duration-300 hover:shadow-md hover:scale-105">
+                  <div className="relative">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <div className="absolute inset-0 h-2 w-2 rounded-full bg-emerald-500 animate-ping"></div>
                   </div>
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                    {workflow.viewCount.toLocaleString()}
+                  </span>
+                  <span className="text-emerald-600 dark:text-emerald-500">
+                    views
+                  </span>
                 </div>
               </div>
 
+              {/* Enhanced verified badge */}
               {workflow.verifiedAndTested && (
-                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-medium px-3 py-1.5 shadow-none">
+                <Badge className="group bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/40 dark:hover:to-green-900/40 font-semibold px-4 py-2 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
                   <svg
-                    className="w-3 h-3 mr-1.5"
+                    className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform duration-300"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -167,109 +157,88 @@ const SingleWorkflowPage = async ({
               )}
             </div>
 
-            {/* Main title */}
-            <div className="space-y-4">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-foreground">
-                {workflow.title}
+            {/* Enhanced title with gradient */}
+            <div className="space-y-6">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight tracking-tight">
+                <span className="bg-gradient-to-r from-foreground via-foreground/90 to-foreground/80 bg-clip-text text-transparent">
+                  {workflow.title}
+                </span>
               </h1>
-
-              {/* Workflow description */}
-              <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-4xl">
-                Complete full-stack project with n8n automation backend and modern frontend. Perfect for building your portfolio and demonstrating real value to clients.
-              </p>
             </div>
 
-            {/* Metadata indicators */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="inline-flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg border border-border/50">
-                <div
-                  className={`h-2 w-2 rounded-full ${
-                    complexity === "Basic"
-                      ? "bg-emerald-500"
-                      : complexity === "Intermediate"
-                      ? "bg-amber-500"
-                      : "bg-red-500"
-                  }`}
-                ></div>
-                <span className="text-sm font-medium text-muted-foreground">
-                  {complexity} Level
-                </span>
-              </div>
+            {/* Enhanced metadata indicators */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Reading time with hover effect */}
+                <div className="group inline-flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-r from-muted/60 to-muted/40 hover:from-muted/80 hover:to-muted/60 rounded-xl border border-border/60 hover:border-border transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-default">
+                  <Clock className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+                  <span className="text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors duration-300">
+                    {readingTime} min read
+                  </span>
+                </div>
 
-              <div className="inline-flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg border border-border/50">
-                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">
-                  {readingTime} min read
-                </span>
-              </div>
+                {/* Date with hover effect */}
+                <div className="group inline-flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-r from-muted/60 to-muted/40 hover:from-muted/80 hover:to-muted/60 rounded-xl border border-border/60 hover:border-border transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-default">
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+                  <span className="text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors duration-300">
+                    {formatDateFunc(workflow.createdAt)}
+                  </span>
+                </div>
 
-              <div className="inline-flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg border border-border/50">
-                <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">
-                  {formatDateFunc(workflow.createdAt)}
-                </span>
-              </div>
-            </div>
-
-            {/* Author and actions row */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 pt-4 border-t border-border/50">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
-                  <AvatarImage
-                    src={workflow.author.profileImage}
-                    alt={`${workflow.author.firstName} ${workflow.author.lastName}`}
-                  />
-                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                    {getInitials(
-                      workflow.author.firstName,
-                      workflow.author.lastName
-                    )}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium text-foreground">
-                    {workflow.author.firstName} {workflow.author.lastName}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Workflow Creator
-                  </p>
+                {/* Steps count indicator */}
+                <div className="group inline-flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-r from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 rounded-xl border border-primary/20 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-default">
+                  <div className="flex items-center gap-1">
+                    <div className="h-2 w-2 rounded-full bg-primary/60"></div>
+                    <div className="h-2 w-2 rounded-full bg-primary/40"></div>
+                    <div className="h-2 w-2 rounded-full bg-primary/20"></div>
+                  </div>
+                  <span className="text-sm font-semibold text-primary">
+                    {workflow.workflowSteps?.length || 0} workflow steps
+                  </span>
                 </div>
               </div>
 
-              <ShareButton
-                propertyId={workflow.slug}
-                name={workflow.title}
-                description="Complete full-stack project with n8n automation backend and modern frontend. Perfect for building your portfolio and demonstrating real value to clients."
-                imageUrl={workflow.creationImage || workflow.workflowImage}
-                variant="default"
-              />
+              {/* Share button moved to the right */}
+              <div className="transform hover:scale-105 transition-transform duration-300">
+                <ShareButton
+                  propertyId={workflow.slug}
+                  name={workflow.title}
+                  description="Complete full-stack project with n8n automation backend and modern frontend. Perfect for building your portfolio and demonstrating real value to clients."
+                  imageUrl={workflow.creationImage || workflow.workflowImage}
+                  variant="default"
+                />
+              </div>
             </div>
           </div>
         </header>
 
-        <div className="mb-20">
-          <WorkflowTeachingGuideComponent guide={enhancedGuideData} />
+        <div className="">
+          <div className="mb-20">
+            <WorkflowTeachingGuideComponent guide={enhancedGuideData} />
+          </div>
         </div>
 
-        {/* Video */}
-        {workflow.videoUrl && (
-          <section className="mb-20">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-3xl blur-xl opacity-50"></div>
-              <div className="relative bg-background/50 backdrop-blur-sm border border-primary/10 rounded-3xl p-2 shadow-xl">
-                <YouTubeVideoPlayer
-                  videoUrl={workflow.videoUrl}
-                  title={workflow.title}
-                />
-              </div>
-            </div>
-          </section>
-        )}
+        {/* Call to action */}
+        <div className="mt-16 mb-10">
+          <div className="inline-flex text-xl items-center justify-center px-8 py-4 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 cursor-pointer">
+            <Rocket className="h-5 w-5 mr-2" />
+            Free Teaching Guide Below, Start Building Your Business Today
+            <div className="ml-2 w-2 h-2 bg-primary-foreground rounded-full animate-ping"></div>
+          </div>
+        </div>
 
         <ZoomableWorkflowImage
           imageSrc={workflow.workflowImage}
           imageAlt={workflow.title}
         />
+
+        {/* Video */}
+        {workflow.videoUrl && (
+          <WorkflowVideoSection 
+            videoUrl={workflow.videoUrl}
+            title={workflow.title}
+          />
+        )}
 
         {/* Tutorial sections */}
         {workflow.workFlowJson && (

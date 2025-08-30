@@ -30,6 +30,10 @@ import {
   AlarmClockCheckIcon,
   BookOpen,
   Briefcase,
+  ExternalLink,
+  Monitor,
+  Settings,
+  MessageSquare,
 } from "lucide-react";
 
 export type NavItem = {
@@ -69,14 +73,14 @@ export const adminNavigation: NavItem[] = [
     icon: AlertCircle,
   },
   {
-    name: "API Setup Guides", // 🆕 NEW: API Guides
+    name: "API Setup Guides",
     href: "/admin/node-guides",
     icon: BookOpen,
   },
   {
-    name: "Websites", // 🆕 NEW: API Guides
-    href: "/admin/websites",
-    icon: BookOpen,
+    name: "Portfolio Manager",
+    href: "/admin/portfolio-manager",
+    icon: Settings,
   },
 ];
 

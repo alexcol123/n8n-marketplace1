@@ -16,9 +16,8 @@ import { getAuthUser, getUserCredentialsBySiteNameAction } from "@/utils/actions
 export async function POST(request: NextRequest, props: { params: Promise<{ siteName: string }> }) {
   const params = await props.params;
   try {
-    // Log every request for debugging and monitoring
-    console.log(`🔥 API CALL: Processing ${params.siteName} request`);
-
+    // ==================================================
+    // Processing request for site: ${params.siteName}
     // ==================================================
     // STEP 1: AUTHENTICATE THE USER
     // ==================================================
@@ -63,7 +62,6 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
 
     // Extract the credentials object (contains webhook, API keys, etc.)
     const userCredentials = credentialsResult.credentials;
-    console.log(`✅ Found credentials for ${params.siteName}:`, Object.keys(userCredentials));
 
     // ==================================================
     // STEP 3: VALIDATE WEBHOOK EXISTS
@@ -92,12 +90,10 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
       // This is FormData - typically used for file uploads
       // FormData can contain both text fields and binary files
       requestData = await request.formData();
-      console.log("📦 Handling FormData request (likely file upload)");
     } else if (contentType.includes("application/json")) {
       // This is JSON - typically used for simple data
       // JSON is easier to work with but can't contain binary files directly
       requestData = await request.json();
-      console.log("📦 Handling JSON request");
     } else {
       // We don't support other content types (like plain text, XML, etc.)
       return NextResponse.json(
@@ -105,8 +101,6 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
         { status: 400 }
       );
     }
-
-    console.log(`📦 Received data type: ${contentType.includes("multipart") ? "FormData" : "JSON"}`);
 
     // ==================================================
     // STEP 5: PREPARE DATA FOR USER'S N8N WEBHOOK
@@ -155,8 +149,6 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
       forwardData = JSON.stringify(enrichedData);
     }
 
-    console.log(`🚀 Forwarding to user's webhook: ${userCredentials.webhook}`);
-
     // ==================================================
     // STEP 6: FORWARD REQUEST TO USER'S N8N WEBHOOK
     // ==================================================
@@ -174,8 +166,6 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
       } : undefined, // For FormData, let the browser set the Content-Type with boundary
     });
 
-    console.log(`📡 Webhook response status: ${webhookResponse.status}`);
-
     // Check if the user's n8n workflow had any errors
     if (!webhookResponse.ok) {
       // The user's webhook failed - this could be:
@@ -183,7 +173,6 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
       // - Their API keys are invalid
       // - Their webhook URL is wrong
       // - Their n8n instance is down
-      console.error(`❌ Webhook failed: ${webhookResponse.status} ${webhookResponse.statusText}`);
       return NextResponse.json(
         { 
           error: "Your n8n workflow returned an error. Please check your workflow configuration.",
@@ -211,7 +200,6 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
       if (responseContentType.includes("application/json")) {
         // The response is JSON - parse it normally
         n8nResult = await webhookResponse.json();
-        console.log("✅ Received JSON response from n8n");
       } else {
         // The response is NOT JSON (could be text, html, binary, etc.)
         // We'll treat it as text and wrap it in an object
@@ -220,17 +208,13 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
           response: responseText, 
           contentType: responseContentType 
         };
-        console.log(`✅ Received non-JSON response: ${responseContentType}`);
       }
     } catch (parseError) {
       // If we can't parse the response (corrupted JSON, etc.)
       // fall back to treating it as plain text
-      console.warn("⚠️ Could not parse webhook response as JSON, treating as text");
       const responseText = await webhookResponse.text();
       n8nResult = { response: responseText };
     }
-
-    console.log(`✅ Successfully processed ${params.siteName} request`);
 
     // ==================================================
     // STEP 8: RETURN ENHANCED RESPONSE TO FRONTEND

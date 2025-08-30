@@ -162,7 +162,6 @@ const IssuesManagementPage = () => {
         toast.error(result.message);
       }
     } catch (error) {
-      console.log(error)
       toast.error("Failed to update status");
     }
   };
@@ -181,7 +180,6 @@ const IssuesManagementPage = () => {
         toast.error(result.message);
       }
     } catch (error) {
-        console.log(error)
       toast.error("Failed to update priority");
     }
   };
@@ -198,7 +196,6 @@ const IssuesManagementPage = () => {
         toast.error(result.message);
       }
     } catch (error) {
-        console.log(error)
       toast.error("Failed to delete issue");
     }
   };

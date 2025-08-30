@@ -244,8 +244,6 @@ export default function UnifiedStepCard({
 
   const nodeImage = guideData?.nodeImage || null;
 
-  console.log("step", step.originalApiStep);
-
   const theme = getTheme(step);
   const hasParameters =
     step.parameters && Object.keys(step.parameters).length > 0;

@@ -88,7 +88,6 @@ function WorkflowJsonInput({
       validateJson(formatted);
     } catch (error) {
       // If can't format, show validation error
-      console.log(error)
       validateJson(jsonInput);
     }
   };

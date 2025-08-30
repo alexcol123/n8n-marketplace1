@@ -50,7 +50,6 @@ export function WorkflowDownloadDialog({
       // If it's an object, stringify it with formatting
       return JSON.stringify(workflow, null, 2);
     } catch (error) {
-      console.log(error);
       // If there's an error, return as is
       return typeof workflow === "string" ? workflow : JSON.stringify(workflow);
     }
@@ -76,7 +75,6 @@ export function WorkflowDownloadDialog({
         description: data.description || "No description available",
       };
     } catch (error) {
-      console.log(error);
       return {
         name: "Unknown Workflow",
         nodeCount: 0,
@@ -97,7 +95,7 @@ export function WorkflowDownloadDialog({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy text:", err);
+      // Failed to copy text
     }
   };
 

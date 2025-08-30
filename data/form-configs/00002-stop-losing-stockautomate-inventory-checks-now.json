@@ -1,0 +1,15 @@
+{
+  "title": "Stop Losing Stock—Automate Inventory Checks Now! 📉",
+  "description": "Enter your details for the Stop Losing Stock—Automate Inventory Checks Now! 📉 workflow",
+  "fields": [
+    {
+      "id": "field_1756554546481",
+      "type": "text",
+      "label": "New text field",
+      "placeholder": "Enter text...",
+      "required": false
+    }
+  ],
+  "submitText": "Submit",
+  "successMessage": "Your request has been submitted successfully!"
+}

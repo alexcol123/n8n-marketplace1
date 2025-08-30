@@ -18,7 +18,6 @@ interface WorkflowObject {
       // If it's an object, stringify it with formatting
       return JSON.stringify(workflowContent, null, 2);
     } catch (error) {
-      console.log(error);
       // If there's an error, return as is
       return typeof workflowContent === "string" ? workflowContent : JSON.stringify(workflowContent || "");
     }

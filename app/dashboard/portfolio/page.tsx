@@ -125,14 +125,9 @@ export default function UserPortfolioPage() {
         setConfiguredSites(configuredSites);
         setAvailableSites(unconfiguredSites);
 
-        // Log success for debugging
-        console.log(
-          `✅ Portfolio loaded: ${configuredSites.length} configured, ${unconfiguredSites.length} available`
-        );
       } else {
         // Fallback for completely new users - show empty configured sites, all available sites
         setConfiguredSites([]);
-        console.log("📝 New user detected - showing all available sites");
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -410,18 +405,7 @@ export default function UserPortfolioPage() {
 
 // Enhanced Configured Site Card Component
 function ConfiguredSiteCard({ site }: { site: Site }) {
-  const getPricingSuggestion = (difficulty?: string) => {
-    switch (difficulty?.toLowerCase()) {
-      case "beginner":
-        return "$297-497 setup fee";
-      case "intermediate":
-        return "$497-797 setup fee";
-      case "advanced":
-        return "$797-1,497 setup fee";
-      default:
-        return "$497 setup fee";
-    }
-  };
+
 
   return (
     <Card className="group relative overflow-hidden border-2 border-emerald-200 hover:border-emerald-400 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/20 bg-gradient-to-br from-emerald-50/50 to-transparent h-full flex flex-col">
@@ -471,19 +455,7 @@ function ConfiguredSiteCard({ site }: { site: Site }) {
           </CardDescription>
 
           {/* Earning Potential Highlight */}
-          <div className="p-3 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-lg mb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-emerald-600" />
-                <span className="text-sm font-medium text-emerald-800">
-                  Ready to Earn
-                </span>
-              </div>
-              <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300">
-                {getPricingSuggestion(site.difficulty)}
-              </Badge>
-            </div>
-          </div>
+
         </div>
 
         <div className="flex gap-2">
@@ -545,18 +517,7 @@ function UnconfiguredSiteCard({ site }: { site: Site }) {
     }
   };
 
-  const getPricingSuggestion = (difficulty?: string) => {
-    switch (difficulty?.toLowerCase()) {
-      case "beginner":
-        return "$297-497 setup fee";
-      case "intermediate":
-        return "$497-797 setup fee";
-      case "advanced":
-        return "$797-1,497 setup fee";
-      default:
-        return "$497 setup fee";
-    }
-  };
+
 
   return (
     <Card className="group relative overflow-hidden border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 h-full flex flex-col">
@@ -677,17 +638,7 @@ function UnconfiguredSiteCard({ site }: { site: Site }) {
                 </div>
               )}
 
-              <div className="p-2 bg-purple-50 border border-purple-200 rounded-lg text-center">
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <DollarSign className="w-3 h-3 text-purple-600" />
-                  <span className="text-xs font-medium text-purple-800">
-                    Client Pricing
-                  </span>
-                </div>
-                <div className="text-xs text-purple-700">
-                  {getPricingSuggestion(site.difficulty)}
-                </div>
-              </div>
+      
             </div>
           </div>
         </div>

@@ -49,7 +49,6 @@ const WorkflowJsonDisplay = ({
       toast.success("JSON copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy text:", err);
       toast.error("Failed to copy text");
     }
   };
@@ -67,7 +66,6 @@ const WorkflowJsonDisplay = ({
         tags: Array.isArray(data.tags) ? data.tags : [],
       };
     } catch (error) {
-      console.log(error);
       return {
         name: "Unknown Workflow",
         tags: [],

@@ -3,7 +3,7 @@ import { SignInButton, SignUpButton, SignedOut, SignedIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-import NavSearch from "./NavSearch";
+
 import {
   LayoutDashboard,
   LogIn,
@@ -14,7 +14,7 @@ import {
   Home,
   PlusCircle,
   ChevronUp,
-  Trophy, // Added Trophy icon for leaderboard
+
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -56,7 +56,7 @@ const Navbar = () => {
 
   return (
     <nav className={`border-b border-border sticky top-0 z-50 transition-all duration-300 ${
-      scrolled ? 'bg-card/95 backdrop-blur-md shadow-sm' : 'bg-card/80 backdrop-blur-sm'
+      scrolled ? 'bg-card/60 backdrop-blur-md shadow-sm' : 'bg-card/90 backdrop-blur-sm'
     }`}>
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
@@ -70,19 +70,10 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Search bar - Centered on large screens (visible on md and larger) */}
-          <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-center max-w-lg mx-auto">
-            <div className="relative w-full max-w-md">
-              <NavSearch />
-            </div>
-          </div>
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Search bar for medium screens only */}
-            <div className="relative lg:hidden">
-              <NavSearch />
-            </div>
+    
             
 
             
@@ -153,14 +144,12 @@ const Navbar = () => {
 
       {/* Mobile Menu with animation */}
       <div 
-        className={`md:hidden bg-background/95 backdrop-blur-sm border-b border-border overflow-hidden transition-all duration-300 ${
+        className={`md:hidden bg-background/80 backdrop-blur-sm border-b border-border overflow-hidden transition-all duration-300 ${
           isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
         <div className="px-4 py-3 space-y-4">
-          <div className="mb-3">
-            <NavSearch />
-          </div>
+
 
 
           <SignedOut>

@@ -25,7 +25,6 @@ type UserProfile = {
 
 const ProfilePage = async () => {
   const profile = (await fetchProfile()) as UserProfile;
-console.log(profile)
 
 
   if (!profile) {

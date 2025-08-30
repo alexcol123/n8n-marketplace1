@@ -19,22 +19,22 @@ const HeroLandingSection = () => {
           {/* Accent badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 text-sm font-medium mb-8">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span>n8n Portfolio Builder</span>
+            <span>Earn While You Learn • Full-Stack AI Studio</span>
           </div>
 
           {/* Main headline */}
           <h1 className="text-5xl sm:text-6xl lg:text-8xl font-bold mb-8 leading-tight tracking-tight">
-            <span className="text-foreground">Build </span>
-            <span className="text-green-600 dark:text-green-400">Portfolio</span>
+            <span className="text-foreground">Ship AI </span>
+            <span className="text-green-600 dark:text-green-400">Apps</span>
             <br />
-            <span className="text-foreground">Earn </span>
-            <span className="bg-gradient-to-r from-green-600 via-green-500 to-emerald-600 bg-clip-text text-transparent">$100/hour</span>
+            <span className="text-foreground">Land </span>
+            <span className="bg-gradient-to-r from-green-600 via-green-500 to-emerald-600 bg-clip-text text-transparent">$10k Projects</span>
           </h1>
 
           {/* Elegant subheadline */}
           <p className="text-xl sm:text-2xl text-muted-foreground/80 mb-12 max-w-3xl mx-auto leading-relaxed font-light">
-            Master n8n automation by building real workflows.
-            <span className="text-foreground/60"> Showcase your skills to clients and command premium rates.</span>
+            Complete AI automations with stunning frontends.
+            <span className="text-foreground/60"> Deploy to clients today.</span>
           </p>
 
           {/* Elegant stats */}
@@ -44,10 +44,10 @@ const HeroLandingSection = () => {
                 <div className="absolute -top-1 -left-1 w-full h-full bg-green-500/10 rounded-lg" />
                 <div className="relative bg-background border border-border rounded-lg px-8 py-6">
                   <div className="text-3xl sm:text-4xl font-bold text-green-600 dark:text-green-400 mb-1">
-                    $150k+
+                    12+
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    earned by students
+                    AI Apps Ready
                   </div>
                 </div>
               </div>
@@ -56,10 +56,10 @@ const HeroLandingSection = () => {
                 <div className="absolute -top-1 -left-1 w-full h-full bg-primary/10 rounded-lg" />
                 <div className="relative bg-background border border-border rounded-lg px-8 py-6">
                   <div className="text-3xl sm:text-4xl font-bold text-primary mb-1">
-                    500+
+                    $5k+
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    students enrolled
+                    Average Project
                   </div>
                 </div>
               </div>
@@ -77,7 +77,7 @@ const HeroLandingSection = () => {
                 href="/sign-in"
                 className="flex items-center justify-center gap-3"
               >
-                <span>Start Building Portfolio</span>
+                <span>Start Your AI Portfolio</span>
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
@@ -99,7 +99,7 @@ const HeroLandingSection = () => {
           <div className="flex justify-center">
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 px-4 py-2 rounded-full border">
               <Sparkles className="h-4 w-4 text-green-500" />
-              <span>Trusted by 2,000+ automation professionals</span>
+              <span>500+ developers shipping client-ready AI apps</span>
             </div>
           </div>
 

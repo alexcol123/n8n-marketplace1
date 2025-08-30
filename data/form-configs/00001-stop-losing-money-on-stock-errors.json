@@ -1,0 +1,15 @@
+{
+  "title": "Stop Losing Money on Stock Errors! 🚫📉",
+  "description": "Enter your details for the Stop Losing Money on Stock Errors! 🚫📉 workflow",
+  "fields": [
+    {
+      "id": "field_1756576752908",
+      "type": "text",
+      "label": "New text field",
+      "placeholder": "Enter text...",
+      "required": false
+    }
+  ],
+  "submitText": "Submit",
+  "successMessage": "Your request has been submitted successfully!"
+}

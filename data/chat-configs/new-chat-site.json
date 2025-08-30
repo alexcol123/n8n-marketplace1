@@ -1,0 +1,11 @@
+{
+  "title": "New Chat Assistant Chat Assistant",
+  "description": "AI-powered chat interface for New Chat Assistant",
+  "welcomeMessage": "Hello! I'm here to help you with New Chat Assistant. How can I assist you today?",
+  "messages": [],
+  "llmModel": "gpt-4",
+  "temperature": 0.7,
+  "maxTokens": 1000,
+  "systemPrompt": "You are a helpful AI assistant for New Chat Assistant. Help users understand and complete workflows efficiently.",
+  "endMessage": "Thank you for using our chat assistant! Feel free to start a new conversation anytime."
+}

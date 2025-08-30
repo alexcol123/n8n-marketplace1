@@ -70,8 +70,6 @@ export default function CardWorkflow({
   });
   const router = useRouter();
 
-  console.log('workflow  ', workflows)
-
   // Format date to readable string
   const formatDate = (dateString: Date) => {
     const date = new Date(dateString);

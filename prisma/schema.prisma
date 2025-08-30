@@ -49,6 +49,11 @@ model Workflow {
   viewCount         Int          @default(0)
   workFlowJson      Json         @default("{}")
   verifiedAndTested Boolean      @default(true)
+  
+  // Frontend tracking fields
+  needsFrontend     Boolean      @default(true)  // Whether this workflow needs a frontend
+  frontendCompleted Boolean      @default(false) // Whether frontend has been built
+  
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
@@ -90,10 +95,6 @@ model WorkflowStep {
   teachingTips        Json? // ["tip1", "tip2"] - Learning tips
   teachingKeyPoints   Json? // ["point1", "point2"] - Key concepts
 
-  // --- NEW: Step audio ---
-  // stepAudioUrl       String? // URL to this step's audio explanation
-  // stepAudioGenerated Boolean @default(false) // Track if step audio was created
-  // stepAudioScript    String? // Text that was narrated for this step
 
   isCustomStep Boolean @default(false)
 

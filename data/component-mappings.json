@@ -1,0 +1,26 @@
+[
+  {
+    "siteName": "00003-never-run-out-of-stock-again",
+    "componentName": "NeverRunOutOfStockAgainForm",
+    "isActive": true,
+    "updatedAt": "2025-08-30T03:39:12.403Z"
+  },
+  {
+    "siteName": "new-chat-site",
+    "componentName": "NewChatSiteChat",
+    "isActive": true,
+    "updatedAt": "2025-08-30T11:22:20.546Z"
+  },
+  {
+    "siteName": "00002-stop-losing-stockautomate-inventory-checks-now",
+    "componentName": "StopLosingStockautomateInventoryChecksNowChat",
+    "isActive": true,
+    "updatedAt": "2025-08-30T11:57:25.759Z"
+  },
+  {
+    "siteName": "00001-stop-losing-money-on-stock-errors",
+    "componentName": "StopLosingMoneyOnStockErrorsForm",
+    "isActive": true,
+    "updatedAt": "2025-08-30T17:59:18.965Z"
+  }
+]

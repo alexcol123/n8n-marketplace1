@@ -4,7 +4,6 @@ import { createWorkflowAction } from "@/utils/actions";
 import { Separator } from "@/components/ui/separator";
 import { SubmitButton } from "@/components/(custom)/(dashboard)/Form/Buttons";
 import FormContainer from "@/components/(custom)/(dashboard)/Form/FormContainer";
-import FormInput from "@/components/(custom)/(dashboard)/Form/FormInput";
 import ImageInput from "@/components/(custom)/(dashboard)/Form/ImageInput";
 import WorkflowJsonInput from "@/components/(custom)/(dashboard)/Form/WorkflowJsonInput";
 // REMOVED: StepArrayInput import - no longer needed
@@ -342,14 +341,21 @@ const CreateWorkflow = () => {
                   </p>
 
                   <div className="grid gap-4 sm:gap-6">
-                    <FormInput
-                      type="text"
-                      name="title"
-                      label="Workflow Title"
-                      placeholder="e.g., Automate Lead Follow-up"
-                      required
-                      helperText="Choose a clear, descriptive title (100 characters max)"
-                    />
+                    <div className="bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-500 text-white rounded-full p-1 mt-0.5">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-blue-900 dark:text-blue-100 text-sm">Auto-Generated Content</h4>
+                          <p className="text-blue-700 dark:text-blue-300 text-xs mt-1">
+                            Your workflow will be assigned sequence number <strong>#{"{"}next_number{"}"}</strong> initially, then updated with an AI-generated compelling title after analysis. The URL will also be updated to be shareable and meaningful.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
                     {/* REMOVED: Description and Categories inputs - simplified form */}
                   </div>
