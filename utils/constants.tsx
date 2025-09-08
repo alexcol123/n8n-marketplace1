@@ -80,11 +80,6 @@ export const adminNavigation: NavItem[] = [
   },
   {
     name: "Create Workflow",
-    href: "/workflow/create",
-    icon: Network,
-  },
-  {
-    name: "Create Workflow",
     href: "/admin/wf/create",
     icon: PlusCircle,
   },

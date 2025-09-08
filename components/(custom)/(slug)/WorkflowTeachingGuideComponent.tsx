@@ -201,7 +201,7 @@ export default function FinalWorkflowPage({ guide }: WorkflowHeroProps) {
                   </div>
                   
                   <div className="space-y-4">
-                    {guide.toolsUsed.map((tool, index) => {
+                     {guide.toolsUsed !== null && guide.toolsUsed.length > 0 && guide.toolsUsed.map((tool, index) => {
                       const [toolName, toolDescription] = tool.split(" - ");
                       return (
                         <div 

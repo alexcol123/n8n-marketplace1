@@ -4203,3 +4203,96 @@ export async function getUserCompletePortfolioAction(userId: string) {
     };
   }
 }
+
+// ===================== STUDENT RESOURCES ACTIONS =====================
+
+/**
+ * Update student resources for a workflow
+ */
+export const updateWorkflowStudentResourcesAction = async (
+  workflowId: string,
+  studentResourcesData: {
+    resources: Array<{
+      name: string;
+      url: string;
+    }>;
+  }
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    // Check if user is creator or admin
+    const isAuthorized = await isCreatorOrAdmin(workflowId);
+    if (!isAuthorized) {
+      return {
+        success: false,
+        message: "Unauthorized: You must be the workflow creator or admin to update student resources",
+      };
+    }
+
+    // Update the workflow with student resources
+    await db.workflow.update({
+      where: { id: workflowId },
+      data: {
+        studentResources: studentResourcesData as any, // Cast to any since Prisma Json type
+        updatedAt: new Date(),
+      },
+    });
+
+    revalidatePath(`/workflow/${workflowId}`);
+    revalidatePath("/admin");
+
+    return {
+      success: true,
+      message: "Student resources updated successfully",
+    };
+  } catch (error) {
+    console.error("Error updating student resources:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to update student resources",
+    };
+  }
+};
+
+/**
+ * Get student resources for a workflow
+ */
+export const getWorkflowStudentResourcesAction = async (
+  workflowId: string
+): Promise<{
+  success: boolean;
+  data?: any;
+  error?: string;
+}> => {
+  try {
+    const workflow = await db.workflow.findUnique({
+      where: { id: workflowId },
+      select: {
+        id: true,
+        title: true,
+        studentResources: true,
+      },
+    });
+
+    if (!workflow) {
+      return {
+        success: false,
+        error: "Workflow not found",
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        workflowId: workflow.id,
+        workflowTitle: workflow.title,
+        studentResources: workflow.studentResources,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching student resources:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to fetch student resources",
+    };
+  }
+};

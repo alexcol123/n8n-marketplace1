@@ -6,6 +6,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
 model Profile {
   id           String  @id @default(uuid())
   clerkId      String  @unique
@@ -47,6 +53,9 @@ model Workflow {
   // Frontend tracking fields
   needsFrontend     Boolean      @default(true)  // Whether this workflow needs a frontend
   frontendCompleted Boolean      @default(false) // Whether frontend has been built
+  
+  // Student resources for learning and project setup
+  studentResources  Json?        // Links to templates, sample data, starter files, etc.
   
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
@@ -129,7 +138,7 @@ model Issue {
   email       String?
   phone       String?
   workflowUrl String?
-  content     String      @db.Text
+  content     String
   status      IssueStatus @default(OPEN)
   priority    Priority    @default(MEDIUM) // ← Add this line
   userId      String?
@@ -231,7 +240,7 @@ model WorkflowTeachingGuide {
   whatYoullBuild       String // Technical outcome: "**Automated** invoice system using **Stripe** + **Gmail**"
   whatYoullBuildSummary String? // 2-line summary for cards: "Build automated invoice system that charges clients instantly and sends receipts via Gmail"
   possibleMonetization String // "Charge local restaurants $397 setup + $97/month maintenance"
-  toolsUsed            String[] // ["Stripe - Payment processing", "Gmail - Email automation"]
+  toolsUsed            Json? // ["Stripe - Payment processing", "Gmail - Email automation"]
 
   // --- Standard fields ---
   createdAt DateTime @default(now())

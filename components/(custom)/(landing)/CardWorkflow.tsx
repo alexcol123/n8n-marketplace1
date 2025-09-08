@@ -18,16 +18,23 @@ import {
   Edit,
   PlayCircle,
   VideoIcon,
+  BookOpen,
+  Plus,
+  X,
+  FileText,
+  Link as LinkIcon,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { WorkflowCardTypes } from "@/utils/types";
+import { WorkflowCardTypes, StudentResource, StudentResourcesData } from "@/utils/types";
 import {
   deleteWorkflowAction,
   updateWorkflowVideoAction,
+  updateWorkflowStudentResourcesAction,
+  getWorkflowStudentResourcesAction,
 } from "@/utils/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -54,7 +61,7 @@ interface CardWorkflowProps {
 
 export default function CardWorkflow({
   workflows,
-  canEditSteps = false,
+
   canDelete = false,
   onDeleteWorkflow,
   onUpdateWorkflow,
@@ -68,6 +75,13 @@ export default function CardWorkflow({
     title: workflows?.title?.replace(/^"(.+)"$/, "$1") || "",
     videoUrl: workflows?.videoUrl || "",
   });
+  
+  // Student Resources states
+  const [isResourcesDialogOpen, setIsResourcesDialogOpen] = useState(false);
+  const [isLoadingResources, setIsLoadingResources] = useState(false);
+  const [isSavingResources, setIsSavingResources] = useState(false);
+  const [studentResources, setStudentResources] = useState<StudentResource[]>([]);
+  
   const router = useRouter();
 
   // Format date to readable string
@@ -86,6 +100,77 @@ export default function CardWorkflow({
     || "Complete full-stack project with n8n automation backend and modern frontend. Perfect for building your portfolio and demonstrating real value to clients.";
 
   const workflowUrl = `/workflow/${workflows?.slug}`;
+
+  // Load student resources when dialog opens
+  const handleResourcesDialogOpen = async (open: boolean) => {
+    setIsResourcesDialogOpen(open);
+    
+    if (open) {
+      setIsLoadingResources(true);
+      try {
+        const result = await getWorkflowStudentResourcesAction(workflows.id);
+        
+        if (result.success && result.data?.studentResources) {
+          const resourcesData = result.data.studentResources as StudentResourcesData;
+          setStudentResources(resourcesData.resources || []);
+        }
+      } catch (error) {
+        console.error("Error loading student resources:", error);
+        toast.error("Failed to load student resources");
+      } finally {
+        setIsLoadingResources(false);
+      }
+    }
+  };
+
+  // Add a new resource
+  const addNewResource = () => {
+    const newResource: StudentResource = {
+      name: "",
+      url: "",
+    };
+    setStudentResources([...studentResources, newResource]);
+  };
+
+  // Update a resource
+  const updateResource = (index: number, field: keyof StudentResource, value: string) => {
+    const updated = [...studentResources];
+    updated[index] = { ...updated[index], [field]: value };
+    setStudentResources(updated);
+  };
+
+  // Remove a resource
+  const removeResource = (index: number) => {
+    setStudentResources(studentResources.filter((_, i) => i !== index));
+  };
+
+  // Save student resources
+  const handleSaveResources = async () => {
+    setIsSavingResources(true);
+    
+    try {
+      const resourcesData: StudentResourcesData = {
+        resources: studentResources,
+      };
+      
+      const result = await updateWorkflowStudentResourcesAction(
+        workflows.id,
+        resourcesData
+      );
+      
+      if (result.success) {
+        toast.success("Student resources updated successfully!");
+        setIsResourcesDialogOpen(false);
+      } else {
+        toast.error(result.message || "Failed to update student resources");
+      }
+    } catch (error) {
+      console.error("Error saving student resources:", error);
+      toast.error("Failed to save student resources");
+    } finally {
+      setIsSavingResources(false);
+    }
+  };
 
   // Handle delete workflow
   const handleDelete = async () => {
@@ -340,6 +425,23 @@ export default function CardWorkflow({
                         </DialogTrigger>
                       </Dialog>
                     </div>
+
+                    {/* Student Resources Button - Full Width */}
+                    <Dialog
+                      open={isResourcesDialogOpen}
+                      onOpenChange={handleResourcesDialogOpen}
+                    >
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-10 text-xs font-medium text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/50 bg-background/80 backdrop-blur-sm border border-green-200 dark:border-green-800/50 shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                          <BookOpen className="h-4 w-4 mr-2" />
+                          <span>Student Resources</span>
+                        </Button>
+                      </DialogTrigger>
+                    </Dialog>
                   </div>
 
      
@@ -518,6 +620,122 @@ export default function CardWorkflow({
                 <>
                   <Trash2 className="h-4 w-4" />
                   Delete Workflow
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Student Resources Dialog */}
+      <Dialog open={isResourcesDialogOpen} onOpenChange={handleResourcesDialogOpen}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto border-primary border-4 md:py-8 md:px-8">
+          <DialogHeader className="text-center space-y-4">
+            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <BookOpen className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <DialogTitle className="text-2xl font-bold text-foreground mb-2">
+                Student Resources
+              </DialogTitle>
+              <DialogDescription className="text-base text-muted-foreground">
+                Add helpful resources for students - templates, sample data, documentation, and learning materials
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+
+          {isLoadingResources ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-8 w-8 border-3 border-primary border-r-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-6 py-6">
+              {/* Resources List */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold">Resources</Label>
+                  <Button
+                    onClick={addNewResource}
+                    size="sm"
+                    variant="outline"
+                    className="h-8"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Resource
+                  </Button>
+                </div>
+
+                {studentResources.length === 0 ? (
+                  <div className="text-center py-8 bg-muted/50 rounded-lg border-2 border-dashed">
+                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-muted-foreground">No resources added yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">Click "Add Resource" to get started</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {studentResources.map((resource, index) => (
+                      <div key={index} className="p-4 bg-muted/30 rounded-lg border space-y-3">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-xs">Resource Name</Label>
+                              <Input
+                                value={resource.name}
+                                onChange={(e) => updateResource(index, "name", e.target.value)}
+                                placeholder="e.g., Sample Inventory Sheet"
+                                className="h-9 mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Resource URL</Label>
+                              <Input
+                                value={resource.url}
+                                onChange={(e) => updateResource(index, "url", e.target.value)}
+                                placeholder="https://docs.google.com/spreadsheets/..."
+                                className="h-9 mt-1"
+                              />
+                            </div>
+                          </div>
+                          <Button
+                            onClick={() => removeResource(index)}
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsResourcesDialogOpen(false)}
+              disabled={isSavingResources}
+              className="flex-1 h-12 text-base font-medium border-2 hover:border-primary transition-colors rounded-xl"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveResources}
+              disabled={isSavingResources}
+              className="flex-1 h-12 text-base font-medium bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl gap-2"
+            >
+              {isSavingResources ? (
+                <>
+                  <div className="h-5 w-5 border-2 border-current border-r-transparent rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <BookOpen className="h-4 w-4" />
+                  Save Resources
                 </>
               )}
             </Button>

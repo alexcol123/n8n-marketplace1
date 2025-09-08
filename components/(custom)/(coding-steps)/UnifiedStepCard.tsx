@@ -24,15 +24,14 @@ import {
   Play,
   Info,
   BookOpen,
-  Edit,
-  ArrowLeft,
 
+  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { type OrderedWorkflowStep } from "@/utils/functions/WorkflowStepsInOrder";
 
-import EditCardHelp from "./EditCardHelp";
+
 import NodeDetailsSection from "../(UnifiedStepCardParts)/NodeDetailsSection";
 import NodeDocumentationSection from "../(UnifiedStepCardParts)/NodeDocumentationSection";
 import { NodeDocumentation } from "@prisma/client";
@@ -44,7 +43,9 @@ import {
   isAINode,
   isCodeNode,
 } from "@/utils/functions/nodeContentUtils";
-import WorkflowStepTeaching, { WorkflowStepTeachingProps } from "../(UnifiedStepCardParts)/WorkflowStepTeaching";
+import WorkflowStepTeaching, {
+  WorkflowStepTeachingProps,
+} from "../(UnifiedStepCardParts)/WorkflowStepTeaching";
 
 // Simplified theme configuration
 const CATEGORY_THEMES = {
@@ -158,6 +159,7 @@ interface UnifiedStepCardProps {
   onExpand?: (stepId: string) => void;
   guideData?: NodeDocumentation;
   isReturnStep?: boolean;
+
 }
 
 // Utility functions
@@ -238,6 +240,7 @@ export default function UnifiedStepCard({
   onExpand,
   guideData,
   isReturnStep = false,
+
 }: UnifiedStepCardProps) {
   const [nodeCopied, setNodeCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
@@ -448,7 +451,9 @@ export default function UnifiedStepCard({
                 {isReturnStep && (
                   <div className="flex items-center gap-2 bg-primary border-l-3 border-l-green-700 px-3 py-2 rounded-r-lg shadow-lg">
                     <ArrowLeft className="w-3.5 h-3.5 text-white" />
-                    <span className=" text-sm font-semibold">Return to Step</span>
+                    <span className=" text-sm font-semibold">
+                      Return to Step
+                    </span>
                   </div>
                 )}
 
@@ -517,11 +522,10 @@ export default function UnifiedStepCard({
             </div>
           </div>
 
-    
-
           <div>
-        <WorkflowStepTeaching {...(step.originalApiStep as WorkflowStepTeachingProps)} />
-
+            <WorkflowStepTeaching
+              {...(step.originalApiStep as WorkflowStepTeachingProps)}
+            />
           </div>
 
           {/* Expand button */}
@@ -572,10 +576,7 @@ export default function UnifiedStepCard({
                     <BookOpen className="w-4 h-4" />
                     Setup Guide
                   </TabsTrigger>
-                  <TabsTrigger value="help" className="flex items-center gap-2">
-                    <Edit className="w-4 h-4" />
-                    Edit Help
-                  </TabsTrigger>
+  
                 </TabsList>
 
                 <TabsContent value="guide" className="mt-0">
@@ -605,9 +606,7 @@ export default function UnifiedStepCard({
                   />
                 </TabsContent>
 
-                <TabsContent value="help" className="mt-0">
-                  <EditCardHelp step={step} canEditSteps={canEditSteps} />
-                </TabsContent>
+
               </Tabs>
             </div>
           </CardContent>

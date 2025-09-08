@@ -19,7 +19,7 @@ import MarkCompletedButton from "./MarkCompletedButton";
 import { NodeDocumentation, WorkflowStep } from "@prisma/client";
 import { JsonValue } from "@prisma/client/runtime/library";
 import { identifyService } from "@/utils/functions/identifyService";
-import { WorkflowStepLike } from "@/utils/types";
+import {  WorkflowStepLike } from "@/utils/types";
 
 interface OrderedWorkflowStep {
   id: string;
@@ -73,6 +73,7 @@ interface WorkflowStepsViewerProps {
   guide?: string; // Make optional
   usageCount?: number; // Make optional
   lastUsedAt?: Date;
+
 }
 
 const createDefaultConnectionInfo = (): ConnectionInfo => ({
@@ -81,6 +82,7 @@ const createDefaultConnectionInfo = (): ConnectionInfo => ({
   nextSteps: [],
   previousSteps: [],
   connectionInstructions: "No connection information available.",
+
 });
 
 export default function WorkflowStepsViewer({
@@ -89,6 +91,7 @@ export default function WorkflowStepsViewer({
   canEditSteps = false,
   workflowSteps,
   guideLookup,
+  studentResources,
 }: WorkflowStepsViewerProps) {
   const [viewedSteps, setViewedSteps] = useState<Set<string>>(new Set());
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
@@ -334,6 +337,7 @@ export default function WorkflowStepsViewer({
               canEditSteps={canEditSteps}
               guideData={guideData as NodeDocumentation | undefined}
               isReturnStep={currentStep.isReturnStep === true}
+          
             />
           ) : (
             /* Error State */

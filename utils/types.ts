@@ -76,3 +76,13 @@ export type ServiceInfo = {
  hostIdentifier: string | null;
  nodeType: string;
 };
+
+// Student Resources Types - Simplified
+export type StudentResource = {
+  name: string;
+  url: string;
+};
+
+export type StudentResourcesData = {
+  resources: StudentResource[];
+};

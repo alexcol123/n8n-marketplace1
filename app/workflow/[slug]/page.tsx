@@ -23,6 +23,8 @@ import formatDateFunc from "@/utils/functions/formmatDate";
 import readingTimeFunc from "@/utils/functions/readingTimeFunc";
 import WorkflowTeachingGuideComponent from "@/components/(custom)/(slug)/WorkflowTeachingGuideComponent";
 import ZoomableWorkflowImage from "@/components/(custom)/(coding-steps)/ZoomableWorkflowImage";
+import StudentResourcesDisplay from "@/components/(custom)/(slug)/StudentResourcesDisplay";
+import { StudentResourcesData } from "@/utils/types";
 
 type WorkflowWithAuthor = Workflow & {
   author: Profile;
@@ -42,6 +44,8 @@ const SingleWorkflowPage = async ({
   }
 
   const workflow = result as WorkflowWithAuthor;
+
+  console.log(workflow)
   if (!workflow) return <EmptyList />;
 
   const workflowTeachingGuide = await fetchWorkflowTeachingGuide(workflow.id);
@@ -173,7 +177,7 @@ const SingleWorkflowPage = async ({
                 <div className="group inline-flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-r from-muted/60 to-muted/40 hover:from-muted/80 hover:to-muted/60 rounded-xl border border-border/60 hover:border-border transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-default">
                   <Clock className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
                   <span className="text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors duration-300">
-                    {readingTime} min read
+                    {readingTime || 2} min read
                   </span>
                 </div>
 
@@ -218,6 +222,8 @@ const SingleWorkflowPage = async ({
           </div>
         </div>
 
+
+
         {/* Call to action */}
         <div className="mt-16 mb-10">
           <div className="inline-flex text-xl items-center justify-center px-8 py-4 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 cursor-pointer">
@@ -226,6 +232,8 @@ const SingleWorkflowPage = async ({
             <div className="ml-2 w-2 h-2 bg-primary-foreground rounded-full animate-ping"></div>
           </div>
         </div>
+
+
 
         <ZoomableWorkflowImage
           imageSrc={workflow.workflowImage}
@@ -250,9 +258,22 @@ const SingleWorkflowPage = async ({
               showStats={true}
               canEditSteps={false}
               guideLookup={guideLookup}
+              studentResources={workflow.studentResources}
             />
           </section>
         )}
+      </div>
+
+                      {/* Student Resources Section */}
+        {workflow.studentResources && (
+          <StudentResourcesDisplay 
+            resources={workflow.studentResources as StudentResourcesData}
+          />
+        )}
+
+
+      <div>
+        
       </div>
     </main>
   );
