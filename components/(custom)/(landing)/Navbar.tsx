@@ -192,22 +192,7 @@ const Navbar = () => {
                     </div>
                   </Link>
                   
-                  {/* Create New Workflow Button */}
-                  <Button 
-                    asChild 
-                    variant="default" 
-                    size="sm" 
-                    className="w-full group"
-                  >
-                    <Link 
-                      href="/dashboard/wf/create" 
-                      className="flex items-center justify-center gap-2"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <PlusCircle className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
-                      <span>Create New Workflow</span>
-                    </Link>
-                  </Button>
+
                 </div>
               </div>
             </div>

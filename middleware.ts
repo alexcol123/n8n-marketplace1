@@ -11,7 +11,8 @@ const isPublicRoute = createRouteMatcher([
 
 // Define admin routes that require admin access
 const isAdminRoute = createRouteMatcher([
-  "/admin(.*)"
+  "/admin(.*)",
+  "/workflow/create(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

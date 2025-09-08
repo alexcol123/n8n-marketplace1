@@ -66,7 +66,7 @@ export const CreateNewWorkflowButton = () => {
   
    
     >
-      <Link href="/dashboard/wf/create" className="flex items-center gap-2">
+      <Link href="/admin/wf/create" className="flex items-center gap-2">
         <Plus className="h-5 w-5" />
          New Workflow
       </Link>

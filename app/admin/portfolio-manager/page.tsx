@@ -1,550 +1,492 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
-  Edit3, 
+  getAllSitesWithStatsAction,
+  updateSiteAction,
+  deleteSiteAction
+} from '@/utils/actions';
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Edit, 
+  ExternalLink, 
   Trash2, 
-  AlertCircle, 
-  Monitor,
-  Code,
-  ExternalLink,
-  Wrench,
-  Eye,
-  CheckCircle,
-  Clock,
-  BarChart3,
+  Users, 
+  Eye, 
+  TrendingUp,
   Workflow,
-  MessageSquare
-} from "lucide-react";
-import Link from "next/link";
-import FormBuilder, { FormConfig } from "@/components/(custom)/(admin)/FormBuilder";
-import SimpleChatBuilder, { SimpleChatConfig } from "@/components/(custom)/(admin)/SimpleChatBuilder";
-import { generateComponentCode } from "@/components/(custom)/(admin)/ComponentGenerator";
-import { generateSimpleChatComponentCode } from "@/components/(custom)/(admin)/SimpleChatComponentGenerator";
+  Settings,
+  CheckCircle,
+  AlertCircle
+} from 'lucide-react';
 
-interface PortfolioSite {
+interface Site {
   id: string;
   siteName: string;
   name: string;
-  status: 'ACTIVE' | 'COMING_SOON' | 'BETA' | 'DISABLED';
   description: string;
   siteUrl: string;
-  hasComponent: boolean;
-  componentName?: string;
-  createdAt: string;
+  category?: string;
+  difficulty?: string;
+  estimatedTime?: string;
+  status: string;
+  sortOrder: number;
+  viewCount: number;
+  completeCount: number;
+  requiredCredentials: string[];
+  workflowId?: string;
   workflow?: {
+    id: string;
     title: string;
-    needsFrontend?: boolean;
-    frontendCompleted?: boolean;
-    WorkflowTeachingGuide?: {
-      title: string;
-    };
+    category: string;
+    verifiedAndTested: boolean;
   };
+  _count?: {
+    userCredentials: number;
+  };
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-interface ComponentMapping {
-  siteName: string;
-  componentName: string;
-  isActive: boolean;
+interface Workflow {
+  id: string;
+  title: string;
+  category: string;
+  verifiedAndTested: boolean;
+  slug: string;
 }
 
-export default function PortfolioManagerPage() {
-  const [sites, setSites] = useState<PortfolioSite[]>([]);
-  const [components, setComponents] = useState<ComponentMapping[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editingComponent, setEditingComponent] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-  const [buildingForm, setBuildingForm] = useState<string | null>(null);
-  const [buildingChat, setBuildingChat] = useState<string | null>(null);
-  const [showStats, setShowStats] = useState(true);
+export default function AdminWebsitesPage() {
+  const [showForm, setShowForm] = useState(false);
+  const [editingSite, setEditingSite] = useState<Site | null>(null);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Generate component name based on site name
-  const generateComponentName = (siteName: string) => {
-    const cleanName = siteName
-      .split('-')
-      .map(word => {
-        // Remove leading numbers and ensure first char is letter
-        const cleanWord = word.replace(/^[0-9]+/, '');
-        return cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1);
-      })
-      .filter(word => word) // Remove empty words
-      .join('');
-    
-    // Ensure the component name starts with a letter
-    const finalName = cleanName || 'Custom';
-    return finalName + 'Form';
-  };
+  const [formData, setFormData] = useState({
+    status: 'COMING_SOON',
+    frontendWorkflowJson: ''
+  });
 
-  // Generate chat component name based on site name
-  const generateChatComponentName = (siteName: string) => {
-    const cleanName = siteName
-      .split('-')
-      .map(word => {
-        const cleanWord = word.replace(/^[0-9]+/, '');
-        return cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1);
-      })
-      .filter(word => word)
-      .join('');
-    
-    const finalName = cleanName || 'Custom';
-    return finalName + 'Chat';
-  };
+  const statusOptions = ['ACTIVE', 'COMING_SOON', 'BETA', 'DISABLED'];
 
+  // Load data on component mount
   useEffect(() => {
-    loadSites();
-    loadComponentMappings();
+    loadData();
   }, []);
 
-  const loadSites = async () => {
-    try {
-      const response = await fetch('/api/admin/portfolio-sites');
-      if (response.ok) {
-        const data = await response.json();
-        setSites(data);
-      }
-    } catch (error) {
-      console.error('Error loading sites:', error);
+  const loadData = async () => {
+    const sitesResult = await getAllSitesWithStatsAction();
+    
+    if (sitesResult.success) {
+      setSites(sitesResult.sites);
     }
   };
 
-  const loadComponentMappings = async () => {
+  const handleSubmit = async () => {
+    if (!editingSite) return;
+    
+    setIsLoading(true);
+    
     try {
-      const response = await fetch('/api/admin/component-mappings');
-      if (response.ok) {
-        const data = await response.json();
-        setComponents(data);
-      }
-    } catch (error) {
-      console.error('Error loading component mappings:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateComponentMapping = async (siteName: string, componentName: string) => {
-    try {
-      const response = await fetch('/api/admin/component-mappings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ siteName, componentName })
-      });
-
-      if (response.ok) {
-        setMessage({ type: 'success', text: `Component mapping updated for ${siteName}` });
-        loadComponentMappings();
-        setEditingComponent(null);
-      } else {
-        throw new Error('Failed to update mapping');
-      }
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to update component mapping' });
-    }
-  };
-
-  const handleFormBuilderSave = async (siteName: string, config: FormConfig) => {
-    try {
-      // Generate the component code with valid name
-      const { componentCode, validComponentName } = generateComponentCode(config, '', siteName);
-      
-      // Save the component file
-      const response = await fetch('/api/admin/save-component', {
+      // Update site status using dedicated API route
+      const statusResponse = await fetch('/api/admin/update-site-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          siteName, 
-          componentName: validComponentName, 
-          componentCode,
-          formConfig: config 
+          siteId: editingSite.id, 
+          status: formData.status 
         })
       });
-
-      if (response.ok) {
-        // Update the component mapping
-        await updateComponentMapping(siteName, validComponentName);
-        setBuildingForm(null);
-        setMessage({ type: 'success', text: `Form component ${validComponentName} generated and saved for ${siteName}!` });
-      } else {
-        throw new Error('Failed to save component');
-      }
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to generate form component' });
-    }
-  };
-
-  const handleChatBuilderSave = async (siteName: string, config: SimpleChatConfig) => {
-    try {
-      // Generate the chat component code with valid name
-      const { componentCode, validComponentName } = generateSimpleChatComponentCode(config, siteName);
       
-      // Save the component file
-      const response = await fetch('/api/admin/save-component', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          siteName, 
-          componentName: validComponentName, 
-          componentCode,
-          chatConfig: config 
-        })
-      });
-
-      if (response.ok) {
-        // Update the component mapping
-        await updateComponentMapping(siteName, validComponentName);
-        setBuildingChat(null);
-        setMessage({ type: 'success', text: `Chat component ${validComponentName} generated and saved for ${siteName}!` });
-      } else {
-        throw new Error('Failed to save component');
+      const statusResult = await statusResponse.json();
+      
+      if (!statusResult.success) {
+        alert(statusResult.error || 'Error updating site status');
+        setIsLoading(false);
+        return;
       }
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to generate chat component' });
+
+      // Update frontend workflow JSON if provided
+      if (formData.frontendWorkflowJson?.trim()) {
+        const result = await updateSiteAction(editingSite.id, {
+          siteName: editingSite.siteName,
+          name: editingSite.name,
+          description: editingSite.description,
+          siteUrl: editingSite.siteUrl,
+          requiredCredentials: editingSite.requiredCredentials,
+          category: editingSite.category,
+          difficulty: editingSite.difficulty,
+          estimatedTime: editingSite.estimatedTime,
+          workflowId: editingSite.workflowId,
+          frontendWorkflowJson: formData.frontendWorkflowJson
+        });
+        
+        if (!result.success) {
+          alert(result.message || 'Error updating workflow template');
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      // Success
+      setShowForm(false);
+      setEditingSite(null);
+      resetForm();
+      await loadData();
+      alert('Site updated successfully!');
+      
+    } catch (error) {
+      alert('Error updating site');
+      console.error(error);
+    }
+    
+    setIsLoading(false);
+  };
+
+  const handleEdit = (site: Site) => {
+    setEditingSite(site);
+    setFormData({
+      status: site.status,
+      frontendWorkflowJson: ''
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (siteId: string, siteName: string) => {
+    if (!confirm(`Are you sure you want to delete "${siteName}"? This will also remove all user configurations for this site.`)) {
+      return;
+    }
+
+    const result = await deleteSiteAction(siteId);
+    if (result.success) {
+      await loadData();
+      alert('Site deleted successfully');
+    } else {
+      alert(result.message || 'Error deleting site');
     }
   };
 
-  const removeComponentMapping = async (siteName: string) => {
-    try {
-      const response = await fetch(`/api/admin/component-mappings?siteName=${siteName}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        setMessage({ type: 'success', text: `Component mapping removed for ${siteName}` });
-        loadComponentMappings();
-      }
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to remove component mapping' });
-    }
+  const resetForm = () => {
+    setFormData({
+      status: 'COMING_SOON',
+      frontendWorkflowJson: ''
+    });
   };
 
-  const updateSiteStatus = async (siteId: string, status: string) => {
-    try {
-      const response = await fetch('/api/admin/update-site-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ siteId, status })
-      });
 
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Site status updated successfully' });
-        loadSites();
-      }
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to update site status' });
-    }
-  };
-
-  const getSiteComponent = (siteName: string) => {
-    return components.find(c => c.siteName === siteName);
-  };
-
-  // Calculate stats for overview
-  const stats = {
-    total: sites.length,
-    active: sites.filter(s => s.status === 'ACTIVE').length,
-    comingSoon: sites.filter(s => s.status === 'COMING_SOON').length,
-    beta: sites.filter(s => s.status === 'BETA').length,
-    withComponents: sites.filter(s => getSiteComponent(s.siteName)).length,
-    withTutorials: sites.filter(s => s.workflow).length
-  };
-
-  if (loading) {
+  if (showForm) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto mb-4"></div>
-            <p>Loading portfolio sites...</p>
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-semibold">
+              Edit Site: {editingSite?.name}
+            </h1>
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setShowForm(false);
+                setEditingSite(null);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Site Configuration</CardTitle>
+              <CardDescription>
+                Configure site status and provide optional student template
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              
+              {/* Site Status */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Site Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData(prev => ({...prev, status: e.target.value}))}
+                  className="w-full px-3 py-2 border rounded-lg bg-background"
+                >
+                  {statusOptions.map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Controls whether users can access this site
+                </p>
+              </div>
+
+              {/* Required Credentials - Hardcoded */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Required Credentials</label>
+                <div className="flex items-center gap-2">
+                  <Badge variant="default">webhook</Badge>
+                  <span className="text-sm text-muted-foreground">
+                    All sites require a webhook URL to connect to n8n
+                  </span>
+                </div>
+              </div>
+
+              {/* Frontend Workflow JSON */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Student Workflow Template (n8n JSON)
+                </label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Pre-configured n8n workflow JSON that students can copy and import into their n8n instance. 
+                  Include placeholder credentials that students will replace with their own API keys.
+                </p>
+                <textarea
+                  value={formData.frontendWorkflowJson}
+                  onChange={(e) => setFormData(prev => ({...prev, frontendWorkflowJson: e.target.value}))}
+                  placeholder='{"nodes": [...], "connections": {...}}'
+                  rows={8}
+                  className="w-full px-3 py-2 border rounded-lg bg-background font-mono text-xs"
+                />
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      try {
+                        if (formData.frontendWorkflowJson) {
+                          const formatted = JSON.stringify(
+                            JSON.parse(formData.frontendWorkflowJson), 
+                            null, 
+                            2
+                          );
+                          setFormData(prev => ({...prev, frontendWorkflowJson: formatted}));
+                        }
+                      } catch (e) {
+                        alert('Invalid JSON format');
+                      }
+                    }}
+                  >
+                    Format JSON
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormData(prev => ({...prev, frontendWorkflowJson: ''}))}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleSubmit}
+                disabled={isLoading}
+                className="w-full"
+                size="lg"
+              >
+                {isLoading ? 'Updating...' : 'Update Site'}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Portfolio Manager</h1>
-            <p className="text-muted-foreground">
-              Complete portfolio site management with form builder and analytics
+            <h1 className="text-3xl font-semibold">Website Management</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage automation portfolio sites and their configurations
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowStats(!showStats)}
-            className="gap-2"
-          >
-            <BarChart3 className="h-4 w-4" />
-            {showStats ? 'Hide Stats' : 'Show Stats'}
-          </Button>
+ 
         </div>
-      </div>
 
-      {/* Portfolio Stats Overview */}
-      {showStats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50 border-blue-200">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{stats.total}</div>
-              <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Total Sites</div>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Settings className="w-4 h-4 text-primary" />
+                <div>
+                  <p className="text-2xl font-bold">{sites.length}</p>
+                  <p className="text-sm text-muted-foreground">Total Sites</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/50 border-green-200">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.active}</div>
-              <div className="text-xs text-green-600 dark:text-green-400 font-medium">Active</div>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-500" />
+                <div>
+                  <p className="text-2xl font-bold">
+                    {sites.filter(s => s.status === 'ACTIVE').length}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Active Sites</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          
-          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/50 border-amber-200">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">{stats.comingSoon}</div>
-              <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">Coming Soon</div>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-blue-500" />
+                <div>
+                  <p className="text-2xl font-bold">
+                    {sites.reduce((sum, site) => sum + (site._count?.userCredentials || 0), 0)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">User Configs</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50 border-purple-200">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{stats.beta}</div>
-              <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">Beta</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/50 dark:to-indigo-900/50 border-indigo-200">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">{stats.withComponents}</div>
-              <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">With Forms</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/50 border-orange-200">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{stats.withTutorials}</div>
-              <div className="text-xs text-orange-600 dark:text-orange-400 font-medium">With Tutorials</div>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-purple-500" />
+                <div>
+                  <p className="text-2xl font-bold">
+                    {sites.reduce((sum, site) => sum + site.viewCount, 0)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Total Views</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
-      )}
 
-      {/* Success/Error Message */}
-      {message && (
-        <Alert className={`mb-6 ${message.type === 'error' ? 'border-red-500' : 'border-green-500'}`}>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription className={message.type === 'error' ? 'text-red-700' : 'text-green-700'}>
-            {message.text}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Sites Management */}
-      <div className="space-y-6">
-        {sites.map((site) => {
-          const component = getSiteComponent(site.siteName);
-          const isEditing = editingComponent === site.siteName;
-          
-          return (
-            <Card key={site.id} className="relative">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold">
-                        {site.workflow?.WorkflowTeachingGuide?.title || site.name}
-                      </h3>
-                      
-                      {/* Status Badge */}
-                      <Badge variant={
-                        site.status === 'ACTIVE' ? 'default' :
-                        site.status === 'BETA' ? 'secondary' :
-                        'outline'
-                      }>
-                        {site.status === 'COMING_SOON' ? 'Coming Soon' : site.status}
-                      </Badge>
-
-                      {/* Component Status */}
-                      {component ? (
-                        <Badge variant="default" className="bg-green-600">
-                          <Code className="h-3 w-3 mr-1" />
-                          {component.componentName}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">
-                          No Component
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-1 mb-2">
-                      <p className="text-sm text-muted-foreground">
-                        Site: <code className="bg-muted px-1 rounded">{site.siteName}</code> • 
-                        Created: {new Date(site.createdAt).toLocaleDateString()}
-                      </p>
-                      {site.workflow && (
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            <Workflow className="h-3 w-3 mr-1" />
-                            Connected Tutorial
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            {site.workflow.WorkflowTeachingGuide?.title || site.workflow.title}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground">
-                      {site.description}
-                    </p>
-
-                    {/* Frontend Status Indicator */}
-                    {site.workflow && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <Badge variant={site.workflow.frontendCompleted ? 'default' : 'outline'} className="text-xs">
-                          {site.workflow.frontendCompleted ? (
-                            <>
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Frontend Built
-                            </>
-                          ) : site.workflow.needsFrontend ? (
-                            <>
-                              <Clock className="h-3 w-3 mr-1" />
-                              Needs Frontend
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="h-3 w-3 mr-1" />
-                              No Frontend Required
-                            </>
-                          )}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Link href={site.siteUrl} target="_blank">
-                      <Button size="sm" variant="outline">
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        View
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Component Management */}
-                <div className="border-t pt-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium mb-1">Component Mapping</h4>
-                      <p className="text-xs text-muted-foreground">
-                        Auto-generate site-specific component: {generateComponentName(site.siteName)}
-                      </p>
-                    </div>
-
-                    {!isEditing && buildingForm !== site.siteName && buildingChat !== site.siteName ? (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setBuildingForm(site.siteName)}
-                        >
-                          <Wrench className="h-3 w-3 mr-1" />
-                          {component ? 'Edit Form' : 'Build Form'}
-                        </Button>
-                        
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setBuildingChat(site.siteName)}
-                        >
-                          <MessageSquare className="h-3 w-3 mr-1" />
-                          Build Chat
-                        </Button>
-                        
-                        {component && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => removeComponentMapping(site.siteName)}
-                          >
-                            <Trash2 className="h-3 w-3 mr-1" />
-                            Remove
-                          </Button>
-                        )}
-
-                        {/* Status Toggle */}
-                        <Select
-                          value={site.status}
-                          onValueChange={(value) => updateSiteStatus(site.id, value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="COMING_SOON">Coming Soon</SelectItem>
-                            <SelectItem value="ACTIVE">Active</SelectItem>
-                            <SelectItem value="BETA">Beta</SelectItem>
-                            <SelectItem value="DISABLED">Disabled</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ) : buildingForm === site.siteName ? (
-                      <div className="mt-4">
-                        <FormBuilder
-                          siteName={site.siteName}
-                          workflowTitle={site.workflow?.WorkflowTeachingGuide?.title || site.name}
-                          onSave={(config) => handleFormBuilderSave(site.siteName, config)}
-                          onCancel={() => setBuildingForm(null)}
-                        />
-                      </div>
-                    ) : buildingChat === site.siteName ? (
-                      <div className="mt-4">
-                        <SimpleChatBuilder
-                          siteName={site.siteName}
-                          workflowTitle={site.workflow?.WorkflowTeachingGuide?.title || site.name}
-                          onSave={(config) => handleChatBuilderSave(site.siteName, config)}
-                          onCancel={() => setBuildingChat(null)}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
+        {/* Sites List */}
+        <div className="space-y-4">
+          {sites.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Settings className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Sites Yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Create your first automation portfolio site to get started
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Sites are automatically created when workflows are added.
+                </p>
               </CardContent>
             </Card>
-          );
-        })}
+          ) : (
+            sites.map(site => (
+              <Card key={site.id}>
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-semibold">{site.name}</h3>
+                        
+                        <Badge variant={site.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                          {site.status}
+                        </Badge>
 
-        {sites.length === 0 && (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <Monitor className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-muted-foreground">No portfolio sites found</p>
-            </CardContent>
-          </Card>
-        )}
+                        {site.category && (
+                          <Badge variant="outline">{site.category}</Badge>
+                        )}
+
+                        {site.difficulty && (
+                          <Badge variant="outline">{site.difficulty}</Badge>
+                        )}
+
+                        {site.workflow && (
+                          <Badge variant="outline" className="text-blue-600">
+                            <Workflow className="w-3 h-3 mr-1" />
+                            Connected
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <p className="text-muted-foreground mb-3">{site.description}</p>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
+                        <div>
+                          <span className="text-muted-foreground">Slug:</span>
+                          <br />
+                          <code className="bg-muted px-1 rounded">{site.siteName}</code>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">URL:</span>
+                          <br />
+                          <Link
+                            href={site.siteUrl} 
+                            className="text-primary hover:underline text-sm"
+                          >
+                            {site.siteUrl}
+                          </Link>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Users:</span>
+                          <br />
+                          <span className="font-medium">{site._count?.userCredentials || 0}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Views:</span>
+                          <br />
+                          <span className="font-medium">{site.viewCount}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-sm text-muted-foreground mr-2">Required:</span>
+                        {site.requiredCredentials.map(cred => (
+                          <Badge key={cred} variant="outline" className="text-xs">
+                            {cred}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 ml-4">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEdit(site)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        asChild
+                      >
+                        <Link href={site.siteUrl}>
+                          <ExternalLink className="w-4 h-4" />
+                        </Link>
+                      </Button>
+
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDelete(site.id, site.name)}
+                        className="text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       </div>
-
-      {/* Instructions */}
-      <Card className="mt-8 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800">
-        <CardContent className="p-6">
-          <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-            💡 How to Use This Manager
-          </h3>
-          <div className="text-sm text-blue-700 dark:text-blue-300 space-y-2">
-            <p><strong>1. Add Component:</strong> Each site gets its own unique component auto-generated from the site name</p>
-            <p><strong>2. Component Names:</strong> Site names like &quot;never-run-out-of-stock&quot; become &quot;NeverRunOutOfStockForm&quot;</p>
-            <p><strong>3. Change Status:</strong> Set to &quot;Active&quot; when component is ready, &quot;Coming Soon&quot; for placeholder</p>
-            <p><strong>4. Safe Updates:</strong> No code editing required - everything updates automatically</p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

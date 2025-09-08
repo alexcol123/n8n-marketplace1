@@ -91,7 +91,7 @@ export default function UserPortfolioPage() {
   const [availableSites, setAvailableSites] = useState<Site[]>([]);
   const [configuredSites, setConfiguredSites] = useState<Site[]>([]);
   // const [unConfiguredSites, setUnConfiguredSites] = useState<Site[]>([]);
-  const [showBrowse, setShowBrowse] = useState(false);
+  const [showBrowse, setShowBrowse] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -125,9 +125,14 @@ export default function UserPortfolioPage() {
         setConfiguredSites(configuredSites);
         setAvailableSites(unconfiguredSites);
 
+        // Log success for debugging
+        console.log(
+          `✅ Portfolio loaded: ${configuredSites.length} configured, ${unconfiguredSites.length} available`
+        );
       } else {
         // Fallback for completely new users - show empty configured sites, all available sites
         setConfiguredSites([]);
+        console.log("📝 New user detected - showing all available sites");
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -278,27 +283,32 @@ export default function UserPortfolioPage() {
 
         {/* Main Content: Configured Sites */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold flex items-center gap-3">
-                <Rocket className="w-8 h-8 text-emerald-500" />
-                Automation Solutions
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                {configuredSites.length > 0
-                  ? "Professional automation solutions designed to streamline business operations"
-                  : "Get started with your first automation solution"}
-              </p>
+          {/* Enhanced Main Header */}
+          <div className="bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10 border border-emerald-200/50 dark:border-emerald-800/30 rounded-xl p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                    <Rocket className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  My Automation Solutions
+                </h2>
+                <p className="text-muted-foreground text-lg">
+                  {configuredSites.length > 0
+                    ? `Manage your ${configuredSites.length} configured automation solution${configuredSites.length !== 1 ? 's' : ''} 💼`
+                    : "Get started with your first automation solution 🚀"}
+                </p>
+              </div>
+              {configuredSites.length > 0 && (
+                <Badge
+                  variant="outline"
+                  className="text-lg px-4 py-2 border-emerald-200 bg-emerald-50/50"
+                >
+                  {configuredSites.length} Solution
+                  {configuredSites.length !== 1 ? "s" : ""} Active
+                </Badge>
+              )}
             </div>
-            {configuredSites.length > 0 && (
-              <Badge
-                variant="outline"
-                className="text-lg px-4 py-2 border-emerald-200"
-              >
-                {configuredSites.length} Solution
-                {configuredSites.length !== 1 ? "s" : ""} Available
-              </Badge>
-            )}
           </div>
 
           {/* Configured Sites Grid */}
@@ -317,10 +327,13 @@ export default function UserPortfolioPage() {
                   <Button
                     size="lg"
                     className="bg-primary hover:bg-primary/90"
-                    onClick={() => setShowBrowse(true)}
+                    onClick={() => {
+                      setShowBrowse(true);
+                      document.getElementById('available-solutions')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
                   >
                     <Plus className="w-5 h-5 mr-2" />
-                    Add New Solution
+                    Browse Solutions
                   </Button>
                   <Button variant="outline" asChild>
                     <Link href="/dashboard/workflows">
@@ -344,40 +357,73 @@ export default function UserPortfolioPage() {
                 <Button
                   size="lg"
                   className="bg-primary hover:bg-primary/90"
-                  onClick={() => setShowBrowse(true)}
+                  onClick={() => {
+                    setShowBrowse(true);
+                    document.getElementById('available-solutions')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
                 >
                   <Plus className="w-5 h-5 mr-2" />
-                  Add New Solution
+                  Browse Solutions
                 </Button>
               </div>
             </>
           )}
         </div>
 
-        {/* Browse Available Sites - Show by default for new users OR when toggled */}
-        {(showBrowse || configuredSites.length === 0) && (
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-2xl font-bold flex items-center gap-3">
-                  <Grid3X3 className="w-6 h-6 text-primary" />
-                  Available Solutions
-                </h3>
-                <p className="text-muted-foreground mt-1">
-                  {configuredSites.length === 0
-                    ? "Choose your first automation solution to get started"
-                    : "Expand your service offerings with these automation solutions"}
-                </p>
-              </div>
-              {configuredSites.length > 0 && (
-                <Button variant="outline" onClick={() => setShowBrowse(false)}>
-                  <EyeOff className="w-4 h-4 mr-2" />
-                  Hide Available Solutions
+        {/* Section Separator */}
+        <div className="relative py-8">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border/60"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-background px-6 text-muted-foreground font-medium flex items-center gap-2">
+              <Rocket className="w-4 h-4" />
+              Explore More Solutions
+              <Rocket className="w-4 h-4" />
+            </span>
+          </div>
+        </div>
+
+        {/* Browse Available Sites - Show by default, hide only when user toggles */}
+        {showBrowse && (
+          <div id="available-solutions" className="mb-12">
+            {/* Enhanced Header with Background */}
+            <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-transparent border border-primary/20 rounded-xl p-6 mb-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-3xl font-bold flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                      <Grid3X3 className="w-5 h-5 text-primary" />
+                    </div>
+                    Available Solutions
+                  </h3>
+                  <p className="text-muted-foreground text-lg">
+                    {configuredSites.length === 0
+                      ? "Choose your first automation solution to get started 🚀"
+                      : "Expand your service offerings with these automation solutions 💼"}
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowBrowse(!showBrowse)}
+                  className="border-primary/30 hover:bg-primary/10"
+                >
+                  {showBrowse ? (
+                    <>
+                      <EyeOff className="w-4 h-4 mr-2" />
+                      Hide Solutions
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-4 h-4 mr-2" />
+                      Show Solutions
+                    </>
+                  )}
                 </Button>
-              )}
+              </div>
             </div>
 
-            {availableSites.length === 0 ? (
+            {availableSites.filter(site => site.status === 'ACTIVE').length === 0 ? (
               <Card className="border-2 border-dashed border-muted-foreground/20">
                 <CardContent className="py-8 text-center">
                   <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -391,9 +437,11 @@ export default function UserPortfolioPage() {
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {availableSites.map((site) => (
-                  <UnconfiguredSiteCard key={site.id} site={site} />
-                ))}
+                {availableSites
+                  .filter(site => site.status === 'ACTIVE')
+                  .map((site) => (
+                    <UnconfiguredSiteCard key={site.id} site={site} />
+                  ))}
               </div>
             )}
           </div>
@@ -405,7 +453,18 @@ export default function UserPortfolioPage() {
 
 // Enhanced Configured Site Card Component
 function ConfiguredSiteCard({ site }: { site: Site }) {
-
+  const getPricingSuggestion = (difficulty?: string) => {
+    switch (difficulty?.toLowerCase()) {
+      case "beginner":
+        return "$297-497 setup fee";
+      case "intermediate":
+        return "$497-797 setup fee";
+      case "advanced":
+        return "$797-1,497 setup fee";
+      default:
+        return "$497 setup fee";
+    }
+  };
 
   return (
     <Card className="group relative overflow-hidden border-2 border-emerald-200 hover:border-emerald-400 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/20 bg-gradient-to-br from-emerald-50/50 to-transparent h-full flex flex-col">
@@ -455,7 +514,19 @@ function ConfiguredSiteCard({ site }: { site: Site }) {
           </CardDescription>
 
           {/* Earning Potential Highlight */}
-
+          <div className="p-3 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-lg mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm font-medium text-emerald-800">
+                  Ready to Earn
+                </span>
+              </div>
+              <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300">
+                {getPricingSuggestion(site.difficulty)}
+              </Badge>
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-2">
@@ -517,7 +588,18 @@ function UnconfiguredSiteCard({ site }: { site: Site }) {
     }
   };
 
-
+  const getPricingSuggestion = (difficulty?: string) => {
+    switch (difficulty?.toLowerCase()) {
+      case "beginner":
+        return "$297-497 setup fee";
+      case "intermediate":
+        return "$497-797 setup fee";
+      case "advanced":
+        return "$797-1,497 setup fee";
+      default:
+        return "$497 setup fee";
+    }
+  };
 
   return (
     <Card className="group relative overflow-hidden border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 h-full flex flex-col">
@@ -638,7 +720,17 @@ function UnconfiguredSiteCard({ site }: { site: Site }) {
                 </div>
               )}
 
-      
+              <div className="p-2 bg-purple-50 border border-purple-200 rounded-lg text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <DollarSign className="w-3 h-3 text-purple-600" />
+                  <span className="text-xs font-medium text-purple-800">
+                    Client Pricing
+                  </span>
+                </div>
+                <div className="text-xs text-purple-700">
+                  {getPricingSuggestion(site.difficulty)}
+                </div>
+              </div>
             </div>
           </div>
         </div>

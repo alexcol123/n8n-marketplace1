@@ -16,14 +16,8 @@ import { revalidatePath } from "next/cache";
 import { deleteImage, uploadImage } from "./supabase";
 
 import slug from "slug";
-import {
-  IssueStatus,
-  Priority,
-  WorkflowStep,
-} from "@prisma/client";
+import { IssueStatus, Priority, WorkflowStep } from "@prisma/client";
 import { getDateTime } from "./functions/getDateTime";
-
-
 
 import { identifyService } from "./functions/identifyService";
 import { extractAndSaveWorkflowSteps } from "./functions/extractWorkflowSteps";
@@ -35,7 +29,6 @@ import {
   stepTeachingSchema,
   teachingGuideSchema,
 } from "./workflowTeachGuideSchemas";
-
 
 export const getAuthUser = async () => {
   const user = await currentUser();
@@ -343,15 +336,13 @@ export const updateProfileImageAction = async (
   }
 };
 
-export const fetchWorkflows = async ({
-  search = "",
-}: {
-  search?: string;
-}) => {
+export const fetchWorkflows = async ({ search = "" }: { search?: string }) => {
   const workflows = await db.workflow.findMany({
-    where: search ? {
-      title: { contains: search, mode: "insensitive" }
-    } : {},
+    where: search
+      ? {
+          title: { contains: search, mode: "insensitive" },
+        }
+      : {},
     select: {
       id: true,
       title: true,
@@ -470,7 +461,7 @@ export async function getUserWorkflowStats() {
     );
 
     // Categories no longer used - removed category field
-    const categoriesUsed: Array<{name: string, count: number}> = [];
+    const categoriesUsed: Array<{ name: string; count: number }> = [];
 
     // Get most used category
 
@@ -630,7 +621,7 @@ export const deleteWorkflowAction = async (
     }
 
     // Revalidate relevant paths to update the UI
-    revalidatePath("/dashboard/wf"); // My Workflows page
+    revalidatePath("/admin/wf"); // My Workflows page
     revalidatePath("/"); // Home page that might show the workflows
 
     // Return success message
@@ -642,11 +633,6 @@ export const deleteWorkflowAction = async (
     return renderError(error);
   }
 };
-
-
-
-
-
 
 export const getUserProfileWithWorkflows = async (username: string) => {
   try {
@@ -675,7 +661,7 @@ export const getUserProfileWithWorkflows = async (username: string) => {
             id: true,
             slug: true,
             title: true,
-                workflowImage: true,
+            workflowImage: true,
             creationImage: true,
             viewCount: true,
             createdAt: true,
@@ -834,7 +820,7 @@ export const fetchUserCompletions = async () => {
           select: {
             id: true,
             title: true,
-                slug: true,
+            slug: true,
             workflowImage: true,
             creationImage: true,
             author: {
@@ -1002,8 +988,6 @@ export const getCompletionLeaderboard = async (limit: number = 10) => {
     return [];
   }
 };
-
-
 
 // Get completion streaks for gamification
 export const getCompletionStreaks = async () => {
@@ -1303,7 +1287,6 @@ export const updateIssueStatus = async (
     return { message: "Failed to update issue status", success: false };
   }
 };
-
 
 // Get single issue details
 export const fetchIssueById = async (issueId: string) => {
@@ -1768,7 +1751,7 @@ export const updateWorkflowVideoAction = async (
     });
 
     // Revalidate relevant paths to update the UI
-    revalidatePath("/dashboard/wf"); // My Workflows page
+    revalidatePath("/admin/wf"); // My Workflows page
     revalidatePath(`/workflow/${workflowId}`); // Individual workflow page
 
     // Return success message
@@ -1887,7 +1870,7 @@ export const updateWorkflowStepAction = async (
 
     // Revalidate the workflow page to reflect changes
     revalidatePath(`/workflow/${step.workflow.slug}`);
-    revalidatePath("/dashboard/wf");
+    revalidatePath("/admin/wf");
 
     return {
       success: true,
@@ -2067,8 +2050,8 @@ export const updateWorkflowStepImageAction = async (
     }
 
     // Revalidate the workflow page
-    revalidatePath(`/dashboard/wf/${updatedStep.workflow.slug}`);
-    revalidatePath("/dashboard/wf");
+    revalidatePath(`/admin/wf/${updatedStep.workflow.slug}`);
+    revalidatePath("/admin/wf");
 
     return {
       message: "Step image updated successfully",
@@ -2801,16 +2784,6 @@ export const getNodeSetupGuide = async (guideId: string) => {
   }
 };
 
-// =======================================================================================>
-// =======================================================================================>
-// =======================================================================================>
-// =======================================================================================>
-// =======================================================================================>
-
-// Enhanced createWorkflowAction in utils/actions.ts
-
-// Enhanced createWorkflowAction in utils/actions.ts
-
 export const createWorkflowAction = async (
   prevState: Record<string, unknown>,
   formData: FormData
@@ -2829,7 +2802,7 @@ export const createWorkflowAction = async (
 
     // Generate sequence number for title
     const workflowCount = await db.workflow.count();
-    const sequenceNumber = (workflowCount + 1).toString().padStart(5, '0');
+    const sequenceNumber = (workflowCount + 1).toString().padStart(5, "0");
 
     // ... existing image upload code ...
     const validatedWorkflowImage = validateWithZodSchema(imageSchema, {
@@ -2918,8 +2891,8 @@ export const createWorkflowAction = async (
     };
   }
 
-  // revalidatePath("/dashboard/wf");
-  redirect("/dashboard/wf");
+  // revalidatePath("/admin/wf");
+  redirect("/admin/wf");
 };
 
 async function createFrontendScaffold(
@@ -2931,7 +2904,7 @@ async function createFrontendScaffold(
   try {
     // Create AvailableSite record - this is all we need for dynamic routes!
     const siteName = `${sequenceNumber}-${slugName}`;
-    
+
     // Check if site already exists
     const existingSite = await db.availableSite.findUnique({
       where: { siteName },
@@ -2957,7 +2930,6 @@ async function createFrontendScaffold(
     } else {
       // Site already exists
     }
-    
   } catch (error) {
     console.error("❌ Failed to create frontend scaffold:", error);
     // Don't throw - this is optional functionality
@@ -3014,7 +2986,12 @@ async function generateWorkflowTeachingGuide(
 
     // Create frontend scaffold if needed
     if (updatedWorkflow.needsFrontend) {
-      await createFrontendScaffold(workflowId, originalTitle, newSlug, teachingContent.title);
+      await createFrontendScaffold(
+        workflowId,
+        originalTitle,
+        newSlug,
+        teachingContent.title
+      );
     }
   } catch (error) {
     console.error("❌ Failed to generate workflow teaching guide:", error);
@@ -3037,8 +3014,7 @@ async function generateTeachingGuideWithLLM(
 
     return {
       title: `💰 Get Results Fast - Master ${originalTitle}`,
-      whatYoullBuild:
-        `Build a **professional ${originalTitle.toLowerCase()} automation system** that eliminates manual work and transforms your business operations into a streamlined, profit-generating machine. This complete automation uses **n8n**, **webhooks**, and **HTTP requests** to create a hands-off workflow that processes tasks in minutes instead of hours—reducing what typically takes 2-3 hours of manual work down to just 5 minutes of automated execution. Your system operates 24/7 without supervision, connecting multiple services seamlessly and handling complex workflows that would normally require constant human intervention. The result is a scalable automation that you can immediately deploy for clients or your own business, turning operational bottlenecks into competitive advantages while you focus on growth and revenue generation.`,
+      whatYoullBuild: `Build a **professional ${originalTitle.toLowerCase()} automation system** that eliminates manual work and transforms your business operations into a streamlined, profit-generating machine. This complete automation uses **n8n**, **webhooks**, and **HTTP requests** to create a hands-off workflow that processes tasks in minutes instead of hours—reducing what typically takes 2-3 hours of manual work down to just 5 minutes of automated execution. Your system operates 24/7 without supervision, connecting multiple services seamlessly and handling complex workflows that would normally require constant human intervention. The result is a scalable automation that you can immediately deploy for clients or your own business, turning operational bottlenecks into competitive advantages while you focus on growth and revenue generation.`,
       possibleMonetization:
         "🚀 BUSINESS OPPORTUNITY: Every small business around you is drowning in manual tasks and would pay handsomely to escape. Charge $497 to set up this exact automation for local businesses, or offer 'Done-For-You Automation' at $197/month per client. With just 25 business clients, you're earning $4,925/month solving real operational pain while they focus on growth.",
       toolsUsed:
@@ -3164,8 +3140,7 @@ Make every section feel urgent and valuable. They should think "I'm hemorrhaging
         "✅ Automatically triggers when specific events occur ✅ Processes tasks without human intervention ✅ Connects your existing tools seamlessly ✅ Provides notifications when work is completed",
       realCostOfNotHaving:
         "What you're really losing isn't just time - it's your competitive advantage. Every hour spent on manual work is an hour not spent on strategy, customer acquisition, or innovation. This operational inefficiency signals to the market that you're stuck in the weeds while smarter competitors are scaling systematically.",
-      whatYoullBuild:
-        `Build a **comprehensive automation system** that transforms your business operations from manual labor into a profit-generating machine working around the clock. This complete workflow automation uses **n8n**, **webhooks**, and **enterprise-grade automation tools** to eliminate repetitive tasks and create systematic processes that generate immediate business value—reducing what typically takes 3-4 hours of manual work down to just 10 minutes of automated execution. Your hands-free system operates 24/7 without supervision, automatically identifying and processing opportunities while you focus on strategic growth. The result is professional automation skills that create scalable business value, turning operational bottlenecks into competitive advantages that position you as the automation expert in your market.`,
+      whatYoullBuild: `Build a **comprehensive automation system** that transforms your business operations from manual labor into a profit-generating machine working around the clock. This complete workflow automation uses **n8n**, **webhooks**, and **enterprise-grade automation tools** to eliminate repetitive tasks and create systematic processes that generate immediate business value—reducing what typically takes 3-4 hours of manual work down to just 10 minutes of automated execution. Your hands-free system operates 24/7 without supervision, automatically identifying and processing opportunities while you focus on strategic growth. The result is professional automation skills that create scalable business value, turning operational bottlenecks into competitive advantages that position you as the automation expert in your market.`,
       whatYoullBuildSummary: `Build automated ${originalTitle.toLowerCase()} system that saves hours of manual work using n8n workflows`,
       possibleMonetization:
         "🚀 BUSINESS OPPORTUNITY: Every business in your area is bleeding money on manual processes and would pay premium rates to escape this operational quicksand. Charge $397 to implement this automation for local companies, or offer 'Done-For-You Process Automation' at $147/month per client. With just 30 business clients, you're generating $4,410/month in recurring revenue helping them reclaim their time and sanity.",
@@ -3391,8 +3366,6 @@ export const fetchWorkflowTeachingGuide = async (workflowId: string) => {
 // Alternative version if you want to fetch by slug instead of ID
 export const fetchWorkflowTeachingGuideBySlug = async (slug: string) => {
   try {
-   
-
     // Find workflow by slug first
     const workflow = await db.workflow.findUnique({
       where: { slug },
@@ -3564,7 +3537,7 @@ export const createSiteAction = async (siteData: {
   try {
     // Check if siteName already exists
     const existingSite = await db.availableSite.findUnique({
-      where: { siteName: siteData.siteName }
+      where: { siteName: siteData.siteName },
     });
 
     if (existingSite) {
@@ -3607,10 +3580,10 @@ export const createSiteAction = async (siteData: {
           select: {
             id: true,
             title: true,
-                verifiedAndTested: true
-          }
-        }
-      }
+            verifiedAndTested: true,
+          },
+        },
+      },
     });
 
     return {
@@ -3638,20 +3611,20 @@ export const getAllSitesAction = async () => {
           select: {
             id: true,
             title: true,
-                verifiedAndTested: true
-          }
+            verifiedAndTested: true,
+          },
         },
         _count: {
           select: {
             userCredentials: {
-              where: { isConfigured: true }
-            }
-          }
-        }
+              where: { isConfigured: true },
+            },
+          },
+        },
       },
       orderBy: [
-        { status: "asc" }, 
-        { createdAt: "desc" }  // Order by creation date instead of sortOrder
+        { status: "asc" },
+        { createdAt: "desc" }, // Order by creation date instead of sortOrder
       ],
     });
 
@@ -3672,25 +3645,28 @@ export const getAllSitesAction = async () => {
 /**
  * ✏️ UPDATED: Update existing site (sortOrder removed)
  */
-export const updateSiteAction = async (siteId: string, siteData: {
-  siteName: string;
-  name: string;
-  description: string;
-  siteUrl: string;
-  requiredCredentials: string[];
-  category?: string;
-  difficulty?: string;
-  estimatedTime?: string;
-  workflowId?: string;
-  frontendWorkflowJson?: string;
-}) => {
+export const updateSiteAction = async (
+  siteId: string,
+  siteData: {
+    siteName: string;
+    name: string;
+    description: string;
+    siteUrl: string;
+    requiredCredentials: string[];
+    category?: string;
+    difficulty?: string;
+    estimatedTime?: string;
+    workflowId?: string;
+    frontendWorkflowJson?: string;
+  }
+) => {
   try {
     // Check if siteName is taken by another site
     const existingSite = await db.availableSite.findFirst({
       where: {
         siteName: siteData.siteName,
-        NOT: { id: siteId }
-      }
+        NOT: { id: siteId },
+      },
     });
 
     if (existingSite) {
@@ -3726,24 +3702,24 @@ export const updateSiteAction = async (siteId: string, siteData: {
         workflowId: siteData.workflowId || null,
         frontendWorkflowJson: frontendJson,
         // sortOrder removed
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         workflow: {
           select: {
             id: true,
             title: true,
-                verifiedAndTested: true
-          }
+            verifiedAndTested: true,
+          },
         },
         _count: {
           select: {
             userCredentials: {
-              where: { isConfigured: true }
-            }
-          }
-        }
-      }
+              where: { isConfigured: true },
+            },
+          },
+        },
+      },
     });
 
     return {
@@ -3798,10 +3774,10 @@ export const deleteSiteAction = async (siteId: string) => {
       include: {
         _count: {
           select: {
-            userCredentials: true
-          }
-        }
-      }
+            userCredentials: true,
+          },
+        },
+      },
     });
 
     if (!site) {
@@ -3846,21 +3822,21 @@ export const getAllWorkflowsForSiteSelectionAction = async () => {
           select: {
             firstName: true,
             lastName: true,
-            username: true
-          }
-        }
+            username: true,
+          },
+        },
       },
       orderBy: [
-        { verifiedAndTested: 'desc' }, // Verified first
-        { viewCount: 'desc' },         // Popular first
-        { createdAt: 'desc' }          // Recent first
-      ]
+        { verifiedAndTested: "desc" }, // Verified first
+        { viewCount: "desc" }, // Popular first
+        { createdAt: "desc" }, // Recent first
+      ],
     });
 
     return {
       success: true,
       workflows,
-      count: workflows.length
+      count: workflows.length,
     };
   } catch (error) {
     console.error("Error fetching workflows:", error);
@@ -3880,27 +3856,27 @@ export const toggleSiteStatusAction = async (siteId: string) => {
   try {
     const site = await db.availableSite.findUnique({
       where: { id: siteId },
-      select: { id: true, name: true, status: true }
+      select: { id: true, name: true, status: true },
     });
 
     if (!site) {
       return {
         success: false,
-        message: "Site not found"
+        message: "Site not found",
       };
     }
 
-    const newStatus = site.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    const newStatus = site.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
 
     const updatedSite = await db.availableSite.update({
       where: { id: siteId },
-      data: { status: newStatus }
+      data: { status: newStatus },
     });
 
     return {
       success: true,
       site: updatedSite,
-      message: `Site "${site.name}" is now ${newStatus.toLowerCase()}`
+      message: `Site "${site.name}" is now ${newStatus.toLowerCase()}`,
     };
   } catch (error) {
     console.error("Error toggling site status:", error);
@@ -3918,9 +3894,9 @@ export const incrementSiteViewCountAction = async (siteId: string) => {
   try {
     await db.availableSite.update({
       where: { id: siteId },
-      data: { 
-        viewCount: { increment: 1 }
-      }
+      data: {
+        viewCount: { increment: 1 },
+      },
     });
 
     return { success: true };
@@ -3940,8 +3916,6 @@ export const incrementSiteViewCountAction = async (siteId: string) => {
 
 // UserSiteCredentials  actions ****,
 
-
-
 /**
  * 💪 UPDATED: Get all sites with usage stats (sortOrder removed)
  */
@@ -3953,27 +3927,27 @@ export const getAllSitesWithStatsAction = async () => {
           select: {
             id: true,
             title: true,
-                verifiedAndTested: true
-          }
+            verifiedAndTested: true,
+          },
         },
         _count: {
           select: {
             userCredentials: {
-              where: { isConfigured: true }
-            }
-          }
-        }
+              where: { isConfigured: true },
+            },
+          },
+        },
       },
       orderBy: [
-        { status: "asc" }, 
-        { viewCount: "desc" }  // Order by popularity instead of sortOrder
+        { status: "asc" },
+        { viewCount: "desc" }, // Order by popularity instead of sortOrder
       ],
     });
 
     return {
       success: true,
       sites: sites,
-      count: sites.length
+      count: sites.length,
     };
   } catch (error) {
     console.error("Error fetching sites with stats:", error);
@@ -3990,31 +3964,31 @@ export const getAllSitesWithStatsAction = async () => {
  * ⚡ SAVE: User site credentials with FK relationship
  */
 export async function saveUserSiteCredentialsAction(
-  userId: string, 
-  siteId: string, 
+  userId: string,
+  siteId: string,
   credentials: Record<string, any>
 ) {
   try {
     // Validate that the site exists
     const site = await db.availableSite.findUnique({
-      where: { id: siteId }
+      where: { id: siteId },
     });
 
     if (!site) {
       return {
         success: false,
-        error: "Site not found"
+        error: "Site not found",
       };
     }
 
     // Check required credentials are provided
     const requiredCreds = site.requiredCredentials as string[];
-    const missingCreds = requiredCreds.filter(cred => !credentials[cred]);
-    
+    const missingCreds = requiredCreds.filter((cred) => !credentials[cred]);
+
     if (missingCreds.length > 0) {
       return {
         success: false,
-        error: `Missing required credentials: ${missingCreds.join(', ')}`
+        error: `Missing required credentials: ${missingCreds.join(", ")}`,
       };
     }
 
@@ -4023,14 +3997,14 @@ export async function saveUserSiteCredentialsAction(
       where: {
         userId_availableSiteId: {
           userId,
-          availableSiteId: siteId
-        }
+          availableSiteId: siteId,
+        },
       },
       update: {
         credentials,
         isConfigured: true,
         isActive: true,
-        lastUsed: new Date()
+        lastUsed: new Date(),
       },
       create: {
         userId,
@@ -4038,35 +4012,34 @@ export async function saveUserSiteCredentialsAction(
         credentials,
         isConfigured: true,
         isActive: true,
-        lastUsed: new Date()
+        lastUsed: new Date(),
       },
       include: {
-        availableSite: true
-      }
+        availableSite: true,
+      },
     });
 
     // Increment completion count for analytics
     await db.availableSite.update({
       where: { id: siteId },
-      data: { 
-        completeCount: { increment: 1 }
-      }
+      data: {
+        completeCount: { increment: 1 },
+      },
     });
 
     return {
       success: true,
       credential: userCredential,
-      message: "Credentials saved successfully"
+      message: "Credentials saved successfully",
     };
   } catch (error) {
     console.error("Error saving credentials:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
-
 
 /**
  * 📈 DASHBOARD: Get user portfolio stats
@@ -4081,16 +4054,18 @@ export async function getUserPortfolioStatsAction(userId: string) {
           select: {
             id: true,
             name: true,
-                difficulty: true,
-            viewCount: true
-          }
-        }
-      }
+            difficulty: true,
+            viewCount: true,
+          },
+        },
+      },
     });
 
-    const configuredCount = userCredentials.filter(cred => cred.isConfigured).length;
+    const configuredCount = userCredentials.filter(
+      (cred) => cred.isConfigured
+    ).length;
     const totalSites = await db.availableSite.count({
-      where: { status: 'ACTIVE' }
+      where: { status: "ACTIVE" },
     });
 
     // Categories breakdown removed - category field no longer exists
@@ -4098,7 +4073,7 @@ export async function getUserPortfolioStatsAction(userId: string) {
 
     // Calculate difficulty breakdown
     const difficultyBreakdown = userCredentials
-      .filter(cred => cred.isConfigured && cred.availableSite.difficulty)
+      .filter((cred) => cred.isConfigured && cred.availableSite.difficulty)
       .reduce((acc, cred) => {
         const difficulty = cred.availableSite.difficulty!;
         acc[difficulty] = (acc[difficulty] || 0) + 1;
@@ -4115,16 +4090,22 @@ export async function getUserPortfolioStatsAction(userId: string) {
         categoryBreakdown: categoriesUsed,
         difficultyBreakdown,
         lastActivityDate: userCredentials
-          .filter(cred => cred.lastUsed)
-          .sort((a, b) => new Date(b.lastUsed!).getTime() - new Date(a.lastUsed!).getTime())[0]?.lastUsed,
-        totalUsageCount: userCredentials.reduce((sum, cred) => sum + cred.usageCount, 0)
-      }
+          .filter((cred) => cred.lastUsed)
+          .sort(
+            (a, b) =>
+              new Date(b.lastUsed!).getTime() - new Date(a.lastUsed!).getTime()
+          )[0]?.lastUsed,
+        totalUsageCount: userCredentials.reduce(
+          (sum, cred) => sum + cred.usageCount,
+          0
+        ),
+      },
     };
   } catch (error) {
     console.error("Error fetching portfolio stats:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -4133,18 +4114,21 @@ export async function getUserPortfolioStatsAction(userId: string) {
  * 🔍 LEGACY SUPPORT: Get credentials by siteName (for backward compatibility)
  * Eventually replace all usages with the new FK-based functions above
  */
-export async function getUserCredentialsBySiteNameAction(userId: string, siteName: string) {
+export async function getUserCredentialsBySiteNameAction(
+  userId: string,
+  siteName: string
+) {
   try {
     const credential = await db.userSiteCredentials.findFirst({
       where: {
         userId,
         availableSite: {
-          siteName // Query through FK relationship
-        }
+          siteName, // Query through FK relationship
+        },
       },
       include: {
-        availableSite: true
-      }
+        availableSite: true,
+      },
     });
 
     return {
@@ -4152,14 +4136,14 @@ export async function getUserCredentialsBySiteNameAction(userId: string, siteNam
       isConfigured: credential?.isConfigured || false,
       credentials: credential?.credentials,
       credential,
-      site: credential?.availableSite
+      site: credential?.availableSite,
     };
   } catch (error) {
     console.error("Error fetching credentials by site name:", error);
     return {
       success: false,
       isConfigured: false,
-      error: error instanceof Error ? error.message : "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -4174,28 +4158,31 @@ export async function getUserCompletePortfolioAction(userId: string) {
       db.userSiteCredentials.findMany({
         where: { userId },
         include: { availableSite: true },
-        orderBy: { createdAt: 'desc' }  // Order by creation date instead
+        orderBy: { createdAt: "desc" }, // Order by creation date instead
       }),
-      
+
       // Get all available sites
       db.availableSite.findMany({
-        where: { status: 'ACTIVE' },
+        where: { status: "ACTIVE" },
         orderBy: [
-          { viewCount: 'desc' },   // Order by popularity instead
-          { createdAt: 'desc' }    // Then by newest
-        ]
+          { viewCount: "desc" }, // Order by popularity instead
+          { createdAt: "desc" }, // Then by newest
+        ],
       }),
 
       // Get portfolio stats
-      getUserPortfolioStatsAction(userId)
+      getUserPortfolioStatsAction(userId),
     ]);
 
     const configuredSites = userCredentials
-      .filter(cred => cred.isConfigured)
-      .map(cred => cred.availableSite);
+      .filter((cred) => cred.isConfigured)
+      .map((cred) => cred.availableSite);
 
-    const unconfiguredSites = allSites.filter(site => 
-      !userCredentials.some(cred => cred.availableSiteId === site.id && cred.isConfigured)
+    const unconfiguredSites = allSites.filter(
+      (site) =>
+        !userCredentials.some(
+          (cred) => cred.availableSiteId === site.id && cred.isConfigured
+        )
     );
 
     return {
@@ -4205,16 +4192,14 @@ export async function getUserCompletePortfolioAction(userId: string) {
         unconfiguredSites,
         allSites,
         userCredentials,
-        stats: portfolioStats.success ? portfolioStats.stats : null
-      }
+        stats: portfolioStats.success ? portfolioStats.stats : null,
+      },
     };
   } catch (error) {
     console.error("Error fetching complete portfolio:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
-
-

@@ -20,7 +20,7 @@ import { fetchProfile } from "@/utils/actions";
 import { getUserWorkflowStats } from "@/utils/actions";
 import { getUserCompletionStats } from "@/utils/actions";
 import { fetchUserDownloads } from "@/utils/actions";
-import { CreateNewWorkflowButton } from "@/components/(custom)/(dashboard)/Form/Buttons";
+
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -85,9 +85,7 @@ async function Dashboard() {
             <p className="text-muted-foreground mt-2">Ready to build something amazing?</p>
           </div>
         </div>
-        <div className="mt-6">
-          <CreateNewWorkflowButton />
-        </div>
+   
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -128,27 +126,6 @@ async function Dashboard() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Access</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="h-auto flex-col gap-2 p-4" asChild>
-              <Link href="/dashboard/wf/create">
-                <Plus className="h-5 w-5" />
-                <span className="text-sm">New Workflow</span>
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 p-4" asChild>
-              <Link href="/dashboard/mydownloads">
-                <Download className="h-5 w-5" />
-                <span className="text-sm">My Downloads</span>
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

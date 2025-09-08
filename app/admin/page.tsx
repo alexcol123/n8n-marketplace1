@@ -17,6 +17,7 @@ import {
   Activity,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { CreateNewWorkflowButton } from "@/components/(custom)/(dashboard)/Form/Buttons";
 
 // Simplified interface for admin stats
 interface AdminStats {
@@ -95,6 +96,11 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
           <p className="text-muted-foreground">Platform overview</p>
         </div>
+
+     <div className="mt-6">
+          <CreateNewWorkflowButton />
+        </div>
+
         <Button onClick={loadDashboardData} variant="outline" className="gap-2">
           <RefreshCw className="h-4 w-4" />
           Refresh

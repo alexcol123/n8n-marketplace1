@@ -34,6 +34,7 @@ import {
   Monitor,
   Settings,
   MessageSquare,
+  Network,
 } from "lucide-react";
 
 export type NavItem = {
@@ -45,7 +46,7 @@ export type NavItem = {
 export const navigation: NavItem[] = [
   { name: "Back to Workflows", href: "/", icon: ArrowBigLeft },
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "My Workflows", href: "/dashboard/wf", icon: List },
+  { name: "My Workflows", href: "/admin/wf", icon: List },
   { name: "My Profile", href: "/dashboard/profile", icon: User },
   { name: "Portfolio", href: "/dashboard/portfolio", icon: Briefcase },
   { name: "My Downloads", href: "/dashboard/mydownloads", icon: CloudDownload },
@@ -53,11 +54,6 @@ export const navigation: NavItem[] = [
     name: "My Tutorial Completions",
     href: "/dashboard/myCompletions",
     icon: Trophy,
-  },
-  {
-    name: "Create Workflow",
-    href: "/dashboard/wf/create",
-    icon: PlusCircle,
   },
 ];
 
@@ -81,6 +77,16 @@ export const adminNavigation: NavItem[] = [
     name: "Portfolio Manager",
     href: "/admin/portfolio-manager",
     icon: Settings,
+  },
+  {
+    name: "Create Workflow",
+    href: "/workflow/create",
+    icon: Network,
+  },
+  {
+    name: "Create Workflow",
+    href: "/admin/wf/create",
+    icon: PlusCircle,
   },
 ];
 
