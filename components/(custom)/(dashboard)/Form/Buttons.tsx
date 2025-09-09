@@ -63,12 +63,11 @@ export const CreateNewWorkflowButton = () => {
   return (
     <Button
       asChild
-  
-   
+      className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg transition-all hover:scale-105"
     >
       <Link href="/admin/wf/create" className="flex items-center gap-2">
         <Plus className="h-5 w-5" />
-         New Workflow
+        New Workflow
       </Link>
     </Button>
   );

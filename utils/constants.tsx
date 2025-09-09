@@ -30,11 +30,8 @@ import {
   AlarmClockCheckIcon,
   BookOpen,
   Briefcase,
-  ExternalLink,
-  Monitor,
   Settings,
-  MessageSquare,
-  Network,
+
 } from "lucide-react";
 
 export type NavItem = {
@@ -46,7 +43,6 @@ export type NavItem = {
 export const navigation: NavItem[] = [
   { name: "Back to Workflows", href: "/", icon: ArrowBigLeft },
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "My Workflows", href: "/admin/wf", icon: List },
   { name: "My Profile", href: "/dashboard/profile", icon: User },
   { name: "Portfolio", href: "/dashboard/portfolio", icon: Briefcase },
   { name: "My Downloads", href: "/dashboard/mydownloads", icon: CloudDownload },
@@ -63,11 +59,13 @@ export const adminNavigation: NavItem[] = [
     href: "/admin/",
     icon: AlarmClockCheckIcon,
   },
+
   {
-    name: "Issues Management",
-    href: "/admin/issues",
-    icon: AlertCircle,
+    name: "Create Workflow",
+    href: "/admin/wf/create",
+    icon: PlusCircle,
   },
+
   {
     name: "API Setup Guides",
     href: "/admin/node-guides",
@@ -78,10 +76,12 @@ export const adminNavigation: NavItem[] = [
     href: "/admin/portfolio-manager",
     icon: Settings,
   },
+
+  { name: "ALL Workflows", href: "/admin/wf", icon: List },
   {
-    name: "Create Workflow",
-    href: "/admin/wf/create",
-    icon: PlusCircle,
+    name: "Issues Management",
+    href: "/admin/issues",
+    icon: AlertCircle,
   },
 ];
 
