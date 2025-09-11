@@ -10,6 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Database operations**:
   - Push schema changes: `npx prisma db push && npx prisma generate`
   - Open Prisma Studio: `npx prisma studio`
+- **Frontend generation**: `npm run create-frontend` (creates portfolio site frontends)
 - **Clear Next.js cache**: `rm -rf .next`
 
 ## Tech Stack & Architecture
