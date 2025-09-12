@@ -66,6 +66,7 @@ interface FormField {
 
 interface AutoFormGeneratorProps {
   workflowJson: WorkflowJson;
+  slug: string; // Portfolio site slug (e.g., "00001-chatbot")
   onSubmit?: (data: Record<string, unknown>) => Promise<void>;
   webhookUrl?: string;
   showWebhookInput?: boolean;
@@ -73,6 +74,7 @@ interface AutoFormGeneratorProps {
 
 export default function AutoFormGenerator({
   workflowJson,
+  slug,
   onSubmit,
   webhookUrl: initialWebhookUrl = "",
   showWebhookInput = true,
@@ -83,6 +85,7 @@ export default function AutoFormGenerator({
   const [submissionResult, setSubmissionResult] = useState<{
     success: boolean;
     message: string;
+    data?: unknown;
   } | null>(null);
 
   // Extract trigger nodes from workflow
@@ -278,9 +281,9 @@ export default function AutoFormGenerator({
     }
   }, [extractedFormData, form]);
 
-  // Default form submission handler
+  // Default form submission handler - always uses universal API
   const defaultSubmitHandler = async (data: Record<string, unknown>) => {
-    if (!webhookUrl && showWebhookInput) {
+    if (showWebhookInput && !webhookUrl) {
       setSubmissionResult({
         success: false,
         message: "Please enter a webhook URL before submitting the form",
@@ -291,7 +294,7 @@ export default function AutoFormGenerator({
     try {
       const formData = new FormData();
       
-      // Add webhook URL if available
+      // Add webhook URL to form data so API can forward to it
       if (webhookUrl) {
         formData.append("webhookUrl", webhookUrl);
       }
@@ -311,23 +314,34 @@ export default function AutoFormGenerator({
         }
       });
 
-      // Make API call or custom submission
-      const response = await fetch(webhookUrl, {
+      // ALWAYS call universal API route (never direct webhook)
+      const response = await fetch(`/api/portfolio/${slug}`, {
         method: "POST",
         body: formData,
       });
 
-      if (response.ok) {
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         setSubmissionResult({
           success: true,
-          message: "Form submitted successfully!",
+          message: result.message || "Form submitted successfully! Check your email for results in about 3 minutes.",
+          data: result.data,
         });
         form.reset();
       } else {
-        setSubmissionResult({
-          success: false,
-          message: "Error submitting form. Please try again.",
-        });
+        // Handle different error scenarios from API
+        if (result.needsSetup) {
+          setSubmissionResult({
+            success: false,
+            message: "Please configure your credentials first. Go to the credentials section to set up your workflow.",
+          });
+        } else {
+          setSubmissionResult({
+            success: false,
+            message: result.error || "Error submitting form. Please try again.",
+          });
+        }
       }
     } catch (error) {
       console.error("Form submission error:", error);

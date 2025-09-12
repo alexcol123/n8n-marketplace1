@@ -43,13 +43,11 @@ export default function CartoonVideoGeneratorPage() {
   const [loading, setLoading] = useState(true);
   const [loadingWorkflow, setLoadingWorkflow] = useState(false);
 
-  console.log(workflows)
-
   // Fetch workflow that matches this portfolio site by slug
   useEffect(() => {
     const loadWorkflows = async () => {
       try {
-        // Extract slug from pathname: "/dashboard/portfolio/00001-never-lose-another-lead-again" -> "00001-never-lose-another-lead-again"
+        // Extract slug from pathname: "/dashboard/portfolio/00001-never-miss-a-customer-query-again" -> "00001-never-miss-a-customer-query-again"
         const slug = pathname.split('/').pop() || '';
         if (slug) {
           const workflowList = await fetchWorkflowBySlug(slug);

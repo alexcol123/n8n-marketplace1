@@ -35,48 +35,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ slug
     }
 
     // ==================================================
-    // STEP 2: GET USER'S SITE-SPECIFIC CREDENTIALS
-    // ==================================================
-    // Each user can have different credentials for each site type.
-    // For example:
-    // - User John's "chatbot" site uses webhook A + OpenAI key X
-    // - User John's "video-generator" site uses webhook B + Hedra key Y
-    // - User Mary's "chatbot" site uses webhook C + OpenAI key Z
-    // 
-    // getUserCredentialsAction looks up the current user's credentials
-    // for the specific slug (from the URL parameter)
-    const credentialsResult = await getUserCredentialsBySiteNameAction( user.id, params.slug);
-    
-    // Check if the user has configured credentials for this site
-    if (!credentialsResult.success || !credentialsResult.credentials) {
-      // This means the user hasn't set up this site yet
-      // Frontend can use the "needsSetup: true" flag to show a setup form
-      return NextResponse.json(
-        { 
-          error: `No credentials configured for ${params.slug}. Please configure your site first.`,
-          needsSetup: true  // Special flag for frontend to know to show setup
-        },
-        { status: 400 }
-      );
-    }
-
-    // Extract the credentials object (contains webhook, API keys, etc.)
-    const userCredentials = credentialsResult.credentials;
-
-    // ==================================================
-    // STEP 3: VALIDATE WEBHOOK EXISTS
-    // ==================================================
-    // Every site needs at least a webhook URL to function.
-    // The webhook is where we'll send the user's data for processing.
-    if (!userCredentials.webhook) {
-      return NextResponse.json(
-        { error: "Webhook URL not configured for this site" },
-        { status: 400 }
-      );
-    }
-
-    // ==================================================
-    // STEP 4: EXTRACT AND PARSE REQUEST DATA
+    // STEP 2: EXTRACT AND PARSE REQUEST DATA
     // ==================================================
     // The frontend can send data in different formats:
     // 1. JSON - for simple data (chat messages, form data)
@@ -100,6 +59,73 @@ export async function POST(request: NextRequest, props: { params: Promise<{ slug
         { error: "Unsupported content type. Use JSON or FormData." },
         { status: 400 }
       );
+    }
+
+    // ==================================================
+    // STEP 3: CHECK FOR WEBHOOK URL IN FORM DATA
+    // ==================================================
+    // Check if the form includes a webhookUrl field to override stored credentials
+    let webhookUrlOverride: string | null = null;
+    
+    if (contentType.includes("multipart/form-data")) {
+      const formWebhookUrl = (requestData as FormData).get("webhookUrl");
+      if (formWebhookUrl && typeof formWebhookUrl === "string") {
+        webhookUrlOverride = formWebhookUrl;
+        // Remove webhookUrl from form data so it's not sent to n8n
+        (requestData as FormData).delete("webhookUrl");
+      }
+    } else if (contentType.includes("application/json")) {
+      if (requestData.webhookUrl && typeof requestData.webhookUrl === "string") {
+        webhookUrlOverride = requestData.webhookUrl;
+        // Remove webhookUrl from JSON data so it's not sent to n8n
+        delete requestData.webhookUrl;
+      }
+    }
+
+    // ==================================================
+    // STEP 4: GET USER'S SITE-SPECIFIC CREDENTIALS (if no webhook override)
+    // ==================================================
+    let userCredentials: any = {};
+    let webhookUrl: string;
+    
+    if (webhookUrlOverride) {
+      // Use the webhook URL provided in the form data
+      webhookUrl = webhookUrlOverride;
+      // We still might need credentials for API keys, but webhook is overridden
+      const credentialsResult = await getUserCredentialsBySiteNameAction(user.id, params.slug);
+      if (credentialsResult.success && credentialsResult.credentials) {
+        userCredentials = credentialsResult.credentials;
+      }
+    } else {
+      // Use stored credentials workflow
+      const credentialsResult = await getUserCredentialsBySiteNameAction(user.id, params.slug);
+      
+      // Check if the user has configured credentials for this site
+      if (!credentialsResult.success || !credentialsResult.credentials) {
+        // This means the user hasn't set up this site yet
+        // Frontend can use the "needsSetup: true" flag to show a setup form
+        return NextResponse.json(
+          { 
+            error: `No credentials configured for ${params.slug}. Please configure your site first.`,
+            needsSetup: true  // Special flag for frontend to know to show setup
+          },
+          { status: 400 }
+        );
+      }
+
+      userCredentials = credentialsResult.credentials;
+      webhookUrl = userCredentials.webhook;
+
+      // ==================================================
+      // STEP 5: VALIDATE WEBHOOK EXISTS
+      // ==================================================
+      // Every site needs at least a webhook URL to function.
+      if (!webhookUrl) {
+        return NextResponse.json(
+          { error: "Webhook URL not configured for this site" },
+          { status: 400 }
+        );
+      }
     }
 
     // ==================================================
@@ -158,7 +184,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ slug
     // - They pay for their own API usage (OpenAI, Hedra, etc.)
     // - They control their own workflow logic
     // - We just provide the frontend and routing
-    const webhookResponse = await fetch(userCredentials.webhook, {
+    const webhookResponse = await fetch(webhookUrl, {
       method: "POST",
       body: forwardData,
       headers: contentType.includes("application/json") ? {
@@ -284,9 +310,11 @@ this ONE route dynamically handles them all based on the URL parameter.
 
 HOW IT WORKS:
 1. User interacts with their portfolio site (e.g., submits a chat message)
-2. Frontend sends data to /api/portfolio/[siteName] (e.g., /api/portfolio/chatbot)
-3. API authenticates the user and looks up their credentials for that site
-4. API forwards the request + credentials to the user's personal n8n webhook
+2. Frontend sends data to /api/portfolio/[slug] with optional webhookUrl in form data
+3. API authenticates the user and uses either:
+   - Form-provided webhookUrl (for testing/development)
+   - OR stored user credentials for that site (for production)
+4. API forwards the request + credentials to the specified n8n webhook
 5. User's n8n workflow processes the request using their own API keys
 6. API receives the response and forwards it back to the frontend
 7. User pays for their own API usage (OpenAI, Hedra, etc.)
@@ -303,11 +331,11 @@ KEY FEATURES:
 ✅ Future-proof (works with any site you build)
 
 USAGE EXAMPLES:
-- POST /api/portfolio/00001-chatbot → Routes to user's chatbot webhook
-- POST /api/portfolio/00002-video-generator → Routes to user's video webhook  
-- POST /api/portfolio/00003-ecommerce → Routes to user's store webhook
-- POST /api/portfolio/00004-quiz-maker → Routes to user's quiz webhook
-- POST /api/portfolio/00005-anything → Routes to user's anything webhook
+- POST /api/portfolio/chatbot → Routes to user's chatbot webhook
+- POST /api/portfolio/video-generator → Routes to user's video webhook  
+- POST /api/portfolio/ecommerce → Routes to user's store webhook
+- POST /api/portfolio/quiz-maker → Routes to user's quiz webhook
+- POST /api/portfolio/anything → Routes to user's anything webhook
 
 DATA FLOW:
 Frontend → Your API → User's n8n → User's API providers → Back through the chain
