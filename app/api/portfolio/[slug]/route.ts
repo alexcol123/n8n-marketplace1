@@ -1,23 +1,23 @@
-// app/api/portfolio/[siteName]/route.ts
+// app/api/portfolio/[slug]/route.ts
 // THE CORE ENGINE OF YOUR ENTIRE PLATFORM! 🔥🚀
 // 
 // This is a DYNAMIC API route that handles ALL portfolio sites.
-// The [siteName] in the filename makes this route dynamic - it captures
+// The [slug] in the filename makes this route dynamic - it captures
 // whatever comes after /api/portfolio/ in the URL.
 // 
 // Examples:
-// - POST /api/portfolio/chatbot → params.siteName = "chatbot"
-// - POST /api/portfolio/video-generator → params.siteName = "video-generator"
-// - POST /api/portfolio/anything → params.siteName = "anything"
+// - POST /api/portfolio/00001-chatbot → params.slug = "00001-chatbot"
+// - POST /api/portfolio/00002-video-generator → params.slug = "00002-video-generator"
+// - POST /api/portfolio/00003-anything → params.slug = "00003-anything"
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser, getUserCredentialsBySiteNameAction } from "@/utils/actions";
 
-export async function POST(request: NextRequest, props: { params: Promise<{ siteName: string }> }) {
+export async function POST(request: NextRequest, props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
   try {
     // ==================================================
-    // Processing request for site: ${params.siteName}
+    // Processing request for site: ${params.slug}
     // ==================================================
     // STEP 1: AUTHENTICATE THE USER
     // ==================================================
@@ -44,8 +44,8 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
     // - User Mary's "chatbot" site uses webhook C + OpenAI key Z
     // 
     // getUserCredentialsAction looks up the current user's credentials
-    // for the specific siteName (from the URL parameter)
-    const credentialsResult = await getUserCredentialsBySiteNameAction( user.id, params.siteName);
+    // for the specific slug (from the URL parameter)
+    const credentialsResult = await getUserCredentialsBySiteNameAction( user.id, params.slug);
     
     // Check if the user has configured credentials for this site
     if (!credentialsResult.success || !credentialsResult.credentials) {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
       // Frontend can use the "needsSetup: true" flag to show a setup form
       return NextResponse.json(
         { 
-          error: `No credentials configured for ${params.siteName}. Please configure your site first.`,
+          error: `No credentials configured for ${params.slug}. Please configure your site first.`,
           needsSetup: true  // Special flag for frontend to know to show setup
         },
         { status: 400 }
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
       (forwardData as FormData).append('user_credentials', JSON.stringify(credentialsForN8N));
       
       // Add useful metadata that n8n workflows might need
-      (forwardData as FormData).append('site_name', params.siteName);  // "chatbot", "video-generator", etc.
+      (forwardData as FormData).append('site_slug', params.slug);  // "00001-chatbot", "00002-video-generator", etc.
       (forwardData as FormData).append('user_id', user.id);            // Unique user identifier
       
     } else {
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
       const enrichedData = {
         ...requestData,                           // Original data from frontend
         user_credentials: credentialsForN8N,      // User's API keys, settings, etc.
-        site_name: params.siteName,               // Which site this is for
+        site_slug: params.slug,                   // Which site this is for
         user_id: user.id,                         // Who this belongs to
         timestamp: new Date().toISOString()       // When this happened
       };
@@ -224,9 +224,9 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
     // so the frontend knows what to expect.
     return NextResponse.json({
       success: true,                                    // Always include success indicator
-      message: `${params.siteName} request processed successfully`,  // Human-readable message
+      message: `${params.slug} request processed successfully`,  // Human-readable message
       data: n8nResult,                                  // The actual response from user's n8n
-      siteName: params.siteName,                        // Which site this was for
+      siteSlug: params.slug,                            // Which site this was for
       timestamp: new Date().toISOString(),              // When we processed this
       
       // SMART FIELD EXTRACTION:
@@ -244,13 +244,13 @@ export async function POST(request: NextRequest, props: { params: Promise<{ site
     // If ANYTHING goes wrong in our code (not the user's webhook),
     // we catch it here and return a proper error response.
     // This prevents the API from crashing and gives useful debugging info.
-    console.error(`💥 API ERROR for ${params.siteName}:`, error);
+    console.error(`💥 API ERROR for ${params.slug}:`, error);
     
     return NextResponse.json(
       {
         error: "Internal server error",                                   // Generic error message for users
         message: error instanceof Error ? error.message : "Unknown error occurred",  // Detailed error for debugging
-        siteName: params.siteName,                                        // Context about what was being processed
+        siteSlug: params.slug,                                            // Context about what was being processed
       },
       { status: 500 }
     );
@@ -303,11 +303,11 @@ KEY FEATURES:
 ✅ Future-proof (works with any site you build)
 
 USAGE EXAMPLES:
-- POST /api/portfolio/chatbot → Routes to user's chatbot webhook
-- POST /api/portfolio/video-generator → Routes to user's video webhook  
-- POST /api/portfolio/ecommerce → Routes to user's store webhook
-- POST /api/portfolio/quiz-maker → Routes to user's quiz webhook
-- POST /api/portfolio/anything → Routes to user's anything webhook
+- POST /api/portfolio/00001-chatbot → Routes to user's chatbot webhook
+- POST /api/portfolio/00002-video-generator → Routes to user's video webhook  
+- POST /api/portfolio/00003-ecommerce → Routes to user's store webhook
+- POST /api/portfolio/00004-quiz-maker → Routes to user's quiz webhook
+- POST /api/portfolio/00005-anything → Routes to user's anything webhook
 
 DATA FLOW:
 Frontend → Your API → User's n8n → User's API providers → Back through the chain

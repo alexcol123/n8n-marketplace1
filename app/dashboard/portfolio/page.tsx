@@ -52,14 +52,14 @@ interface UserProfile {
 
 interface Site {
   id: string;
-  siteName: string;
+  slug: string;
   name: string;
   description: string;
   siteUrl: string;
-  category?: string;
+  category?: string | null;
   isPopular?: boolean;
-  difficulty?: string;
-  estimatedTime?: string;
+  difficulty?: string | null;
+  estimatedTime?: string | null;
   status?: string;
   requiredCredentials: string[];
   frontendWorkflowJson?: string;
@@ -122,8 +122,8 @@ export default function UserPortfolioPage() {
           portfolioResult.data;
 
         // Set the data efficiently
-        setConfiguredSites(configuredSites);
-        setAvailableSites(unconfiguredSites);
+        setConfiguredSites(configuredSites as Site[]);
+        setAvailableSites(unconfiguredSites as Site[]);
 
         // Log success for debugging
         console.log(
@@ -564,7 +564,7 @@ function UnconfiguredSiteCard({ site }: { site: Site }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${site.siteName}-workflow-template.json`;
+      a.download = `${site.slug}-workflow-template.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -742,7 +742,7 @@ function UnconfiguredSiteCard({ site }: { site: Site }) {
             className="flex-1 bg-primary hover:bg-primary/90 transition-all duration-200 group-hover:translate-y-[-1px]"
           >
             <Link
-              href={`/dashboard/portfolio/${site.siteName}`}
+              href={`/dashboard/portfolio/${site.slug}`}
               className="flex items-center justify-center gap-2"
             >
               <Settings className="w-4 h-4" />

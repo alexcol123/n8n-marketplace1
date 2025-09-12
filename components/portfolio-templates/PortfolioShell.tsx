@@ -6,7 +6,7 @@ import CredentialSetup from "@/components/(custom)/(credentials-for-portfolio)/C
 
 interface PortfolioShellProps {
   children: ReactNode;
-  siteName: string;
+  slug: string;
   title: string;
   description?: string;
 }
@@ -28,7 +28,7 @@ interface UserProfile {
 
 export default function PortfolioShell({
   children,
-  siteName,
+  slug,
   title,
   description
 }: PortfolioShellProps) {
@@ -40,7 +40,7 @@ export default function PortfolioShell({
   // Load user profile and credentials on mount
   useEffect(() => {
     loadUserData();
-  }, [siteName]);
+  }, [slug]);
 
   const loadUserData = async (): Promise<void> => {
     try {
@@ -67,7 +67,7 @@ export default function PortfolioShell({
     try {
       const result = await getUserCredentialsBySiteNameAction(
         userId,
-        siteName
+        slug
       );
       
       if (result.success && result.credentials) {
@@ -96,7 +96,7 @@ export default function PortfolioShell({
   if (showSetup) {
     return (
       <CredentialSetup 
-        siteName={siteName} 
+        slug={slug} 
         onComplete={() => {
           setShowSetup(false);
           if (userProfile) {
@@ -125,7 +125,7 @@ export default function PortfolioShell({
                 <div>
                   <span className="text-slate-100">Credentials for</span>
                   <span className="block text-lg font-bold text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">
-                    {siteName}
+                    {slug}
                   </span>
                 </div>
               </h3>
@@ -196,14 +196,14 @@ export default function PortfolioShell({
                     <>
                       <strong className="text-green-100">All systems ready!</strong>
                       <div className="text-green-300 text-xs mt-1">
-                        Your {siteName} workflow is configured and ready to use
+                        Your {slug} workflow is configured and ready to use
                       </div>
                     </>
                   ) : (
                     <>
                       <strong className="text-orange-100">Setup required</strong>
                       <div className="text-orange-300 text-xs mt-1">
-                        Configure your credentials to unlock {siteName} functionality
+                        Configure your credentials to unlock {slug} functionality
                       </div>
                     </>
                   )}

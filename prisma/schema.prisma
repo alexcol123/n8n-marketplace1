@@ -292,8 +292,8 @@ model AvailableSite {
   frontendWorkflowJson Json? // Modified version with webhooks/credentials
 
   // Site identification
-  siteName String @unique // "chatbot", "video-generator" - matches folder name
-  siteUrl  String // "/dashboard/portfolio/chatbot"
+  slug     String @unique // "00001-never-lose-another-lead-again" - matches workflow.slug
+  siteUrl  String // "/dashboard/portfolio/00001-never-lose-another-lead-again"
 
   // Display information
   name         String // "AI Chatbot", "Video Generator Pro"
@@ -326,7 +326,7 @@ model AvailableSite {
 
 
   @@index([category])
-  @@index([siteName]) // Keep this for API route lookups
+  @@index([slug]) // Primary index for slug-based lookups
 }
 
 enum SiteStatus {

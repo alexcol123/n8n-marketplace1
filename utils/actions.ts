@@ -17,7 +17,6 @@ import { deleteImage, uploadImage } from "./supabase";
 
 import slug from "slug";
 import { IssueStatus, Priority, WorkflowStep } from "@prisma/client";
-import { getDateTime } from "./functions/getDateTime";
 
 import { identifyService } from "./functions/identifyService";
 import { extractAndSaveWorkflowSteps } from "./functions/extractWorkflowSteps";
@@ -365,6 +364,47 @@ export const fetchWorkflows = async ({ search = "" }: { search?: string }) => {
   });
 
   return workflows;
+};
+
+export const fetchWorkflowById = async (workflowId: string) => {
+  const workflow = await db.workflow.findUnique({
+    where: { id: workflowId },
+    select: {
+      id: true,
+      title: true,
+      workFlowJson: true,
+      slug: true,
+    },
+  });
+
+  return workflow;
+};
+
+export const fetchWorkflowBySlug = async (slug: string) => {
+  // Direct slug matching: AvailableSite.slug === Workflow.slug
+  // Both will be "00001-never-lose-another-lead-again"
+  
+  const workflows = await db.workflow.findMany({
+    where: { slug },
+    select: {
+      id: true,
+      title: true,
+      workflowImage: true,
+      creationImage: true,
+      createdAt: true,
+      authorId: true,
+      author: true,
+      slug: true,
+      viewCount: true,
+      WorkflowTeachingGuide: {
+        select: {
+          whatYoullBuildSummary: true,
+        },
+      },
+    },
+  });
+
+  return workflows; // Return as array to match fetchWorkflows format
 };
 
 export const fetchSingleWorkflow = async (slug: string) => {
@@ -2790,7 +2830,7 @@ export const createWorkflowAction = async (
 ): Promise<{ message: string }> => {
   const user = await getAuthUser();
   const rawData = Object.fromEntries(formData);
-  const workflowCreatedAt = getDateTime();
+
   const workflowImageFile = formData.get("image") as File;
   const creationImageFile = formData.get("creationImage") as File;
 
@@ -2800,9 +2840,11 @@ export const createWorkflowAction = async (
       videoUrl: rawData.videoUrl || "",
     });
 
-    // Generate sequence number for title
-    const workflowCount = await db.workflow.count();
-    const sequenceNumber = (workflowCount + 1).toString().padStart(5, "0");
+    // Generate atomic sequence number to prevent duplicates during concurrent creation
+    const sequenceNumber = await db.$transaction(async (tx) => {
+      const workflowCount = await tx.workflow.count();
+      return (workflowCount + 1).toString().padStart(5, "0");
+    });
 
     // ... existing image upload code ...
     const validatedWorkflowImage = validateWithZodSchema(imageSchema, {
@@ -2902,20 +2944,20 @@ async function createFrontendScaffold(
   teachingTitle: string
 ) {
   try {
-    // Create AvailableSite record - this is all we need for dynamic routes!
-    const siteName = `${sequenceNumber}-${slugName}`;
+    // Create AvailableSite record - now using consistent slug format!
+    const slug = `${sequenceNumber}-${slugName}`;
 
     // Check if site already exists
-    const existingSite = await db.availableSite.findUnique({
-      where: { siteName },
+    const existingSite = await db.availableSite.findFirst({
+      where: { slug },
     });
 
     if (!existingSite) {
       await db.availableSite.create({
         data: {
           workflowId,
-          siteName,
-          siteUrl: `/dashboard/portfolio/${siteName}`,
+          slug, // Primary identifier - matches workflow.slug
+          siteUrl: `/dashboard/portfolio/${slug}`,
           name: teachingTitle,
           description: `Frontend implementation for ${teachingTitle}`,
           previewImage: "/placeholder-frontend.png",
@@ -2975,7 +3017,12 @@ async function generateWorkflowTeachingGuide(
     });
 
     // Update workflow title and slug to match teaching guide
-    const newSlug = slug(teachingContent.title, { lower: true });
+    // Create slug with sequence number prefix: "00001-never-lose-another-lead-again"
+    const titleSlug = slug(teachingContent.title, { lower: true });
+    // Only add sequence number if title doesn't already start with it
+    const newSlug = titleSlug.startsWith(originalTitle.toLowerCase()) 
+      ? titleSlug 
+      : `${originalTitle}-${titleSlug}`;
     const updatedWorkflow = await db.workflow.update({
       where: { id: workflowId },
       data: {
@@ -2988,8 +3035,8 @@ async function generateWorkflowTeachingGuide(
     if (updatedWorkflow.needsFrontend) {
       await createFrontendScaffold(
         workflowId,
-        originalTitle,
-        newSlug,
+        originalTitle, // This is the padded sequence number (e.g., "00001")
+        titleSlug, // Use the clean slug without sequence number prefix
         teachingContent.title
       );
     }
@@ -3013,8 +3060,8 @@ async function generateTeachingGuideWithLLM(
     const fallbackTools = detectWorkflowTools(workflowSteps);
 
     return {
-      title: `💰 Get Results Fast - Master ${originalTitle}`,
-      whatYoullBuild: `Build a **professional ${originalTitle.toLowerCase()} automation system** that eliminates manual work and transforms your business operations into a streamlined, profit-generating machine. This complete automation uses **n8n**, **webhooks**, and **HTTP requests** to create a hands-off workflow that processes tasks in minutes instead of hours—reducing what typically takes 2-3 hours of manual work down to just 5 minutes of automated execution. Your system operates 24/7 without supervision, connecting multiple services seamlessly and handling complex workflows that would normally require constant human intervention. The result is a scalable automation that you can immediately deploy for clients or your own business, turning operational bottlenecks into competitive advantages while you focus on growth and revenue generation.`,
+      title: `💰 Get Results Fast - Master This Automation`,
+      whatYoullBuild: `Build a **professional automation system** that eliminates manual work and transforms your business operations into a streamlined, profit-generating machine. This complete automation uses **n8n**, **webhooks**, and **HTTP requests** to create a hands-off workflow that processes tasks in minutes instead of hours—reducing what typically takes 2-3 hours of manual work down to just 5 minutes of automated execution. Your system operates 24/7 without supervision, connecting multiple services seamlessly and handling complex workflows that would normally require constant human intervention. The result is a scalable automation that you can immediately deploy for clients or your own business, turning operational bottlenecks into competitive advantages while you focus on growth and revenue generation.`,
       possibleMonetization:
         "🚀 BUSINESS OPPORTUNITY: Every small business around you is drowning in manual tasks and would pay handsomely to escape. Charge $497 to set up this exact automation for local businesses, or offer 'Done-For-You Automation' at $197/month per client. With just 25 business clients, you're earning $4,925/month solving real operational pain while they focus on growth.",
       toolsUsed:
@@ -3105,6 +3152,18 @@ Make every section feel urgent and valuable. They should think "I'm hemorrhaging
     }
 
     const teachingContent = JSON.parse(responseText);
+
+    // Normalize toolsUsed array - handle case where LLM returns objects instead of strings
+    if (teachingContent.toolsUsed && Array.isArray(teachingContent.toolsUsed)) {
+      teachingContent.toolsUsed = teachingContent.toolsUsed.map((tool: any) => {
+        // If it's an object with toolName property, extract the string value
+        if (typeof tool === 'object' && tool.toolName) {
+          return tool.toolName;
+        }
+        // If it's already a string, return as is
+        return typeof tool === 'string' ? tool : String(tool);
+      });
+    }
 
     // Validate that all required fields exist (fail fast if LLM didn't follow schema)
     const requiredFields = [
@@ -3523,7 +3582,7 @@ export const fetchPublicWorkflowTeachingGuide = async (slug: string) => {
  * 🔥 UPDATED: Create site with new schema fields (sortOrder removed)
  */
 export const createSiteAction = async (siteData: {
-  siteName: string;
+  slug: string;
   name: string;
   description: string;
   siteUrl: string;
@@ -3535,15 +3594,15 @@ export const createSiteAction = async (siteData: {
   frontendWorkflowJson?: string;
 }) => {
   try {
-    // Check if siteName already exists
+    // Check if slug already exists
     const existingSite = await db.availableSite.findUnique({
-      where: { siteName: siteData.siteName },
+      where: { slug: siteData.slug },
     });
 
     if (existingSite) {
       return {
         success: false,
-        message: `Site name "${siteData.siteName}" already exists`,
+        message: `Site slug "${siteData.slug}" already exists`,
       };
     }
 
@@ -3562,7 +3621,7 @@ export const createSiteAction = async (siteData: {
 
     const site = await db.availableSite.create({
       data: {
-        siteName: siteData.siteName,
+        slug: siteData.slug,
         name: siteData.name,
         description: siteData.description,
         siteUrl: siteData.siteUrl,
@@ -3648,7 +3707,7 @@ export const getAllSitesAction = async () => {
 export const updateSiteAction = async (
   siteId: string,
   siteData: {
-    siteName: string;
+    slug: string;
     name: string;
     description: string;
     siteUrl: string;
@@ -3661,10 +3720,10 @@ export const updateSiteAction = async (
   }
 ) => {
   try {
-    // Check if siteName is taken by another site
+    // Check if slug is taken by another site
     const existingSite = await db.availableSite.findFirst({
       where: {
-        siteName: siteData.siteName,
+        slug: siteData.slug,
         NOT: { id: siteId },
       },
     });
@@ -3672,7 +3731,7 @@ export const updateSiteAction = async (
     if (existingSite) {
       return {
         success: false,
-        message: `Site name "${siteData.siteName}" is already taken`,
+        message: `Site slug "${siteData.slug}" is already taken`,
       };
     }
 
@@ -3692,7 +3751,7 @@ export const updateSiteAction = async (
     const site = await db.availableSite.update({
       where: { id: siteId },
       data: {
-        siteName: siteData.siteName,
+        slug: siteData.slug,
         name: siteData.name,
         description: siteData.description,
         siteUrl: siteData.siteUrl,
@@ -4123,7 +4182,10 @@ export async function getUserCredentialsBySiteNameAction(
       where: {
         userId,
         availableSite: {
-          siteName, // Query through FK relationship
+          OR: [
+            { slug: siteName }, // Primary: use slug field
+            { siteName }, // Fallback: for backward compatibility
+          ],
         },
       },
       include: {

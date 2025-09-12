@@ -25,7 +25,7 @@ import {
 
 interface Site {
   id: string;
-  siteName: string;
+  slug: string;
   name: string;
   description: string;
   siteUrl: string;
@@ -81,7 +81,7 @@ export default function AdminWebsitesPage() {
     const sitesResult = await getAllSitesWithStatsAction();
     
     if (sitesResult.success) {
-      setSites(sitesResult.sites);
+      setSites(sitesResult.sites as Site[]);
     }
   };
 
@@ -112,7 +112,7 @@ export default function AdminWebsitesPage() {
       // Update frontend workflow JSON if provided
       if (formData.frontendWorkflowJson?.trim()) {
         const result = await updateSiteAction(editingSite.id, {
-          siteName: editingSite.siteName,
+          slug: editingSite.slug,
           name: editingSite.name,
           description: editingSite.description,
           siteUrl: editingSite.siteUrl,
@@ -155,8 +155,8 @@ export default function AdminWebsitesPage() {
     setShowForm(true);
   };
 
-  const handleDelete = async (siteId: string, siteName: string) => {
-    if (!confirm(`Are you sure you want to delete "${siteName}"? This will also remove all user configurations for this site.`)) {
+  const handleDelete = async (siteId: string, slug: string) => {
+    if (!confirm(`Are you sure you want to delete "${slug}"? This will also remove all user configurations for this site.`)) {
       return;
     }
 
@@ -418,7 +418,7 @@ export default function AdminWebsitesPage() {
                         <div>
                           <span className="text-muted-foreground">Slug:</span>
                           <br />
-                          <code className="bg-muted px-1 rounded">{site.siteName}</code>
+                          <code className="bg-muted px-1 rounded">{site.slug}</code>
                         </div>
                         <div>
                           <span className="text-muted-foreground">URL:</span>
@@ -474,7 +474,7 @@ export default function AdminWebsitesPage() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleDelete(site.id, site.name)}
+                        onClick={() => handleDelete(site.id, site.slug)}
                         className="text-red-600 hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4" />

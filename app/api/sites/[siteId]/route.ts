@@ -8,10 +8,13 @@ export async function GET(
   try {
     const { siteId } = await params;
 
-    // Look up the site in the database
-    const site = await db.availableSite.findUnique({
+    // Look up the site in the database (support both slug and siteName)
+    const site = await db.availableSite.findFirst({
       where: {
-        siteName: siteId,
+        OR: [
+          { slug: siteId }, // Primary: use slug field
+          { siteName: siteId }, // Fallback: for backward compatibility
+        ],
       },
       include: {
         workflow: {

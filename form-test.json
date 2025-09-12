@@ -1,0 +1,219 @@
+{
+  "name": "form-test",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Form",
+        "formDescription": "Review",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "review 1-5",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "1"
+                  },
+                  {
+                    "option": "2"
+                  },
+                  {
+                    "option": "3"
+                  },
+                  {
+                    "option": "4"
+                  },
+                  {
+                    "option": "5"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Name",
+              "placeholder": "Enter Name"
+            },
+            {
+              "fieldLabel": "Email",
+              "placeholder": "john@gmail.com",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -96,
+        -48
+      ],
+      "id": "aa813ed9-4518-4b12-be79-63e4deffd729",
+      "name": "On form submission",
+      "webhookId": "abb8a060-097b-4f29-a8b9-9e11706a09cc"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1x_HRAlen8x6bc4A-SfAU3EsmItW7SB2r2c6e8ujnkec",
+          "mode": "list",
+          "cachedResultName": "Form-test-1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1x_HRAlen8x6bc4A-SfAU3EsmItW7SB2r2c6e8ujnkec/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1x_HRAlen8x6bc4A-SfAU3EsmItW7SB2r2c6e8ujnkec/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name ": "={{ $json.Name }}",
+            "Email": "={{ $json.Email }}",
+            "review 1-5": "={{ $json[\"review 1-5\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name ",
+              "displayName": "Name ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "review 1-5",
+              "displayName": "review 1-5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "de43e09a-fa75-4e4e-81cc-71b61b4d612c",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "6oKsHZZyhEsFmKNo",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "Alexcol123456@gmail.com",
+        "subject": "New Review",
+        "emailType": "text",
+        "message": "=You just reciecieve a new Review from : {{ $json['Name '] }}    email : {{ $json.Email }}  rating : {{ $json['review 1-5'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "04ee55bf-5693-4205-b654-fe525922e06f",
+      "name": "Send a message",
+      "webhookId": "0d2825d5-1600-4a8c-955b-c86d9f7bc3d3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xWRRuwZpOIThxpVw",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "079abafe-9443-4514-a550-4a56dfd867b8",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -48,
+        176
+      ],
+      "id": "2dd6bd20-0865-4b63-bf6d-8e3eb3c5c8ab",
+      "name": "Webhook",
+      "webhookId": "079abafe-9443-4514-a550-4a56dfd867b8"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "68def91c-dc6d-4d9b-8df6-07e0b9bcc52d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1c60b9486c231ee26e50d4567f0fdfcb550b2724c3184e0952bd28129e300a81"
+  },
+  "id": "eai1CjVW9l3ztx93",
+  "tags": []
+}

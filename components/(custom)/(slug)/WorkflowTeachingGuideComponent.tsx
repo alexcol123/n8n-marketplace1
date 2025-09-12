@@ -72,6 +72,9 @@ const formatBoldText = (text: string) => {
 };
 
 export default function FinalWorkflowPage({ guide }: WorkflowHeroProps) {
+
+  console.log(guide);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 relative overflow-hidden">
       {/* Enhanced background decorations */}
@@ -199,10 +202,15 @@ export default function FinalWorkflowPage({ guide }: WorkflowHeroProps) {
                       Required Tools
                     </h3>
                   </div>
+
+                  
                   
                   <div className="space-y-4">
                      {guide.toolsUsed !== null && guide.toolsUsed.length > 0 && guide.toolsUsed.map((tool, index) => {
-                      const [toolName, toolDescription] = tool.split(" - ");
+                      // Handle both string and object formats
+                      const toolString = typeof tool === 'string' ? tool : (tool as any)?.toolName || String(tool);
+                      const [toolName, ...toolDescriptionParts] = toolString.split("-");
+                      const toolDescription = toolDescriptionParts.join("-").trim();
                       return (
                         <div 
                           key={index}
