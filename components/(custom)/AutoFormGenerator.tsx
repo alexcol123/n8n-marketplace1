@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { getWebhookStatusAction, fetchProfile, getUserCredentialsBySiteNameAction, getAllSitesAction } from "@/utils/actions";
 import {
   Form,
   FormControl,
@@ -68,25 +69,44 @@ interface AutoFormGeneratorProps {
   workflowJson: WorkflowJson;
   slug: string; // Portfolio site slug (e.g., "00001-chatbot")
   onSubmit?: (data: Record<string, unknown>) => Promise<void>;
-  webhookUrl?: string;
-  showWebhookInput?: boolean;
 }
 
 export default function AutoFormGenerator({
   workflowJson,
   slug,
   onSubmit,
-  webhookUrl: initialWebhookUrl = "",
-  showWebhookInput = true,
 }: AutoFormGeneratorProps) {
   const [extractedFormData, setExtractedFormData] = useState<FormData | null>(null);
-  const [webhookUrl, setWebhookUrl] = useState(initialWebhookUrl);
+  const [webhookStatus, setWebhookStatus] = useState<{
+    hasWebhook: boolean;
+    webhookPreview: string;
+    loading: boolean;
+  }>({ hasWebhook: false, webhookPreview: "", loading: true });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<{
     success: boolean;
     message: string;
     data?: unknown;
   } | null>(null);
+  
+  // User authentication and credentials state
+  const [userProfile, setUserProfile] = useState<{
+    clerkId: string;
+    firstName: string;
+    lastName: string;
+  } | null>(null);
+  const [userCredentials, setUserCredentials] = useState<Record<string, string>>({});
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isCredentialsMinimized, setIsCredentialsMinimized] = useState(true);
+  const [siteData, setSiteData] = useState<{
+    id: string;
+    slug: string;
+    name: string;
+    description: string;
+    requiredCredentials: string[] | null;
+  } | null>(null);
+  const [hasConfiguredCredentials, setHasConfiguredCredentials] = useState(false);
 
   // Extract trigger nodes from workflow
   const extractTriggerNodes = (workflow: WorkflowJson): N8nNode[] => {
@@ -127,6 +147,94 @@ export default function AutoFormGenerator({
     }
   };
 
+  // Initialize user authentication and load credentials
+  useEffect(() => {
+    const loadUserAndCredentials = async () => {
+      setAuthLoading(true);
+      setAuthError(null);
+      
+      try {
+        console.log('🚀 Starting credential loading for slug:', slug);
+        
+        // 1. Validate user is authenticated
+        const profile = await fetchProfile();
+        console.log('👤 User profile loaded:', profile);
+        
+        if (!profile || !profile.clerkId) {
+          setAuthError("Please sign in to access this automation");
+          return;
+        }
+        
+        setUserProfile(profile);
+        
+        // 2. Load site data to get required credentials
+        const sitesResult = await getAllSitesAction();
+        console.log('🏢 Sites result:', sitesResult);
+        let siteInfo = null;
+        
+        if (sitesResult.success) {
+          siteInfo = sitesResult.sites.find(
+            (s: any) => s.slug === slug
+          );
+          if (siteInfo) {
+            setSiteData({
+              id: siteInfo.id,
+              slug: siteInfo.slug,
+              name: siteInfo.name,
+              description: siteInfo.description,
+              requiredCredentials: Array.isArray(siteInfo.requiredCredentials) 
+                ? siteInfo.requiredCredentials as string[]
+                : null
+            });
+          }
+        }
+        
+        // 3. Load user's credentials for this site
+        console.log('🔐 Loading credentials for user:', profile.clerkId, 'site:', slug);
+        const credentialsResult = await getUserCredentialsBySiteNameAction(
+          profile.clerkId,
+          slug
+        );
+        console.log('🔐 Credentials result:', credentialsResult);
+        
+        if (credentialsResult.success && credentialsResult.credentials) {
+          const creds = credentialsResult.credentials as Record<string, string>;
+          console.log('✅ User credentials loaded:', creds);
+          setUserCredentials(creds);
+          
+          // 4. Check if user has all required credentials configured (same logic as CredentialsForm)
+          if (siteInfo && siteInfo.requiredCredentials && Array.isArray(siteInfo.requiredCredentials)) {
+            console.log('📋 Required credentials for site:', siteInfo.requiredCredentials);
+            const hasCredentials = (siteInfo.requiredCredentials as string[]).some((cred: string) => {
+              const hasThisCred = creds[cred] && creds[cred].trim() !== "";
+              console.log(`  - ${cred}: ${hasThisCred ? '✅' : '❌'} (value: "${creds[cred] || 'empty'}")`);
+              return hasThisCred;
+            });
+            console.log('🎯 Final credential check result:', hasCredentials);
+            setHasConfiguredCredentials(hasCredentials);
+            setIsCredentialsMinimized(hasCredentials);
+          } else {
+            console.log('❌ No required credentials found for site:', siteInfo);
+            setHasConfiguredCredentials(false);
+            setIsCredentialsMinimized(false);
+          }
+        } else {
+          console.log('❌ No credentials loaded for user. Result:', credentialsResult);
+          setHasConfiguredCredentials(false);
+          setIsCredentialsMinimized(false);
+        }
+        
+      } catch (error) {
+        console.error('Error loading user and credentials:', error);
+        setAuthError("Error loading user authentication. Please refresh the page.");
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    loadUserAndCredentials();
+  }, [slug]);
+
   // Initialize form data when workflow changes
   useEffect(() => {
     if (workflowJson) {
@@ -135,6 +243,34 @@ export default function AutoFormGenerator({
       setExtractedFormData(formData);
     }
   }, [workflowJson]);
+
+  // Fetch webhook status from user credentials (only after user is authenticated)
+  useEffect(() => {
+    const fetchWebhookStatus = async () => {
+      if (!userProfile || authLoading) return;
+      
+      setWebhookStatus(prev => ({ ...prev, loading: true }));
+      
+      try {
+        const result = await getWebhookStatusAction(slug);
+        
+        setWebhookStatus({
+          hasWebhook: result.hasWebhook,
+          webhookPreview: result.webhookPreview,
+          loading: false
+        });
+      } catch (error) {
+        console.error('Error fetching webhook status:', error);
+        setWebhookStatus({
+          hasWebhook: false,
+          webhookPreview: "Error loading webhook status",
+          loading: false
+        });
+      }
+    };
+
+    fetchWebhookStatus();
+  }, [slug, userProfile, authLoading]);
 
   // Generate dynamic Zod schema for form validation
   const generateFormSchema = (formFields: FormField[]) => {
@@ -283,21 +419,16 @@ export default function AutoFormGenerator({
 
   // Default form submission handler - always uses universal API
   const defaultSubmitHandler = async (data: Record<string, unknown>) => {
-    if (showWebhookInput && !webhookUrl) {
+    if (!webhookStatus.hasWebhook) {
       setSubmissionResult({
         success: false,
-        message: "Please enter a webhook URL before submitting the form",
+        message: "Please configure your credentials first. Go to the credentials section to set up your workflow.",
       });
       return;
     }
 
     try {
       const formData = new FormData();
-      
-      // Add webhook URL to form data so API can forward to it
-      if (webhookUrl) {
-        formData.append("webhookUrl", webhookUrl);
-      }
 
       // Process form fields
       Object.entries(data).forEach(([key, value]) => {
@@ -559,6 +690,50 @@ export default function AutoFormGenerator({
     }
   };
 
+  // Authentication loading state
+  if (authLoading) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Auto Form Generator</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading user authentication...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Authentication error state
+  if (authError || !userProfile) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Authentication Required</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-red-600 text-xl">🔒</span>
+            </div>
+            <p className="text-red-600 mb-4">
+              {authError || "Please sign in to access this automation"}
+            </p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+            >
+              Refresh Page
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // If no workflow JSON provided
   if (!workflowJson) {
     return (
@@ -607,22 +782,110 @@ export default function AutoFormGenerator({
         )}
       </CardHeader>
       <CardContent>
-        {/* Webhook URL Input */}
-        {showWebhookInput && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <label className="block text-sm font-medium text-blue-900 mb-2">
-              Webhook URL
-            </label>
-            <Input
-              type="url"
-              placeholder="https://your-instance.n8n.cloud/webhook/..."
-              value={webhookUrl}
-              onChange={(e) => setWebhookUrl(e.target.value)}
-              className="w-full"
-            />
-            <p className="text-xs text-blue-700 mt-1">
-              Enter the webhook URL to submit the form data
-            </p>
+        {/* User Info Display */}
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm font-medium text-blue-900">
+                Signed in as {userProfile.firstName} {userProfile.lastName}
+              </span>
+            </div>
+            <span className="text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded">
+              Site: {slug}
+            </span>
+          </div>
+        </div>
+
+        {/* Credentials Status Display */}
+        {!webhookStatus.loading && (
+          <div className="mb-6">
+            {/* When credentials are configured - show minimized status */}
+            {hasConfiguredCredentials && isCredentialsMinimized && (
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-green-800">
+                      Credentials configured
+                    </span>
+                    <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                      {Object.keys(userCredentials).length} credential(s)
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setIsCredentialsMinimized(false)}
+                    className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center gap-1"
+                    title="Show credential details"
+                  >
+                    <span>↓</span>
+                    Show
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* When credentials are configured - show expanded status */}
+            {hasConfiguredCredentials && !isCredentialsMinimized && (
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-green-900">
+                    Credentials Status
+                  </label>
+                  <button
+                    onClick={() => setIsCredentialsMinimized(true)}
+                    className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center gap-1"
+                    title="Hide credential details"
+                  >
+                    <span>↑</span>
+                    Hide
+                  </button>
+                </div>
+                <div className="flex items-center space-x-2 mb-2">
+                  <Input
+                    type="text"
+                    value={webhookStatus.webhookPreview}
+                    readOnly
+                    className="w-full bg-green-50 border-green-200"
+                  />
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                </div>
+                <p className="text-xs text-green-700">
+                  ✅ Webhook configured and ready
+                </p>
+                <div className="mt-2 text-xs text-green-600">
+                  <span>✅ {Object.keys(userCredentials).length} credential(s) configured for this site</span>
+                </div>
+              </div>
+            )}
+
+            {/* When credentials are NOT configured - show warning */}
+            {!hasConfiguredCredentials && (
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <label className="block text-sm font-medium text-red-900 mb-2">
+                  Webhook Status
+                </label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="text"
+                    value={webhookStatus.webhookPreview}
+                    readOnly
+                    className="w-full bg-red-50 border-red-200"
+                  />
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                </div>
+                <p className="text-xs mt-1 text-red-700">
+                  Configure webhook in credentials section
+                </p>
+                
+                {/* Show credentials warning only when no credentials */}
+                {Object.keys(userCredentials).length === 0 && (
+                  <div className="mt-2 text-xs text-red-600">
+                    <span>⚠️ No credentials configured for this site</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -650,9 +913,9 @@ export default function AutoFormGenerator({
             <Button
               type="submit"
               className="w-full"
-              disabled={isSubmitting || (showWebhookInput && !webhookUrl)}
+              disabled={isSubmitting || !webhookStatus.hasWebhook || webhookStatus.loading}
             >
-              {isSubmitting ? "Submitting..." : "Submit Form"}
+              {isSubmitting ? "Submitting..." : !webhookStatus.hasWebhook ? "Configure Webhook First" : "Submit Form"}
             </Button>
           </form>
         </Form>

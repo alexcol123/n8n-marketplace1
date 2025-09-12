@@ -179,7 +179,7 @@ export default function CartoonVideoGeneratorPage() {
               <p>Loading workflow data...</p>
             </div>
           ) : (
-            <AutoFormGenerator workflowJson={selectedWorkflow.workFlowJson} />
+            <AutoFormGenerator workflowJson={selectedWorkflow.workFlowJson} slug={slug} />
           )}
         </div>
       )}

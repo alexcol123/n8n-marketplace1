@@ -4178,20 +4178,46 @@ export async function getUserCredentialsBySiteNameAction(
   siteName: string
 ) {
   try {
+    console.log('🔍 DEBUG: getUserCredentialsBySiteNameAction called with:', { userId, siteName });
+    
+    // First, let's check if the site exists
+    const siteExists = await db.availableSite.findFirst({
+      where: { slug: siteName }
+    });
+    console.log('🏢 Site exists check:', siteExists ? `Found: ${siteExists.name}` : 'Site not found');
+    
+    // Then check for user credentials
     const credential = await db.userSiteCredentials.findFirst({
       where: {
         userId,
         availableSite: {
-          OR: [
-            { slug: siteName }, // Primary: use slug field
-            { siteName }, // Fallback: for backward compatibility
-          ],
+          slug: siteName, // Only use slug since siteName field doesn't exist anymore
         },
       },
       include: {
         availableSite: true,
       },
     });
+    
+    console.log('🔐 Credential lookup result:', {
+      found: !!credential,
+      isConfigured: credential?.isConfigured,
+      credentialsKeys: credential?.credentials ? Object.keys(credential.credentials as any) : [],
+      siteName: credential?.availableSite?.name
+    });
+    
+    // Debug: Let's also check what credentials exist for this user
+    const allUserCredentials = await db.userSiteCredentials.findMany({
+      where: { userId },
+      include: { availableSite: true }
+    });
+    console.log('🔍 All credentials for user:', allUserCredentials.map(c => ({
+      id: c.id,
+      siteName: c.availableSite.name,
+      siteSlug: c.availableSite.slug,
+      isConfigured: c.isConfigured,
+      credentialKeys: Object.keys(c.credentials as any)
+    })));
 
     return {
       success: true,
@@ -4206,6 +4232,50 @@ export async function getUserCredentialsBySiteNameAction(
       success: false,
       isConfigured: false,
       error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+// Get webhook status for AutoFormGenerator
+export async function getWebhookStatusAction(slug: string) {
+  try {
+    const user = await getAuthUser();
+    if (!user) {
+      return {
+        success: false,
+        hasWebhook: false,
+        webhookPreview: "Authentication required",
+      };
+    }
+
+    const credentialsResult = await getUserCredentialsBySiteNameAction(user.id, slug);
+    
+    if (credentialsResult.success && credentialsResult.credentials) {
+      const credentials = credentialsResult.credentials as Record<string, any>;
+      const webhook = credentials.webhook;
+      
+      if (webhook && typeof webhook === 'string' && webhook.length > 5) {
+        // Show last 5 characters of webhook
+        const lastFive = webhook.slice(-5);
+        return {
+          success: true,
+          hasWebhook: true,
+          webhookPreview: `...${lastFive}`,
+        };
+      }
+    }
+
+    return {
+      success: true,
+      hasWebhook: false,
+      webhookPreview: "Webhook needed - configure credentials",
+    };
+  } catch (error) {
+    console.error("Error fetching webhook status:", error);
+    return {
+      success: false,
+      hasWebhook: false,
+      webhookPreview: "Error loading webhook status",
     };
   }
 }
